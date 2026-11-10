@@ -1,0 +1,100 @@
+/*
+Theme Name: Gas Safety
+Theme URI: https://safety-tech.dev
+Description: Companion theme for the Gas Safety Manager plugin — Technion Safety Unit. Recreates the original portal's navy/gold RTL identity and provides full-bleed templates for the gas systems management UI.
+Version: 1.2.0
+Author: Diamond Rubinny
+Text Domain: gas-safety-theme
+Requires at least: 6.4
+Requires PHP: 8.1
+*/
+
+/* The WP theme manifest. Design tokens live in assets/css/tokens.css. */
+
+/* ---- Global base (applies to EVERY page, not just the app) ------------- */
+html { box-sizing: border-box; }
+*, *::before, *::after { box-sizing: inherit; }
+
+body {
+  margin: 0;
+  background: var(--gs-bg, #f4f6f9);
+  color: #1a2332;
+  font-family: var(--gs-font, 'Rubik', 'Segoe UI', Arial, sans-serif);
+  direction: rtl;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: var(--gs-navy, #002147); }
+
+h1, h2, h3, h4 {
+  font-family: var(--gs-font, 'Rubik', 'Segoe UI', Arial, sans-serif);
+  color: var(--gs-navy, #002147);
+  line-height: 1.25;
+}
+
+.gs-page {
+  background: var(--gs-surface, #fff);
+  border: 1px solid var(--gs-border, #d9dee6);
+  border-radius: var(--gs-r-lg, 14px);
+  box-shadow: var(--gs-shadow, 0 2px 12px rgba(0, 33, 71, 0.08));
+  padding: 28px;
+}
+
+/* ---- App (full-bleed) pages: let the plugin SPA own the screen --------- */
+body.gs-fullbleed {
+  margin: 0;
+  background: var(--gs-bg, #f4f6f9);
+  font-family: var(--gs-font, 'Rubik', 'Segoe UI', Arial, sans-serif);
+  direction: rtl;
+}
+body.gs-fullbleed .site-header,
+body.gs-fullbleed .site-footer-widgets {
+  display: none;
+}
+
+/* ---- Branded landing (shown at the site root when it is NOT the app) --- */
+.gst-hero {
+  min-height: 70vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 16px;
+  background:
+    radial-gradient(1200px 400px at 50% -10%, rgba(224, 165, 38, 0.12), transparent 60%),
+    linear-gradient(160deg, var(--gs-navy, #002147), var(--gs-navy-2, #0b2545));
+}
+.gst-hero__card {
+  width: 100%;
+  max-width: 540px;
+  text-align: center;
+  color: #fff;
+}
+.gst-hero__logo {
+  width: 84px; height: 84px;
+  margin: 0 auto 18px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 44px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 20px;
+}
+.gst-hero__logo img { max-width: 64px; max-height: 64px; display: block; }
+.gst-hero__title { color: #fff; font-size: 30px; font-weight: 800; margin: 0 0 8px; }
+.gst-hero__sub { color: rgba(255, 255, 255, 0.78); font-size: 16px; margin: 0 0 28px; }
+.gst-hero__actions { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+.gst-btn {
+  display: inline-block;
+  padding: 13px 30px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 16px;
+  text-decoration: none;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: transform .08s ease, box-shadow .15s ease;
+}
+.gst-btn:hover { transform: translateY(-1px); }
+.gst-btn--primary { background: var(--gs-gold, #e0a526); color: #2a1c00; }
+.gst-btn--ghost { background: transparent; color: #fff; border-color: rgba(255, 255, 255, 0.35); }
+.gst-hero__note { margin-top: 22px; color: rgba(255, 255, 255, 0.6); font-size: 13px; }

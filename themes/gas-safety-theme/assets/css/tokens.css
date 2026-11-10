@@ -1,0 +1,69 @@
+/**
+ * Gas Safety — Design Tokens
+ * Extracted from the original portal to preserve the exact visual identity:
+ * navy/gold palette, Rubik type, RTL, card radii, status colors.
+ * Loaded by both the theme and the plugin UI so they always match.
+ */
+
+:root {
+  /* Brand */
+  --gs-navy: #002147;
+  --gs-navy-2: #0b2545;
+  --gs-gold: #e0a526;
+  --gs-gold-2: #e6b54a;
+
+  /* Surfaces */
+  --gs-bg: #f4f6f9;
+  --gs-surface: #ffffff;
+  --gs-surface-2: #fafbfd;
+  --gs-border: #d9dee6;
+  --gs-muted: #7a8699;
+
+  /* Status */
+  --gs-ok: #1a9b54;
+  --gs-ok-dark: #157a43;
+  --gs-danger: #c0392b;
+  --gs-danger-bg: #fdecea;
+  --gs-danger-border: #f5b5b5;
+  --gs-warn: #e0a526;
+  --gs-warn-bg: #fff7e6;
+  --gs-warn-border: #f0dca8;
+
+  /* Type */
+  --gs-font: 'Rubik', 'Segoe UI', Arial, sans-serif;
+
+  /* Radii */
+  --gs-r-sm: 8px;
+  --gs-r: 9px;
+  --gs-r-md: 12px;
+  --gs-r-lg: 14px;
+
+  /* Spacing scale */
+  --gs-sp-1: 4px;
+  --gs-sp-2: 8px;
+  --gs-sp-3: 12px;
+  --gs-sp-4: 16px;
+  --gs-sp-5: 24px;
+  --gs-sp-6: 32px;
+
+  /* Shadow */
+  --gs-shadow: 0 2px 12px rgba(0, 33, 71, 0.08);
+  --gs-shadow-lg: 0 6px 24px rgba(0, 33, 71, 0.12);
+}
+
+/* Base reset within our UI containers only (never touch WP admin globally). */
+.gs-app,
+.gs-app * {
+  box-sizing: border-box;
+}
+
+.gs-app {
+  font-family: var(--gs-font);
+  color: #1c2733;
+  background: var(--gs-bg);
+  direction: rtl;
+  text-align: right;
+  line-height: 1.5;
+}
+
+/* Load Rubik from Google Fonts with a safe fallback (theme enqueues it). */

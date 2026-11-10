@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>לוח מצב ציבורי — בטיחות גזים</title>
+<style>
+  :root{--navy:#002147;--navy2:#0b2545;--gold:#f0b323;--ok:#1f9d55;--warn:#b7791f;--danger:#c23b3b;--muted:#5b6673;--bd:#e3e8ef}
+  *{box-sizing:border-box} html,body{margin:0}
+  body{font-family:Rubik,Arial,sans-serif;background:#eef2f7;color:#14202e;padding:18px}
+  .wrap{max-width:860px;margin:0 auto}
+  header{background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff;border-radius:16px;padding:22px 20px;border-bottom:4px solid var(--gold)}
+  header h1{margin:0 0 4px;font-size:20px} header p{margin:0;color:#c8d4e6;font-size:13px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-top:16px}
+  .tile{background:#fff;border:1px solid var(--bd);border-radius:14px;padding:16px;text-align:center}
+  .tile .n{font-size:30px;font-weight:800;color:var(--navy)} .tile .l{color:var(--muted);font-size:13px;margin-top:4px}
+  .tile.ok .n{color:var(--ok)} .tile.warn .n{color:var(--warn)} .tile.danger .n{color:var(--danger)}
+  .card{background:#fff;border:1px solid var(--bd);border-radius:14px;padding:16px;margin-top:14px}
+  .card h2{margin:0 0 10px;font-size:15px;color:var(--navy)}
+  table{width:100%;border-collapse:collapse} th,td{padding:8px 10px;text-align:right;border-bottom:1px solid var(--bd);font-size:14px}
+  th{color:var(--muted);font-weight:600}
+  .foot{color:var(--muted);font-size:12px;text-align:center;margin-top:16px}
+  .err{background:#fdecec;color:#9b2c2c;border:1px solid #f5c6c6;border-radius:12px;padding:16px;margin-top:16px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header><h1>לוח מצב — בטיחות גזים</h1><p id="org">נתוני מצב מצטברים</p></header>
+  <div id="root"><p style="color:#5b6673;margin-top:16px">טוען…</p></div>
+  <div class="foot">נתונים מצטברים בלבד · ללא פרטים אישיים · מתעדכן בכל טעינה</div>
+</div>
+<script>
+(function () {
+  function qs(k){ return new URLSearchParams(location.search).get(k) || ''; }
+  var token = qs('t') || qs('token');
+  var api = qs('api') || '/wp-json/gas/v1';
+  var root = document.getElementById('root');
+  if (!token) { root.innerHTML = '<div class="err">חסר אסימון גישה בקישור.</div>'; return; }
+
+  function esc(s){ var d=document.createElement('div'); d.textContent=(s==null?'':String(s)); return d.innerHTML; }
+
+  function render(d){
+    document.getElementById('org').textContent = d.org || 'נתוני מצב מצטברים';
+    var rows = (d.by_status||[]).map(function(s){
+      return '<tr><td>'+esc(s.label)+'</td><td>'+esc(s.count)+'</td></tr>';
+    }).join('');
+    root.innerHTML =
+      '<div class="grid">' +
+        tile(d.total_equipment, 'ציוד במערכת', '') +
+        tile((d.scan_coverage_pct||0)+'%', 'כיסוי סריקה (30 ימים)', cls(d.scan_coverage_pct>=70?'ok':(d.scan_coverage_pct>=40?'warn':'danger'))) +
+        tile(d.faults_open, 'תקלות פתוחות', cls(d.faults_open>0?'warn':'ok')) +
+        tile(d.quarterly_overdue, 'ביקורת רבעונית באיחור', cls(d.quarterly_overdue>0?'danger':'ok')) +
+      '</div>' +
+      (rows ? '<div class="card"><h2>ציוד לפי סטטוס</h2><table><thead><tr><th>סטטוס</th><th>כמות</th></tr></thead><tbody>'+rows+'</tbody></table></div>' : '') +
+      '<div class="foot">עודכן: '+esc(d.generated||'')+'</div>';
+  }
+  function tile(n,l,c){ return '<div class="tile'+c+'"><div class="n">'+esc(n)+'</div><div class="l">'+esc(l)+'</div></div>'; }
+  function cls(c){ return c?(' '+c):''; }
+
+  function fetchJson(url){ return fetch(url, { credentials:'omit' }).then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); }); }
+
+  var url = api.replace(/\/$/,'') + '/bi/public?token=' + encodeURIComponent(token);
+  fetchJson(url)
+    .then(render)
+    .catch(function(){
+      // Fallback for sites on "plain" permalinks.
+      fetchJson('/?rest_route=/gas/v1/bi/public&token=' + encodeURIComponent(token))
+        .then(render)
+        .catch(function(e){ root.innerHTML = '<div class="err">טעינת הנתונים נכשלה ('+esc(e.message||e)+'). ייתכן שהאסימון אינו תקף.</div>'; });
+    });
+})();
+</script>
+</body>
+</html>

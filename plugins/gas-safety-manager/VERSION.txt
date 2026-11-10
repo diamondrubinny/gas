@@ -1,0 +1,118 @@
+Gas Safety Manager v2.13.0 — Secure attachments + Communication/alerts + Public dashboard + Security hardening.
+
+NEW in v2.13.0:
+- Secure attachments (צרופות) on inspections & faults: upload/preview/download/delete from the
+  edit forms. Allow-list by extension AND real MIME (wp_check_filetype_and_ext + finfo +
+  getimagesize), 8MB cap, 10/item cap, random stored name, stored OUTSIDE public under
+  uploads/gas-private/ with deny-all guards, served only via authorized REST (never a direct URL,
+  never executed), SVG/exe/script rejected, optional AV via gsm_attachment_scan, path-traversal
+  guarded, delete limited to manager OR uploader (IDOR-safe). Routes: POST /attachments,
+  GET /attachments/list/{entity}/{id}, GET /attachments/{id}, DELETE /attachments/{id}.
+- תקשורת והתראות (manager): daily quarterly-due email reminders (WP-Cron), instant email on urgent
+  fault, broadcast to an audience, test-email, delivery log. Optional WhatsApp/SMS via webhook —
+  token stored server-side only, masked to the client (whatsapp_has_token). Routes: GET/POST /comm,
+  POST /comm/broadcast, POST /comm/test.
+- Public status dashboard: token-protected, aggregate-only page (no personal data). GET /bi/public.
+- Security hardening: front-end security headers + no-store on file streams; transient per-IP rate
+  limiting on upload/download/broadcast/public. (CSP/HSTS recommended at the server.)
+- DB v8: adds wp_gas_attachments + wp_gas_comm_log (auto-created on upgrade).
+
+----
+Gas Safety Manager v2.12.0 — Panel numbering + Contacts + Branding + Menu order.
+
+NEW in v2.12.0:
+- מספור פאנל (manager): sequential panel numbers for a group (building filter, prefix, start,
+  overwrite). POST /equipment/assign-panels.
+- אנשי קשר (manager): contact library (PI/lab/maint + counts) + bulk assign (by building) +
+  rename/remove across all equipment. GET /contacts, POST /contacts/assign, /contacts/replace.
+- מיתוג: system title + home subtitle + optional header logo URL (gsm_branding, via config).
+- סידור תפריט: reorder nav items (up/down), saved (gsm_nav_order), applied for all.
+- No DB change — stays v7.
+
+----
+Gas Safety Manager v2.11.0 — Undo delete + Restore points (data safety).
+
+NEW in v2.11.0:
+- Undo delete: audit "יומן בקרה" shows "↩ שחזר" on each delete; re-creates the record from
+  the already-captured before_json. POST /audit/{id}/undo (manager). (Inspection item-level
+  checklist results are not restored.)
+- Restore points "נקודות שחזור" (manager): full data snapshots (equipment/faults/inspections/
+  items + config), keep last 20. Restore / download JSON / delete. Restore is NON-destructive
+  (REPLACE/upsert by id — never deletes newer rows) and auto-saves a safety snapshot first.
+- DB upgrades v6 -> v7: adds one table (gas_restore_points). Existing data untouched.
+  Safe "Replace current with uploaded"; the upgrade runs automatically on activation.
+
+----
+Gas Safety Manager v2.10.0 — "My Equipment" + dashboard scan coverage / monthly overdue.
+
+NEW in v2.10.0:
+- "הציוד שלי": new screen listing only equipment linked to the signed-in user (PI / lab
+  manager / maintenance / contact), matched by WP name (whole-word, order-independent,
+  multi-word needs >=2 words) or email. GET /equipment/mine (report). Read-only.
+- Dashboard coverage card: 30-day scan coverage (scanned/total + %), not-scanned count,
+  monthly-inspection overdue count (per configured cadence), and a 14-day scan trend chart.
+  /dashboard payload gains "coverage". No DB change — stays v6.
+
+----
+Gas Safety Manager v2.9.0 — Checklist Excel export (monthly + quarterly).
+
+NEW in v2.9.0:
+- "הגדרות ביקורת" screen: "⬇️ ייצוא צ׳ק-ליסטים" button downloads an .xlsx with BOTH
+  checklists (monthly + quarterly) in one sheet (type | number | item). Also added as
+  a card in the "הנפקת דוחות" export center.
+- Server: GET /gas/v1/export/checklists (report cap) via the existing GSM_Xlsx writer,
+  same base64->Blob flow as the other exports. No DB change — stays v6.
+
+----
+Gas Safety Manager v2.8.3 — fix: intermittent "Cookie check failed" (nonce) errors.
+
+FIX in v2.8.3:
+- "בדיקת עוגיות נכשלה" (rest_cookie_invalid_nonce) no longer forces a manual refresh.
+  1) Login now returns a nonce valid for the NEW session (set_logged_in_cookie applied
+     in-request before wp_create_nonce) -> first call after login works.
+  2) The SPA auto-recovers from an expired/rotated/cached nonce: on that error it pulls
+     a fresh nonce via admin-ajax (action=gsm_nonce, cookie-auth, no REST nonce needed)
+     and retries the request ONCE. Safe: the nonce gate runs before the handler, so the
+     rejected call never executed -> no double-submit.
+  3) A heartbeat refreshes the nonce on a 12-min timer and on tab refocus, so idle tabs
+     don't fail on the first action.
+- No tables/behaviour change — DB stays v6 (safe "Replace current with uploaded").
+
+----
+Gas Safety Manager v2.8.2 — branding: Safety Unit logo in the header + home/login.
+
+NEW in v2.8.2:
+- The יחידת הבטיחות (Safety Unit) logo replaces the shield icon in the app header
+  and on the home/login screens. Bundled in the plugin (public/assets/img/brand),
+  served same-origin — no external CDN. Two forms: a background-removed (transparent)
+  logo for the navy header bar, and the full navy badge for the white home/login cards.
+- No tables/behaviour change — DB stays v6 (safe "Replace current with uploaded").
+
+----
+Gas Safety Manager v2.8.1 — fix: QR + charts load locally (no blocked CDN).
+
+FIX in v2.8.1:
+- QR codes were blank + BI charts missing on the Technion network because
+  qrcodejs + Chart.js loaded from cdnjs (blocked). Both are now bundled in the
+  plugin (public/assets/vendor) and served same-origin — no external access needed.
+
+----
+Gas Safety Manager v2.8.0 — Equipment import from Excel/CSV with column mapping.
+
+NEW in v2.8.0:
+- ייבוא ציוד מקובץ (Excel/CSV) עם מיפוי עמודות ("import", מנהל): העלאת .xlsx/.csv →
+  מיפוי כל עמודה לשדה → תצוגה מקדימה → ייבוא. כל שורה עוברת דרך שכבת השירות המאומתת
+  (יצירה חדשה / עדכון קיים לפי שדה מזהה: מספר נכס / Monday ID / שם) ונרשמת ביומן הבקרה.
+  קריאת CSV ו‑XLSX בצד השרת ללא ספרייה חיצונית (עצמאי — עובד גם כשחסומים CDN חיצוניים);
+  עברית נתמכת בשניהם (XLSX מומלץ לאמינות קידוד).
+- אבטחת העלאה: תקרת 5MB, בדיקת סיומת+MIME, פענוח מקובץ ה‑temp בלבד (לא נשמר ב‑public,
+  לא מורץ), והגנות zip-bomb ל‑XLSX. REST: /import/analyze + /import/equipment (מנהל בלבד).
+- אין שינוי בטבלאות — DB נשאר v6 (בטוח ל"החלף").
+
+בדיקות: php -l + node --check נקיים · סימולציית התנהגות (19/19: CSV עברי, XLSX inlineStr,
+XLSX sharedStrings כמו Excel אמיתי + תאים מספריים, נרמול סטטוס/תאריכים, upsert מלא) ·
+סימולציית טעינה מלאה (v2.8.0, 45 routes, מחלקות חדשות).
+
+----
+Gas Safety Manager v2.7.1 — fixes: RTL nav dropdown overflow + Excel export error reporting.
+Gas Safety Manager v2.7.0 — QR issuance manager + internal database browser.

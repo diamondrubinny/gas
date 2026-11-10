@@ -1,0 +1,576 @@
+/**
+ * Gas Safety — Design Tokens
+ * Extracted from the original portal to preserve the exact visual identity:
+ * navy/gold palette, Rubik type, RTL, card radii, status colors.
+ * Loaded by both the theme and the plugin UI so they always match.
+ */
+
+:root {
+  /* Brand */
+  --gs-navy: #002147;
+  --gs-navy-2: #0b2545;
+  --gs-gold: #e0a526;
+  --gs-gold-2: #e6b54a;
+
+  /* Surfaces */
+  --gs-bg: #f4f6f9;
+  --gs-surface: #ffffff;
+  --gs-surface-2: #fafbfd;
+  --gs-border: #d9dee6;
+  --gs-muted: #7a8699;
+
+  /* Status */
+  --gs-ok: #1a9b54;
+  --gs-ok-dark: #157a43;
+  --gs-danger: #c0392b;
+  --gs-danger-bg: #fdecea;
+  --gs-danger-border: #f5b5b5;
+  --gs-warn: #e0a526;
+  --gs-warn-bg: #fff7e6;
+  --gs-warn-border: #f0dca8;
+
+  /* Type */
+  --gs-font: 'Rubik', 'Segoe UI', Arial, sans-serif;
+
+  /* Radii */
+  --gs-r-sm: 8px;
+  --gs-r: 9px;
+  --gs-r-md: 12px;
+  --gs-r-lg: 14px;
+
+  /* Spacing scale */
+  --gs-sp-1: 4px;
+  --gs-sp-2: 8px;
+  --gs-sp-3: 12px;
+  --gs-sp-4: 16px;
+  --gs-sp-5: 24px;
+  --gs-sp-6: 32px;
+
+  /* Shadow */
+  --gs-shadow: 0 2px 12px rgba(0, 33, 71, 0.08);
+  --gs-shadow-lg: 0 6px 24px rgba(0, 33, 71, 0.12);
+}
+
+/* Base reset within our UI containers only (never touch WP admin globally). */
+.gs-app,
+.gs-app * {
+  box-sizing: border-box;
+}
+
+.gs-app {
+  font-family: var(--gs-font);
+  color: #1c2733;
+  background: var(--gs-bg);
+  direction: rtl;
+  text-align: right;
+  line-height: 1.5;
+}
+
+/* Load Rubik from Google Fonts with a safe fallback (theme enqueues it). */
+/**
+ * Gas Safety — App component styles.
+ * Cards, buttons, tables, stat tiles, header — matching the original portal.
+ * Scoped under .gs-app so nothing leaks into WP admin or other themes.
+ */
+
+/* ---------- Header (portal-style navy bar) ---------- */
+.gs-header {
+  background: linear-gradient(135deg, var(--gs-navy) 0%, var(--gs-navy-2) 100%);
+  color: #fff;
+  border-bottom: 3px solid var(--gs-gold);
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.gs-header__logo {
+  height: 40px;
+  width: auto;
+  display: block;
+  flex: 0 0 auto;
+}
+.gs-header__title {
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0;
+}
+.gs-header__spacer { flex: 1; }
+.gs-header__user {
+  font-size: 13px;
+  opacity: 0.9;
+  background: rgba(255, 255, 255, 0.12);
+  padding: 6px 14px;
+  border-radius: 999px;
+}
+
+/* ---------- Layout ---------- */
+.gs-app { min-height: 100vh; }
+.gs-container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 20px;
+}
+.gs-grid {
+  display: grid;
+  gap: 16px;
+}
+.gs-grid--stats {
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+}
+.gs-grid--2 { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+
+/* ---------- Cards ---------- */
+.gs-card {
+  background: var(--gs-surface);
+  border: 1px solid var(--gs-border);
+  border-radius: var(--gs-r-md);
+  padding: 18px;
+  box-shadow: var(--gs-shadow);
+}
+.gs-card__title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--gs-navy);
+  margin: 0 0 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ---------- Stat tiles ---------- */
+.gs-stat {
+  background: var(--gs-surface);
+  border: 1px solid var(--gs-border);
+  border-top: 3px solid var(--gs-navy);
+  border-radius: var(--gs-r-md);
+  padding: 16px 18px;
+  text-align: center;
+}
+.gs-stat__num {
+  font-size: 30px;
+  font-weight: 800;
+  color: var(--gs-navy);
+  line-height: 1.1;
+}
+.gs-stat__label {
+  font-size: 13px;
+  color: var(--gs-muted);
+  margin-top: 4px;
+}
+.gs-stat--danger { border-top-color: var(--gs-danger); }
+.gs-stat--danger .gs-stat__num { color: var(--gs-danger); }
+.gs-stat--ok { border-top-color: var(--gs-ok); }
+
+/* ---------- Buttons ---------- */
+.gs-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--gs-navy);
+  color: #fff;
+  border: 0;
+  border-radius: var(--gs-r);
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: var(--gs-font);
+  cursor: pointer;
+  text-decoration: none;
+  transition: filter 0.15s;
+}
+.gs-btn:hover { filter: brightness(1.15); }
+.gs-btn--gold { background: var(--gs-gold); color: var(--gs-navy); }
+.gs-btn--ghost {
+  background: transparent;
+  color: var(--gs-navy);
+  border: 1px solid var(--gs-border);
+}
+.gs-btn--danger { background: var(--gs-danger); }
+.gs-btn--sm { padding: 6px 12px; font-size: 13px; }
+
+/* ---------- Tables ---------- */
+.gs-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--gs-surface);
+  border-radius: var(--gs-r-md);
+  overflow: hidden;
+}
+.gs-table th {
+  background: var(--gs-surface-2);
+  color: var(--gs-navy);
+  font-size: 13px;
+  font-weight: 700;
+  text-align: right;
+  padding: 12px 14px;
+  border-bottom: 2px solid var(--gs-border);
+}
+.gs-table td {
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--gs-border);
+  font-size: 14px;
+}
+.gs-table tr:hover td { background: var(--gs-surface-2); }
+
+/* ---------- Status pills ---------- */
+.gs-pill {
+  display: inline-block;
+  padding: 3px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.gs-pill--ok { background: #e8f6ee; color: var(--gs-ok-dark); }
+.gs-pill--danger { background: var(--gs-danger-bg); color: var(--gs-danger); }
+.gs-pill--warn { background: var(--gs-warn-bg); color: #a9741a; }
+
+/* ---------- Tabs ---------- */
+.gs-tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 2px solid var(--gs-border);
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+.gs-tab {
+  padding: 10px 18px;
+  border: 0;
+  background: transparent;
+  color: var(--gs-muted);
+  font-size: 14px;
+  font-weight: 600;
+  font-family: var(--gs-font);
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+}
+.gs-tab.is-active {
+  color: var(--gs-navy);
+  border-bottom-color: var(--gs-gold);
+}
+
+/* ---------- Forms ---------- */
+.gs-field { margin-bottom: 14px; }
+.gs-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gs-navy);
+  margin-bottom: 5px;
+}
+.gs-input,
+.gs-select,
+.gs-textarea {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid var(--gs-border);
+  border-radius: var(--gs-r);
+  font-size: 14px;
+  font-family: var(--gs-font);
+  background: #fff;
+}
+.gs-input:focus,
+.gs-select:focus,
+.gs-textarea:focus {
+  outline: none;
+  border-color: var(--gs-navy);
+  box-shadow: 0 0 0 3px rgba(0, 33, 71, 0.1);
+}
+
+/* ---------- States ---------- */
+.gs-empty {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--gs-muted);
+}
+.gs-loading {
+  text-align: center;
+  padding: 30px;
+  color: var(--gs-muted);
+}
+.gs-error {
+  background: var(--gs-danger-bg);
+  border: 1px solid var(--gs-danger-border);
+  color: var(--gs-danger);
+  padding: 12px 16px;
+  border-radius: var(--gs-r);
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 640px) {
+  .gs-container { padding: 12px; }
+  .gs-header__title { font-size: 15px; }
+  .gs-table { display: block; overflow-x: auto; }
+}
+/* Mount-point specific */
+.gs-app-mount { font-family: var(--gs-font); direction: rtl; }
+.gs-modal-backdrop {
+  position: fixed; inset: 0; background: rgba(0,33,71,.5);
+  display: flex; align-items: center; justify-content: center; z-index: 9999; padding: 20px;
+}
+.gs-modal {
+  background: #fff; border-radius: var(--gs-r-lg); padding: 24px;
+  max-width: 560px; width: 100%; max-height: 90vh; overflow-y: auto;
+  box-shadow: var(--gs-shadow-lg);
+}
+.gs-modal__title { font-size: 18px; font-weight: 700; color: var(--gs-navy); margin: 0 0 16px; }
+.gs-modal__actions { display: flex; gap: 10px; justify-content: flex-start; margin-top: 20px; }
+.gs-row-actions { display: flex; gap: 6px; }
+
+/* ============================================================
+   SPA — Home, Login, Shell, Detail (v1.0 standalone app)
+   ============================================================ */
+
+/* App fills the viewport */
+.gs-app { min-height: 100vh; background: var(--gs-bg); }
+
+/* ---------- Home ---------- */
+.gs-home {
+  min-height: 100vh; display: flex; align-items: center; justify-content: center;
+  padding: 24px; background: linear-gradient(135deg, var(--gs-navy) 0%, var(--gs-navy-2) 100%);
+}
+.gs-home__card {
+  background: #fff; border-radius: var(--gs-r-lg); padding: 44px 36px; max-width: 520px;
+  text-align: center; box-shadow: var(--gs-shadow-lg); border-top: 5px solid var(--gs-gold);
+}
+.gs-home__logo { display: block; height: 78px; width: auto; margin: 0 auto 14px; border-radius: 10px; }
+.gs-home__title { font-size: 24px; color: var(--gs-navy); margin: 0 0 6px; font-weight: 800; }
+.gs-home__sub { color: var(--gs-gold); font-weight: 600; margin: 0 0 18px; }
+.gs-home__desc { color: var(--gs-muted); font-size: 15px; line-height: 1.6; margin: 0 0 26px; }
+.gs-home__actions { margin-bottom: 20px; }
+.gs-home__note { font-size: 12.5px; color: var(--gs-muted); border-top: 1px solid var(--gs-border); padding-top: 16px; margin: 0; }
+
+/* ---------- Login ---------- */
+.gs-login {
+  min-height: 100vh; display: flex; align-items: center; justify-content: center;
+  padding: 24px; background: linear-gradient(135deg, var(--gs-navy) 0%, var(--gs-navy-2) 100%);
+}
+.gs-login__card {
+  background: #fff; border-radius: var(--gs-r-lg); padding: 40px 34px; max-width: 400px; width: 100%;
+  box-shadow: var(--gs-shadow-lg); border-top: 5px solid var(--gs-gold);
+}
+.gs-login__logo { display: block; height: 58px; width: auto; margin: 0 auto 14px; border-radius: 8px; }
+.gs-login__title { font-size: 20px; color: var(--gs-navy); text-align: center; margin: 0 0 24px; font-weight: 700; }
+.gs-check { display: flex; align-items: center; gap: 8px; font-size: 13.5px; color: var(--gs-muted); margin-bottom: 16px; cursor: pointer; }
+
+/* ---------- Shell (header + nav + main) ---------- */
+.gs-shell { min-height: 100vh; display: flex; flex-direction: column; }
+.gs-header {
+  background: linear-gradient(135deg, var(--gs-navy) 0%, var(--gs-navy-2) 100%); color: #fff;
+  border-bottom: 3px solid var(--gs-gold); padding: 12px 20px; display: flex; align-items: center; gap: 12px;
+}
+.gs-header__title { font-size: 17px; font-weight: 700; margin: 0; }
+.gs-header__spacer { flex: 1; }
+.gs-header__user { font-size: 13px; opacity: .9; background: rgba(255,255,255,.12); padding: 6px 14px; border-radius: 999px; }
+.gs-header__logout {
+  background: transparent; color: #fff; border: 1px solid rgba(255,255,255,.35);
+  border-radius: var(--gs-r); padding: 6px 14px; font-size: 13px; cursor: pointer; font-family: var(--gs-font);
+}
+.gs-header__logout:hover { background: rgba(255,255,255,.15); }
+
+.gs-nav {
+  background: #fff; border-bottom: 1px solid var(--gs-border); padding: 0 20px;
+  display: flex; gap: 4px; flex-wrap: wrap; box-shadow: var(--gs-shadow);
+}
+.gs-nav__item {
+  padding: 14px 20px; border: 0; background: transparent; color: var(--gs-muted);
+  font-size: 14.5px; font-weight: 600; font-family: var(--gs-font); cursor: pointer;
+  border-bottom: 3px solid transparent; margin-bottom: -1px;
+}
+.gs-nav__item:hover { color: var(--gs-navy); }
+.gs-nav__item.is-active { color: var(--gs-navy); border-bottom-color: var(--gs-gold); }
+
+.gs-main { flex: 1; max-width: 1100px; width: 100%; margin: 0 auto; padding: 24px 20px; }
+
+/* ---------- Toolbar / headings ---------- */
+.gs-toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; flex-wrap: wrap; gap: 12px; }
+.gs-toolbar__actions { display: flex; gap: 10px; align-items: center; }
+.gs-h2 { font-size: 20px; color: var(--gs-navy); margin: 0; font-weight: 700; }
+
+/* ---------- Detail rows ---------- */
+.gs-detail__row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--gs-border); }
+.gs-detail__row:last-child { border-bottom: 0; }
+.gs-detail__k { color: var(--gs-muted); font-size: 13.5px; }
+.gs-detail__v { font-weight: 600; }
+
+/* ---------- Button sizes ---------- */
+.gs-btn--lg { padding: 13px 28px; font-size: 15.5px; }
+.gs-btn--block { width: 100%; justify-content: center; margin-bottom: 10px; }
+
+/* ---------- Responsive ---------- */
+@media (max-width: 640px) {
+  .gs-header__title { font-size: 14px; }
+  .gs-header__user { display: none; }
+  .gs-nav { padding: 0 8px; }
+  .gs-nav__item { padding: 12px 12px; font-size: 13.5px; }
+  .gs-main { padding: 16px 10px; }
+  .gs-table { display: block; overflow-x: auto; white-space: nowrap; }
+}
+
+/* ---------- QR card (equipment detail) ---------- */
+.gs-qr-wrap { display: flex; gap: 24px; align-items: center; flex-wrap: wrap; }
+.gs-qr-box { width: 180px; height: 180px; background: #fff; padding: 8px; border: 1px solid var(--gs-border); border-radius: var(--gs-r); flex-shrink: 0; }
+.gs-qr-box img, .gs-qr-box canvas { width: 100% !important; height: 100% !important; }
+.gs-qr-meta { flex: 1; min-width: 200px; }
+.gs-qr-name { font-size: 17px; font-weight: 700; color: var(--gs-navy); margin: 0 0 6px; }
+.gs-qr-url { font-size: 12px; word-break: break-all; margin: 0 0 14px; }
+.gs-qr-url a { color: var(--gs-navy); }
+.gs-qr-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* ---- Asset code chip + QR sticker generator (v2.0.0) ------------------- */
+.gs-code {
+  display: inline-block;
+  font-weight: 700;
+  color: var(--gs-navy);
+  background: var(--gs-surface-2);
+  border: 1px solid var(--gs-border);
+  border-radius: var(--gs-r-sm);
+  padding: 2px 8px;
+  font-size: 13px;
+  letter-spacing: .2px;
+  white-space: nowrap;
+}
+.gs-qr-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--gs-sp-2);
+  align-items: center;
+  margin-bottom: var(--gs-sp-4);
+}
+.gs-qr-count {
+  color: var(--gs-muted);
+  font-weight: 600;
+  font-size: 13px;
+  margin-inline-start: auto;
+}
+.gs-qr-table th:first-child,
+.gs-qr-table td:first-child { text-align: center; }
+.gs-qr-table .gsm-qr-cb { width: 18px; height: 18px; cursor: pointer; accent-color: var(--gs-navy); }
+@media (max-width: 640px) {
+  .gs-qr-count { margin-inline-start: 0; }
+  .gs-qr-controls .gs-btn { flex: 1 1 auto; }
+}
+
+/* ---- Full equipment form: sections + scrollable modal (v2.2.0) --------- */
+.gs-modal { max-height: 90vh; overflow-y: auto; }
+.gs-form-section {
+  font-weight: 700;
+  color: var(--gs-navy);
+  font-size: 13px;
+  margin: 16px 0 8px;
+  padding-bottom: 4px;
+  border-bottom: 2px solid var(--gs-gold);
+}
+.gs-form-section:first-of-type { margin-top: 4px; }
+/* Export button in list toolbars */
+.gs-btn--export { background: var(--gs-ok, #1a9b54); color: #fff; }
+.gs-btn--export:hover { filter: brightness(1.05); }
+
+/* ---- Grouped dropdown navigation (v2.4.0) ------------------------------ */
+.gs-nav--grouped {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  position: relative;
+  z-index: 50;
+}
+.gs-navgrp { position: relative; }
+.gs-navgrp__btn {
+  background: transparent;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  padding: 12px 16px;
+  font: inherit;
+  font-weight: 600;
+  color: var(--gs-navy);
+  cursor: pointer;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.gs-navgrp__btn:hover { background: var(--gs-surface-2); }
+.gs-navgrp.is-current > .gs-navgrp__btn { border-bottom-color: var(--gs-gold); }
+.gs-navgrp__caret { font-size: 10px; color: var(--gs-muted); }
+.gs-navgrp__menu {
+  position: absolute;
+  top: 100%;
+  /* Align the menu's start edge (right edge in RTL) to the button, so it opens
+     toward the inline-end (leftward in RTL) and never spills off the right edge
+     of the viewport for the right-most group. */
+  inset-inline-start: 0;
+  max-width: calc(100vw - 24px);
+  min-width: 220px;
+  background: var(--gs-surface);
+  border: 1px solid var(--gs-border);
+  border-radius: var(--gs-r-md);
+  box-shadow: var(--gs-shadow-lg);
+  padding: 6px;
+  display: none;
+  flex-direction: column;
+}
+.gs-navgrp:hover > .gs-navgrp__menu,
+.gs-navgrp.open > .gs-navgrp__menu { display: flex; }
+.gs-navgrp__item {
+  background: transparent;
+  border: 0;
+  text-align: inherit;
+  padding: 10px 12px;
+  border-radius: var(--gs-r-sm);
+  font: inherit;
+  color: var(--gs-navy);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.gs-navgrp__item:hover { background: var(--gs-surface-2); }
+.gs-navgrp__item.is-active { background: var(--gs-navy); color: #fff; }
+@media (max-width: 720px) {
+  .gs-nav--grouped { flex-direction: column; align-items: stretch; }
+  .gs-navgrp__menu { position: static; box-shadow: none; border: 0; padding: 0 0 6px 12px; }
+}
+
+/* ---- Profile avatars + help accordion (v2.5.0) ------------------------- */
+.gsm-av-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.gsm-av {
+  font-size: 22px; width: 42px; height: 42px; line-height: 1;
+  border: 2px solid var(--gs-border); border-radius: 10px;
+  background: #fff; cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
+}
+.gsm-av:hover { border-color: var(--gs-gold); }
+.gsm-av.is-sel { border-color: var(--gs-navy); background: var(--gs-surface-2); }
+.gs-acc { border: 1px solid var(--gs-border); border-radius: var(--gs-r-md); margin-bottom: 8px; background: var(--gs-surface); overflow: hidden; }
+.gs-acc > summary { padding: 12px 14px; cursor: pointer; font-weight: 600; color: var(--gs-navy); }
+.gs-acc > summary::-webkit-details-marker { display: none; }
+.gs-acc[open] > summary { border-bottom: 1px solid var(--gs-border); }
+.gs-acc__body { padding: 12px 14px; color: #33414f; line-height: 1.7; }
+
+/* ---------- BI charts ---------- */
+.gs-chartbox {
+  max-width: 440px;
+  margin: 0 auto 14px;
+}
+.gs-chartbox canvas {
+  max-width: 100%;
+}
+
+/* ---------- QR issuance ---------- */
+.gs-qri-tabs { display:flex; gap:6px; flex-wrap:wrap; margin:0 0 14px; border-bottom:2px solid var(--gs-border); padding-bottom:0; }
+.gs-qri-tab { border:0; background:none; padding:8px 12px; border-radius:9px 9px 0 0; cursor:pointer; font-weight:600;
+  color:var(--gs-muted); font-size:13px; font-family:inherit; display:inline-flex; align-items:center; gap:6px; }
+.gs-qri-tab.on { background:var(--gs-surface); color:var(--gs-navy); box-shadow:0 -2px 0 var(--gs-gold) inset; }
+.gs-qri-tdot { width:9px; height:9px; border-radius:50%; display:inline-block; }
+.gs-qri-h3 { font-size:14px; margin:14px 0 8px; display:flex; align-items:center; gap:7px; }
+.gs-qri-list { display:flex; flex-direction:column; gap:8px; }
+.gs-qri-card { display:flex; gap:10px; background:var(--gs-surface); border:1px solid var(--gs-border);
+  border-radius:12px; padding:12px 14px; align-items:stretch; }
+.gs-qri-dot { width:6px; border-radius:6px; flex:0 0 6px; }
+.gs-qri-body { flex:1; min-width:0; }
+.gs-qri-name { font-weight:600; color:var(--gs-navy); margin-bottom:4px; }
+.gs-qri-meta { display:flex; gap:14px; flex-wrap:wrap; font-size:12.5px; color:var(--gs-muted); margin-bottom:8px; }
+.gs-qri-meta b { color:var(--gs-ink); font-weight:500; }
+.gs-qri-actions { display:flex; gap:5px; flex-wrap:wrap; }
+
+/* ---------- Internal DB browser ---------- */
+.gs-table--db { font-size:12.5px; }
+.gs-table--db td { max-width:280px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.gs-table--db th { white-space:nowrap; }
