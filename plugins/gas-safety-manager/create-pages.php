@@ -1,6 +1,13 @@
 <?php
 // Standalone page creator — run via: wp eval-file, or php with wp-load
 // Creates the two pages if missing. Safe to run multiple times.
+// (The plugin's activator already creates these pages; this is a manual fallback.)
+
+// Never run on a direct HTTP request: WordPress must already be loaded.
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+// phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped -- CLI (wp eval-file) plain-text output, not HTML.
 $pages = array(
   array('title'=>'מערכת גזים','name'=>'gas-app','content'=>'[gas_app]','opt'=>'gsm_app_page_id'),
   array('title'=>'פרטי ציוד','name'=>'bridge','content'=>'[gas_bridge]','opt'=>'gsm_bridge_page_id'),

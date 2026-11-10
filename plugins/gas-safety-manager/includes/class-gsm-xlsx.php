@@ -58,7 +58,7 @@ class GSM_Xlsx {
 
 		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
 		$data = file_get_contents( $tmp );
-		@unlink( $tmp ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
+		wp_delete_file( $tmp );
 
 		return array(
 			'data' => (string) $data,

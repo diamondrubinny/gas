@@ -13,6 +13,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+// Interpolated SQL in this file is limited to: table names ($wpdb->prefix + fixed
+// suffix), fixed WHERE fragments, and whitelisted ORDER BY column/direction.
+// Every user-supplied value is bound through $wpdb->prepare() placeholders.
+// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
 /**
  * Class GSM_Audit
  */

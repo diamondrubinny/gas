@@ -1,0 +1,137 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Lint (PHP ${{ matrix.php }})
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.1', '8.2', '8.3', '8.4']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+          tools: none
+      - name: PHP syntax
+        run: find plugins themes tests scripts -name '*.php' -not -path '*/vendor/*' -print0 | xargs -0 -n1 -P4 php -l
+      - uses: actions/setup-node@v4
+        if: matrix.php == '8.3'
+        with:
+          node-version: '22'
+      - name: JS syntax
+        if: matrix.php == '8.3'
+        run: node scripts/check-js.js
+      - name: Version consistency
+        if: matrix.php == '8.3'
+        run: |
+          f=plugins/gas-safety-manager/gas-safety-manager.php
+          h=$(sed -n 's/^ \* Version: *//p' "$f" | head -1)
+          c=$(sed -n "s/^define( 'GSM_VERSION', '\([^']*\)' );/\1/p" "$f")
+          s=$(sed -n 's/^Stable tag: *//p' plugins/gas-safety-manager/readme.txt | head -1)
+          echo "header=$h constant=$c stable=$s"
+          test "$h" = "$c" && test "$c" = "$s"
+
+  phpcs:
+    name: PHPCS (security + compatibility)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+          tools: composer:v2
+      - name: Install dev tools
+        run: composer install --no-interaction --no-progress --prefer-dist
+      - name: PHPCS — blocking (phpcs.xml.dist)
+        run: vendor/bin/phpcs
+      - name: PHPCS — WordPress style (advisory)
+        continue-on-error: true
+        run: vendor/bin/phpcs --standard=WordPress-Extra --report=summary --extensions=php plugins/gas-safety-manager themes/gas-safety-theme
+
+  unit:
+    name: Unit tests
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+          tools: none
+      - run: php tests/bi-token-test.php plugins/gas-safety-manager
+      - run: php tests/csv-injection-test.php plugins/gas-safety-manager
+
+  e2e:
+    name: E2E (WordPress ${{ matrix.wp }})
+    runs-on: ubuntu-24.04
+    needs: [lint, unit]
+    strategy:
+      fail-fast: false
+      matrix:
+        # Minimum supported ("Requires at least: 6.4") and the current release.
+        wp: ['6.4.5', 'latest']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_sqlite, sqlite3, mbstring, zip, gd
+          coverage: none
+          tools: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install Playwright
+        run: |
+          npm ci --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Throwaway admin password
+        run: |
+          pass="$(openssl rand -hex 16)"
+          echo "::add-mask::$pass"
+          echo "WP_TEST_PASS=$pass" >> "$GITHUB_ENV"
+      - name: Set up test WordPress (SQLite)
+        env:
+          WP_VERSION: ${{ matrix.wp }}
+        run: scripts/setup-test-wp.sh "$RUNNER_TEMP/wp" 8899
+      - name: Public dashboard test
+        run: node tests/public-dashboard-test.js plugins/gas-safety-manager/public/gas-public-dashboard.html
+      - name: End-to-end (CSP, all screens, actions, attachments, bridge)
+        env:
+          BASE: http://127.0.0.1:8899
+          USER_NAME: admin
+          WP_PATH: ${{ runner.temp }}/wp/site
+        run: PASS="$WP_TEST_PASS" node tests/e2e/csp-e2e.js
+      - name: Server log
+        if: failure()
+        run: tail -200 "$RUNNER_TEMP/wp/server.log" || true
+
+  release-zips:
+    name: Build ZIPs
+    runs-on: ubuntu-24.04
+    needs: [phpcs, e2e]
+    steps:
+      - uses: actions/checkout@v4
+      - run: scripts/build-release.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gas-safety-zips
+          path: dist/*.zip
+          retention-days: 14

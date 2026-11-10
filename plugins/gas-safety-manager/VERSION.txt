@@ -1,3 +1,13 @@
+Gas Safety Manager v2.13.4 — PHPCS security pass + CI.
+
+- create-pages.php: ABSPATH guard (no direct HTTP execution).
+- Rate limiter: sanitize REMOTE_ADDR. unlink() -> wp_delete_file().
+- PHPCS security + PHPCompatibility (8.1+): 0 violations; SQL interpolation
+  documented (table names / whitelisted ORDER BY only).
+- CI: lint 8.1-8.4, PHPCS, unit, E2E on WP 6.4.5 + latest.
+- No DB change — stays v8.
+
+----
 Gas Safety Manager v2.13.3 — CSP + inline-handler refactor.
 
 - CSP on [gas_app] + [gas_bridge] pages: script-src 'self' 'nonce-…' (no

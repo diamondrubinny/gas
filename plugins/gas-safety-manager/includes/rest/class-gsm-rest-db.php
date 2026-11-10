@@ -177,9 +177,9 @@ class GSM_REST_DB {
 		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$count_sql = "SELECT COUNT(*) FROM {$table} WHERE {$where_sql}";
 		$total     = $params
-			// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+			// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- whitelisted table/columns; values bound via prepare().
 			? (int) $wpdb->get_var( $wpdb->prepare( $count_sql, $params ) )
-			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- no user values: whitelisted table, WHERE 1=1.
 			: (int) $wpdb->get_var( $count_sql );
 
 		$order = isset( $meta['order'] ) ? $meta['order'] : 'id DESC';
@@ -265,13 +265,13 @@ class GSM_REST_DB {
 		header( 'Content-Type: text/csv; charset=utf-8' );
 		header( 'Content-Disposition: attachment; filename="' . $meta['key'] . '.csv"' );
 		echo "\xEF\xBB\xBF"; // UTF-8 BOM for Excel.
-		echo $this->csv_line( $columns );
+		echo $this->csv_line( $columns ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- raw text/csv body (nosniff), cells neutralized by GSM_Security::csv_cell().
 		foreach ( $rows as $r ) {
 			$line = array();
 			foreach ( $columns as $c ) {
 				$line[] = isset( $r[ $c ] ) ? $r[ $c ] : '';
 			}
-			echo $this->csv_line( $line );
+			echo $this->csv_line( $line ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- raw text/csv body (nosniff), cells neutralized by GSM_Security::csv_cell().
 		}
 		exit;
 	}

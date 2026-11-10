@@ -3,7 +3,7 @@ Contributors: diamondrubinny
 Tags: safety, equipment, inspections, hebrew, rtl
 Requires at least: 6.4
 Requires PHP: 8.1
-Stable tag: 2.13.3
+Stable tag: 2.13.4
 License: Proprietary — Technion Safety Unit
 
 Gas systems maintenance management for the Technion Safety Unit. Manages equipment, inspections, faults, and QR codes with native WordPress storage.
@@ -31,6 +31,15 @@ Pairs with the companion "Gas Safety" theme for the portal look (navy/gold, RTL,
 4. To import from Monday: open "Gas Migration", generate a key, run the console script in the portal, then revoke the key.
 
 == Changelog ==
+
+= 2.13.4 =
+* Hardening from a WordPress security-sniff (PHPCS) pass — 0 violations remain:
+* create-pages.php can no longer be executed by a direct HTTP request (it used to fatal and could reveal the server path when display_errors is on).
+* Rate limiter sanitizes REMOTE_ADDR before validating it.
+* Attachment and temp-file deletion use wp_delete_file() instead of unlink().
+* Remaining interpolated SQL documented (table names / whitelisted ORDER BY only; all user values are bound through prepare()).
+* Dev: CI (GitHub Actions) — PHP 8.1–8.4 lint, PHPCS security + PHP 8.1 compatibility (blocking), unit tests, and end-to-end tests against WordPress 6.4.5 and latest.
+* No DB change — stays v8.
 
 = 2.13.3 =
 * Content-Security-Policy on the app ([gas_app]) and QR bridge ([gas_bridge]) pages: script-src 'self' + a per-request nonce — no 'unsafe-inline', no 'unsafe-eval'. Even if an XSS bug ever slipped in, injected <script> tags and on*="" handlers would not run. WordPress's own scripts (including core inline ones) get the nonce automatically via wp_script_attributes / wp_inline_script_attributes. Other pages of the site are not affected.

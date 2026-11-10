@@ -9,6 +9,7 @@ function update_option($k,$v,$a=null){ $GLOBALS['opts'][$k]=$v; return true; }
 function get_transient($k){ return $GLOBALS['trans'][$k] ?? false; }
 function set_transient($k,$v,$t){ $GLOBALS['trans'][$k]=$v; return true; }
 function wp_unslash($v){ return $v; }
+function sanitize_text_field($s){ return trim( preg_replace( '/[\r\n\t ]+/', ' ', strip_tags( (string) $s ) ) ); }
 function __($s,$d=null){ return $s; }
 function get_bloginfo($k){ return 'Site'; }
 function current_time($t){ return '2026-11-10 10:00:00'; }

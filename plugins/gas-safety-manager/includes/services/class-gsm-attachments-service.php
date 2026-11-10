@@ -256,7 +256,7 @@ class GSM_Attachments_Service {
 		$real = realpath( $path );
 		$base = realpath( trailingslashit( $up['basedir'] ) . 'gas-private' );
 		if ( $real && $base && 0 === strpos( $real, $base ) && is_file( $real ) ) {
-			@unlink( $real ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.WP.AlternativeFunctions.file_system_operations_unlink
+			wp_delete_file( $real );
 		}
 		return GSM_Attachments_Repo::delete( (int) $row['id'] );
 	}

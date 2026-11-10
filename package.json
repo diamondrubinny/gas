@@ -1,0 +1,17 @@
+{
+  "name": "gas-safety",
+  "private": true,
+  "description": "Dev tooling for the Gas Safety Manager plugin and theme (tests only; nothing here ships).",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "lint:js": "node scripts/check-js.js",
+    "test:dashboard": "node tests/public-dashboard-test.js plugins/gas-safety-manager/public/gas-public-dashboard.html",
+    "test:e2e": "node tests/e2e/csp-e2e.js"
+  },
+  "devDependencies": {
+    "playwright": "1.63.0"
+  }
+}

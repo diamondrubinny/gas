@@ -138,6 +138,7 @@ class GSM_Security {
 		if ( 'off' === $mode || headers_sent() || ! self::is_app_request() ) {
 			return;
 		}
+		// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- encodes random bytes for a CSP nonce.
 		self::$nonce = rtrim( strtr( base64_encode( random_bytes( 18 ) ), '+/', '-_' ), '=' );
 		$name        = ( 'report-only' === $mode ) ? 'Content-Security-Policy-Report-Only' : 'Content-Security-Policy';
 		header( $name . ': ' . self::csp_policy( self::$nonce ) );

@@ -378,11 +378,11 @@ class GSM_REST_BI {
 		echo "\xEF\xBB\xBF";
 		if ( ! empty( $rows ) ) {
 			$cols = array_keys( $rows[0] );
-			echo self::csv_line( $cols );
+			echo self::csv_line( $cols ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- raw text/csv body (nosniff), cells neutralized by GSM_Security::csv_cell().
 			foreach ( $rows as $row ) {
 				$line = array();
 				foreach ( $cols as $c ) { $line[] = isset( $row[ $c ] ) ? $row[ $c ] : ''; }
-				echo self::csv_line( $line );
+				echo self::csv_line( $line ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- raw text/csv body (nosniff), cells neutralized by GSM_Security::csv_cell().
 			}
 		}
 		exit;
@@ -421,7 +421,7 @@ class GSM_REST_BI {
 		header( 'Content-Type: text/calendar; charset=utf-8' );
 		header( 'Content-Disposition: inline; filename="gas-inspections.ics"' );
 		self::export_headers();
-		echo implode( "\r\n", $lines );
+		echo implode( "\r\n", $lines ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- raw text/calendar body, values escaped by ics_esc().
 		exit;
 	}
 

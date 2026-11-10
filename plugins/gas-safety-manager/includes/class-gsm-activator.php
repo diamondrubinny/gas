@@ -114,20 +114,21 @@ class GSM_Activator {
 		$table = $wpdb->prefix . 'gas_equipment';
 
 		// Column may not exist yet on a brand-new install path; guard it.
-		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name is $wpdb->prefix + a hard-coded suffix, never user input.
 		$has_col = $wpdb->get_results( "SHOW COLUMNS FROM {$table} LIKE 'asset_code'" );
 		if ( empty( $has_col ) ) {
 			return;
 		}
 
 		// Copy the preserved Monday number into any empty asset_code.
-		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name is $wpdb->prefix + a hard-coded suffix.
 		$wpdb->query(
 			"UPDATE {$table}
 			 SET asset_code = monday_id
 			 WHERE ( asset_code IS NULL OR asset_code = '' )
 			   AND monday_id IS NOT NULL AND monday_id <> ''"
 		);
+		// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 	}
 
 	/**

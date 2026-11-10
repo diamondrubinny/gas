@@ -1,0 +1,21 @@
+# Dev dependencies (installed by composer / npm; never shipped)
+/vendor/
+/node_modules/
+
+# Build output (scripts/build-release.sh)
+/dist/
+
+# Local throwaway WordPress test site (scripts/setup-test-wp.sh)
+/.wp-test/
+
+# Test / tool artifacts
+/test-results/
+/playwright-report/
+*.log
+.phpcs-cache
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

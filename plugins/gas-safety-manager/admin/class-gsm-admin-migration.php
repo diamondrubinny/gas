@@ -344,7 +344,7 @@ class GSM_Admin_Migration {
 		echo '<p>' . sprintf(
 			/* translators: %d: equipment count */
 			esc_html__( 'Equipment rows currently in WordPress: %d', 'gas-safety-manager' ),
-			$count
+			(int) $count
 		) . '</p>';
 		echo '<p>' . esc_html__( 'Migration status:', 'gas-safety-manager' ) . ' <strong>' .
 			( $enabled ? esc_html__( 'ENABLED', 'gas-safety-manager' ) : esc_html__( 'disabled', 'gas-safety-manager' ) ) .

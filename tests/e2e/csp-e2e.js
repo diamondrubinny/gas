@@ -56,6 +56,43 @@ const SCREENS = ['dashboard', 'bi', 'reports', 'audit', 'myequip', 'quality', 'e
   });
   check('seed equipment + restore point', !!seeded.eq, JSON.stringify(seeded));
 
+  // 3b. Attachments: upload -> list -> download -> delete (file must leave disk).
+  const att = await page.evaluate(async (eqId) => {
+    const c = document.createElement('canvas'); c.width = 8; c.height = 8;
+    c.getContext('2d').fillRect(0, 0, 8, 8);
+    const blob = await new Promise((r) => c.toBlob(r, 'image/png'));
+    const nonce = (GSM.restNonce && GSM.restNonce()) || (window.GSM_CONFIG || {}).nonce;
+    const root = GSM_CONFIG.restRoot;
+    const url = (p) => root + (root.indexOf('?') > -1 ? p.replace('?', '&') : p);
+    const fd = new FormData();
+    fd.append('file', blob, 'e2e.png'); fd.append('entity', 'equipment'); fd.append('entity_id', String(eqId));
+    const up = await fetch(url('/attachments'), { method: 'POST', body: fd, headers: { 'X-WP-Nonce': nonce }, credentials: 'same-origin' });
+    const upJ = await up.json();
+    const list = await GSM.api('/attachments/list/equipment/' + eqId);
+    const id = list && list[0] && list[0].id;
+    const dl = id ? await fetch(url('/attachments/' + id + '?_wpnonce=' + encodeURIComponent(nonce)), { credentials: 'same-origin' }) : null;
+    const res = { up: up.status, upMsg: upJ && upJ.message, count: (list || []).length, id: id,
+      dl: dl ? dl.status : 0, type: dl ? dl.headers.get('content-type') : '', nosniff: dl ? dl.headers.get('x-content-type-options') : '' };
+    // Hostile upload: HTML disguised as PNG must be rejected.
+    const fd2 = new FormData();
+    fd2.append('file', new Blob(['<script>alert(1)</script>'], { type: 'image/png' }), 'evil.png');
+    fd2.append('entity', 'equipment'); fd2.append('entity_id', String(eqId));
+    res.evil = (await fetch(url('/attachments'), { method: 'POST', body: fd2, headers: { 'X-WP-Nonce': nonce }, credentials: 'same-origin' })).status;
+    return res;
+  }, seeded.eq);
+  check('attachment upload', att.up >= 200 && att.up < 300 && att.count === 1, JSON.stringify(att));
+  check('attachment download (image/png, nosniff)', att.dl === 200 && /image\/png/.test(att.type) && att.nosniff === 'nosniff', JSON.stringify(att));
+  check('disguised HTML upload rejected', att.evil >= 400, 'status=' + att.evil);
+  let diskBefore = null;
+  const fs = require('fs'), pathMod = require('path');
+  const privDir = process.env.WP_PATH ? pathMod.join(process.env.WP_PATH, 'wp-content/uploads/gas-private') : null;
+  const countFiles = (d) => { let n = 0; if (!d || !fs.existsSync(d)) return 0; for (const e of fs.readdirSync(d, { withFileTypes: true })) { const f = pathMod.join(d, e.name); if (e.isDirectory()) n += countFiles(f); else if (!/^(index\.php|\.htaccess|web\.config)$/.test(e.name)) n++; } return n; };
+  if (privDir) diskBefore = countFiles(privDir);
+  const del = await page.evaluate(async (id) => { try { await GSM.api('/attachments/' + id, { method: 'DELETE' }); return 'ok'; } catch (e) { return e.message; } }, att.id);
+  const after = await page.evaluate((eqId) => GSM.api('/attachments/list/equipment/' + eqId), seeded.eq);
+  check('attachment delete', del === 'ok' && (after || []).length === 0, del);
+  if (privDir) check('deleted attachment removed from disk', countFiles(privDir) === diskBefore - 1, 'before=' + diskBefore + ' after=' + countFiles(privDir));
+
   // 4. Visit every screen.
   for (const s of SCREENS) {
     await page.evaluate((r) => GSM.navigate('/' + r), s);
