@@ -66,4 +66,4 @@
   line-height: 1.5;
 }
 
-/* Load Rubik from Google Fonts with a safe fallback (theme enqueues it). */
+/* Rubik is bundled locally (assets/css/fonts.css) — no Google Fonts. */

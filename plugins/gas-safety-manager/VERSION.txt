@@ -1,3 +1,13 @@
+Gas Safety Manager v2.13.5 — Local font + no third-party requests.
+
+- Rubik bundled locally (OFL 1.1) — no Google Fonts (privacy + blocked CDNs).
+- WP core emoji images (s.w.org) disabled on app/bridge pages only.
+- CSP: font/style hosts and worker-src blob: removed.
+- E2E: asserts the font loads and that no third-party host is contacted.
+- Theme 1.2.2: bundles the same font.
+- No DB change — stays v8.
+
+----
 Gas Safety Manager v2.13.4 — PHPCS security pass + CI.
 
 - create-pages.php: ABSPATH guard (no direct HTTP execution).

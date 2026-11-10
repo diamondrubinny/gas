@@ -96,13 +96,12 @@ class GSM_Security {
 		$d = array(
 			'default-src'     => "'self'",
 			'script-src'      => "'self' 'nonce-" . $nonce . "'",
-			'style-src'       => "'self' 'unsafe-inline' https://fonts.googleapis.com",
-			'font-src'        => "'self' data: https://fonts.gstatic.com",
+			'style-src'       => "'self' 'unsafe-inline'",
+			// Rubik is bundled locally — no third-party font hosts.
+			'font-src'        => "'self' data:",
 			// https: for an optional external header logo (Branding) / avatars.
 			'img-src'         => "'self' data: blob: https:",
 			'connect-src'     => "'self'",
-			// WordPress core's emoji loader runs its feature test in a blob: Worker.
-			'worker-src'      => "'self' blob:",
 			'frame-src'       => "'self'",
 			'object-src'      => "'none'",
 			'base-uri'        => "'self'",
@@ -128,6 +127,22 @@ class GSM_Security {
 			$out[] = 'upgrade-insecure-requests';
 		}
 		return implode( '; ', $out );
+	}
+
+	/**
+	 * template_redirect: on the app / bridge pages, turn off WordPress core's
+	 * emoji replacement. It swaps emoji in the UI for images from s.w.org
+	 * (a third-party host: visitors' IP addresses leave the site, and the
+	 * images break on networks that block external hosts). Every current
+	 * browser renders emoji natively. The rest of the site is untouched.
+	 */
+	public static function app_page_privacy() {
+		if ( ! self::is_app_request() ) {
+			return;
+		}
+		remove_action( 'wp_head', 'print_emoji_detection_script', 7 );
+		remove_action( 'wp_enqueue_scripts', 'wp_enqueue_emoji_styles' );
+		remove_action( 'wp_print_styles', 'print_emoji_styles' );
 	}
 
 	/**

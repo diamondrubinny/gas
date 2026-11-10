@@ -4,8 +4,8 @@
 
 | רכיב | נתיב | גרסה | דרישות |
 |---|---|---|---|
-| תוסף **Gas Safety Manager** | [`plugins/gas-safety-manager/`](plugins/gas-safety-manager/) | 2.13.4 (DB v8) | WordPress 6.4+, PHP 8.1+ |
-| ערכת עיצוב **Gas Safety** | [`themes/gas-safety-theme/`](themes/gas-safety-theme/) | 1.2.1 | WordPress 6.4+, PHP 8.1+ |
+| תוסף **Gas Safety Manager** | [`plugins/gas-safety-manager/`](plugins/gas-safety-manager/) | 2.13.5 (DB v8) | WordPress 6.4+, PHP 8.1+ |
+| ערכת עיצוב **Gas Safety** | [`themes/gas-safety-theme/`](themes/gas-safety-theme/) | 1.2.2 | WordPress 6.4+, PHP 8.1+ |
 
 היסטוריית שינויים: [`plugins/gas-safety-manager/readme.txt`](plugins/gas-safety-manager/readme.txt) (Changelog) ו-[`VERSION.txt`](plugins/gas-safety-manager/VERSION.txt). מצב הפרויקט וממצאים פתוחים: [`STATUS.md`](STATUS.md).
 
@@ -46,6 +46,13 @@ define( 'GSM_CSP_MODE', 'report-only' ); // enforce (ברירת מחדל) | repo
 - **טוקן BI** (מסך "אינטגרציות") פותח ייצוא **מלא**, כולל פרטי אנשי קשר. יש לשתף אותו רק עם מערכות מורשות כמו Power BI ו-Excel.
 - **טוקן לוח המצב הציבורי** (מסך "תקשורת והתראות") פותח **נתונים מצטברים בלבד**.
 - החלפת טוקן מבטלת מיד את כל הקישורים הקודמים.
+
+### פרטיות: אין פניות לשרתים חיצוניים
+בעמודי המערכת הדפדפן לא פונה לאף שרת חיצוני:
+- **הפונט Rubik** מגיע עם התוסף ועם ערכת העיצוב (רישיון SIL OFL 1.1, הקובץ `assets/fonts/OFL.txt`).
+- **תמונות ה-emoji של WordPress** (מ-`s.w.org`) כבויות בעמודי המערכת.
+
+בדיקת ה-E2E נכשלת על כל בקשה למארח חיצוני.
 
 ### דיווח על בעיית אבטחה
 לא לפתוח issue ציבורי. יש לפנות ישירות למנהל המערכת ביחידת הבטיחות.
@@ -119,6 +126,8 @@ BASE=http://127.0.0.1:8899 USER_NAME=admin PASS='local-test-password' WP_PATH=.w
 | Unit | טוקנים, rate limit, הגנת CSV | כן |
 | E2E | WordPress 6.4.5 (המינימום) ו-latest | כן |
 | Build ZIPs | קובצי התקנה כ-artifact | — |
+
+ה-Actions נעולים ל-SHA של גרסה מדויקת, כהגנה מפני שינוי זדוני בגרסה של צד שלישי. [Dependabot](.github/dependabot.yml) פותח פעם בחודש pull request לעדכון, וה-CI רץ עליו לפני מיזוג ידני.
 
 ---
 

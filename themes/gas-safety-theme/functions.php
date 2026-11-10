@@ -13,7 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'GST_VERSION', '1.2.1' );
+define( 'GST_VERSION', '1.2.2' );
 define( 'GST_DIR', get_template_directory() );
 define( 'GST_URI', get_template_directory_uri() );
 
@@ -40,12 +40,12 @@ add_action( 'after_setup_theme', 'gst_setup' );
  * Enqueue styles + fonts.
  */
 function gst_assets() {
-	// Rubik from Google Fonts (Hebrew + Latin).
+	// Rubik (Hebrew + Latin), bundled in assets/fonts — no Google Fonts request.
 	wp_enqueue_style(
 		'gst-rubik',
-		'https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700;800&display=swap',
+		GST_URI . '/assets/css/fonts.css',
 		array(),
-		null
+		GST_VERSION
 	);
 
 	// Shared design tokens (used by theme + plugin).

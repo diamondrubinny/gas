@@ -25,6 +25,14 @@ const SCREENS = ['dashboard', 'bi', 'reports', 'audit', 'myequip', 'quality', 'e
     });
   });
   page.on('pageerror', (e) => errors.push(e.message));
+  // Privacy: the app must not contact any third-party host (fonts, CDNs, ...).
+  const baseOrigin = new URL(BASE).origin;
+  const thirdParty = [];
+  ctx.on('request', (r) => {
+    const u = r.url();
+    if (/^(data|blob|about):/.test(u)) return;
+    try { if (new URL(u).origin !== baseOrigin) thirdParty.push(u); } catch (e) { /* ignore */ }
+  });
   page.on('console', (m) => { if (m.type() === 'error' && !/Failed to load resource/.test(m.text())) errors.push('console: ' + m.text()); });
 
   // 1. Header present on the app page.
@@ -47,6 +55,17 @@ const SCREENS = ['dashboard', 'bi', 'reports', 'audit', 'myequip', 'quality', 'e
   await page.click('#gsm-lg-submit');
   await page.waitForSelector('.gs-header__logout', { timeout: 15000 });
   check('login works under CSP', true);
+
+  // Bundled Rubik font is loaded and actually applied.
+  const font = await page.evaluate(async () => {
+    await document.fonts.ready;
+    await document.fonts.load('600 16px Rubik', 'אבג abc');
+    const faces = []; document.fonts.forEach((f) => faces.push(f.family.replace(/["']/g, '') + ':' + f.status));
+    return { ok: document.fonts.check('600 16px Rubik', 'אבג'), faces: faces,
+      family: getComputedStyle(document.querySelector('.gs-header__title') || document.body).fontFamily };
+  });
+  check('Rubik font loaded locally (Hebrew)', font.ok && font.faces.some((f) => f === 'Rubik:loaded'), JSON.stringify(font));
+  check('UI uses Rubik', /Rubik/.test(font.family), font.family);
 
   // 3. Seed data through the app's own API (same nonce/session).
   const seeded = await page.evaluate(async () => {
@@ -204,6 +223,7 @@ const SCREENS = ['dashboard', 'bi', 'reports', 'audit', 'myequip', 'quality', 'e
     await sheet.click('#gsm-print-now');
     check('sticker sheet print button works', (await printedCount()) === 2, 'printed=' + (await printedCount()));
     check('sticker popup has no inline <script>', (await sheet.$$('script')).length === 0);
+    check('sticker popup uses local Rubik', await sheet.evaluate(async () => { await document.fonts.load('800 16px Rubik', 'G-0001'); return document.fonts.check('800 16px Rubik', 'G-0001'); }));
     await sheet.close();
   } else { check('sticker checkbox present', false); }
 
@@ -273,6 +293,7 @@ const SCREENS = ['dashboard', 'bi', 'reports', 'audit', 'myequip', 'quality', 'e
   }
 
   check('no CSP violations during normal use', violations.length === 0, violations.slice(0, 10).join(' | '));
+  check('no third-party requests (privacy)', thirdParty.length === 0, Array.from(new Set(thirdParty)).slice(0, 10).join(' | '));
   check('no uncaught JS errors', errors.length === 0, errors.slice(0, 10).join(' | '));
   await browser.close();
   console.log(fail ? fail + ' failed' : 'all passed');

@@ -712,7 +712,7 @@
     w.document.write(
       '<!DOCTYPE html><html dir="rtl" lang="he"><head><meta charset="utf-8">' +
       '<title>מדבקות QR — יחידת הבטיחות</title>' +
-      '<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;800&display=swap" rel="stylesheet">' +
+      '<link href="' + esc(GSM.asset('css/fonts.css')) + '" rel="stylesheet">' +
       '<style>' + css + '</style></head><body>' +
       '<div class="noprint" style="padding:8px 6mm;background:#002147;color:#fff;display:flex;justify-content:space-between;align-items:center;margin:-6mm -6mm 6mm">' +
       '<span>' + items.length + ' מדבקות · מוכן להדפסה</span>' +

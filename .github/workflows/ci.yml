@@ -21,15 +21,15 @@ jobs:
       matrix:
         php: ['8.1', '8.2', '8.3', '8.4']
     steps:
-      - uses: actions/checkout@v6
-      - uses: shivammathur/setup-php@v2
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
         with:
           php-version: ${{ matrix.php }}
           coverage: none
           tools: none
       - name: PHP syntax
         run: find plugins themes tests scripts -name '*.php' -not -path '*/vendor/*' -print0 | xargs -0 -n1 -P4 php -l
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
         if: matrix.php == '8.3'
         with:
           node-version: '22'
@@ -50,8 +50,8 @@ jobs:
     name: PHPCS (security + compatibility)
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v6
-      - uses: shivammathur/setup-php@v2
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
         with:
           php-version: '8.3'
           coverage: none
@@ -68,8 +68,8 @@ jobs:
     name: Unit tests
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v6
-      - uses: shivammathur/setup-php@v2
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
         with:
           php-version: '8.3'
           coverage: none
@@ -87,14 +87,14 @@ jobs:
         # Minimum supported ("Requires at least: 6.4") and the current release.
         wp: ['6.4.5', 'latest']
     steps:
-      - uses: actions/checkout@v6
-      - uses: shivammathur/setup-php@v2
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
         with:
           php-version: '8.3'
           extensions: pdo_sqlite, sqlite3, mbstring, zip, gd
           coverage: none
           tools: none
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
         with:
           node-version: '22'
           cache: npm
@@ -128,9 +128,9 @@ jobs:
     runs-on: ubuntu-24.04
     needs: [phpcs, e2e]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
       - run: scripts/build-release.sh
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: gas-safety-zips
           path: dist/*.zip

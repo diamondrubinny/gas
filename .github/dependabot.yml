@@ -1,0 +1,13 @@
+# Keep the SHA-pinned GitHub Actions in ci.yml up to date.
+# Dependabot opens a pull request (it never merges); CI runs on it first.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      actions:
+        patterns: ['*']
+    commit-message:
+      prefix: ci

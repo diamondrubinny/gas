@@ -53,7 +53,8 @@ class GSM_Public {
 	 * Register assets (enqueue only when the shortcode renders).
 	 */
 	public function register_assets() {
-		wp_register_style( 'gsm-rubik', 'https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700;800&display=swap', array(), null );
+		// Rubik is bundled (public/assets/fonts) — no Google Fonts request.
+		wp_register_style( 'gsm-rubik', GSM_PLUGIN_URL . 'public/assets/css/fonts.css', array(), GSM_VERSION );
 		wp_register_style( 'gsm-app', GSM_PLUGIN_URL . 'public/assets/css/app-ui.css', array( 'gsm-rubik' ), GSM_VERSION );
 
 		// SPA scripts in dependency order. app.js depends on all of them.

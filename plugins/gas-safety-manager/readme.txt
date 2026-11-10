@@ -3,7 +3,7 @@ Contributors: diamondrubinny
 Tags: safety, equipment, inspections, hebrew, rtl
 Requires at least: 6.4
 Requires PHP: 8.1
-Stable tag: 2.13.4
+Stable tag: 2.13.5
 License: Proprietary — Technion Safety Unit
 
 Gas systems maintenance management for the Technion Safety Unit. Manages equipment, inspections, faults, and QR codes with native WordPress storage.
@@ -31,6 +31,12 @@ Pairs with the companion "Gas Safety" theme for the portal look (navy/gold, RTL,
 4. To import from Monday: open "Gas Migration", generate a key, run the console script in the portal, then revoke the key.
 
 == Changelog ==
+
+= 2.13.5 =
+* Privacy: the Rubik font is now bundled with the plugin (public/assets/fonts, SIL OFL 1.1) instead of loading from Google Fonts — visitors' IP addresses are no longer sent to Google, and the font now also works on networks that block external CDNs. Applies to the app, the QR bridge page, the sticker print sheet and the public dashboard.
+* Privacy: WordPress core's emoji-to-image replacement is turned off on the app and bridge pages only (it loaded emoji images from s.w.org, a third-party host). Browsers render emoji natively. Other site pages are unchanged.
+* CSP tightened accordingly: no Google font hosts, no blob: workers.
+* No DB change — stays v8.
 
 = 2.13.4 =
 * Hardening from a WordPress security-sniff (PHPCS) pass — 0 violations remain:

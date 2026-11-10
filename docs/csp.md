@@ -1,4 +1,4 @@
-# Content-Security-Policy — Gas Safety Manager (2.13.3)
+# Content-Security-Policy — Gas Safety Manager (2.13.5)
 
 ## מה הוגדר
 CSP נשלחת **רק** בעמודי המערכת: העמוד עם `[gas_app]` ועמוד ה-QR עם `[gas_bridge]`. שאר עמודי האתר ונקודות ה-REST לא מושפעים.
@@ -6,11 +6,10 @@ CSP נשלחת **רק** בעמודי המערכת: העמוד עם `[gas_app]` �
 ```
 default-src 'self';
 script-src 'self' 'nonce-<random per request>';
-style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
-font-src 'self' data: https://fonts.gstatic.com;
+style-src 'self' 'unsafe-inline';
+font-src 'self' data:;
 img-src 'self' data: blob: https:;
 connect-src 'self';
-worker-src 'self' blob:;
 frame-src 'self';
 object-src 'none';
 base-uri 'self';
@@ -23,11 +22,11 @@ upgrade-insecure-requests   (רק ב-HTTPS)
 - **nonce:** WordPress מוסיף אותו לכל `<script>` שהוא מדפיס, דרך הפילטרים `wp_script_attributes` / `wp_inline_script_attributes`. אימתתי את זה בקוד המקור של WP 6.4.5 ובהרצה על WP 7.1.4. זה כולל את `window.GSM_CONFIG` ואת סקריפטי הליבה (emoji, speculationrules).
 - **`style-src 'unsafe-inline'`:** נשאר כי הממשק משתמש ב-`style=""`. CSS לא מריץ קוד, ולכן זה לא מחליש את ההגנה מפני XSS.
 - **`img-src https:`:** נדרש ללוגו חיצוני אופציונלי (מיתוג).
-- **`worker-src blob:`:** נדרש לבדיקת ה-emoji של ליבת WordPress. יצירת Worker דורשת ממילא הרצת סקריפט.
+- **אין מארחים חיצוניים:** מגרסה 2.13.5 הפונט Rubik מגיע עם התוסף (בלי Google Fonts), וסקריפט ה-emoji של WordPress כבוי בעמודי המערכת (הוא טען תמונות מ-`s.w.org`). לכן הוסרו גם `fonts.googleapis.com`, `fonts.gstatic.com` ו-`worker-src blob:`. בדיקת ה-E2E נכשלת על כל בקשה למארח חיצוני.
 
 ## לוח המצב הציבורי
 הקובץ `public/gas-public-dashboard.html` סטטי, ולכן ה-CSP שלו מוגדרת ב-`<meta>`:
-`default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; form-action 'none'`.
+`default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; form-action 'none'`.
 הסקריפט הועבר ל-`public/assets/js/public-dashboard.js`.
 
 ## מתג הפעלה (לפריסה ולתקלות)
