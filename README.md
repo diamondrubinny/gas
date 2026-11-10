@@ -4,8 +4,8 @@
 
 | רכיב | נתיב | גרסה | דרישות |
 |---|---|---|---|
-| תוסף **Gas Safety Manager** | [`plugins/gas-safety-manager/`](plugins/gas-safety-manager/) | 2.13.5 (DB v8) | WordPress 6.4+, PHP 8.1+ |
-| ערכת עיצוב **Gas Safety** | [`themes/gas-safety-theme/`](themes/gas-safety-theme/) | 1.2.2 | WordPress 6.4+, PHP 8.1+ |
+| תוסף **Gas Safety Manager** | [`plugins/gas-safety-manager/`](plugins/gas-safety-manager/) | 2.13.6 (DB v8) | WordPress 6.4+, PHP 8.1+ |
+| ערכת עיצוב **Gas Safety** | [`themes/gas-safety-theme/`](themes/gas-safety-theme/) | 1.2.3 | WordPress 6.4+, PHP 8.1+ |
 
 היסטוריית שינויים: [`plugins/gas-safety-manager/readme.txt`](plugins/gas-safety-manager/readme.txt) (Changelog) ו-[`VERSION.txt`](plugins/gas-safety-manager/VERSION.txt). מצב הפרויקט וממצאים פתוחים: [`STATUS.md`](STATUS.md).
 
@@ -34,6 +34,7 @@
 |---|---|
 | סקירת XSS והקשחות | [`docs/xss-review.md`](docs/xss-review.md) |
 | מדיניות אבטחת תוכן (CSP) | [`docs/csp.md`](docs/csp.md) |
+| נגישות (WCAG 2.1 AA / ת״י 5568) | [`docs/accessibility.md`](docs/accessibility.md) |
 | ממצאים, תיקונים ופתוחים | [`STATUS.md`](STATUS.md) |
 
 ### מדיניות אבטחת תוכן (CSP)
@@ -125,6 +126,7 @@ BASE=http://127.0.0.1:8899 USER_NAME=admin PASS='local-test-password' WP_PATH=.w
 | PHPCS style | סגנון WordPress מלא | לא (לידיעה) |
 | Unit | טוקנים, rate limit, הגנת CSV | כן |
 | E2E | WordPress 6.4.5 (המינימום) ו-latest | כן |
+| נגישות | axe-core (WCAG 2.1 A/AA) על 35 תצוגות, ובדיקות מקלדת ופוקוס | כן |
 | Build ZIPs | קובצי התקנה כ-artifact | — |
 
 ה-Actions נעולים ל-SHA של גרסה מדויקת, כהגנה מפני שינוי זדוני בגרסה של צד שלישי. [Dependabot](.github/dependabot.yml) פותח פעם בחודש pull request לעדכון, וה-CI רץ עליו לפני מיזוג ידני.

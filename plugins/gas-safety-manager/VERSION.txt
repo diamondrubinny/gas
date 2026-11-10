@@ -1,3 +1,13 @@
+Gas Safety Manager v2.13.6 — Accessibility (WCAG 2.1 AA).
+
+- axe-core: 344 failing elements -> 0 (35 views). Keyboard/focus: 22/22.
+- Labels linked (a11y.js + forms.js), names for selects/checkboxes, QR alt.
+- Contrast fixed via tokens (--gs-muted, --gs-gold-text, --gs-warn-text).
+- Accessible dialogs (focus trap, Esc, focus return); keyboard file upload.
+- SPA: title + focus on screen change; skip link; live regions; lang he-IL.
+- No DB change — stays v8.
+
+----
 Gas Safety Manager v2.13.5 — Local font + no third-party requests.
 
 - Rubik bundled locally (OFL 1.1) — no Google Fonts (privacy + blocked CDNs).

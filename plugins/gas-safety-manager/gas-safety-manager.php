@@ -3,7 +3,7 @@
  * Plugin Name:       Gas Safety Manager
  * Plugin URI:        https://safety-tech.dev
  * Description:       Gas systems maintenance management for the Technion Safety Unit. Manages equipment, inspections, faults, and QR codes. Full replacement for the Monday.com backend with native WordPress storage, including a batch QR sticker generator.
- * Version:           2.13.5
+ * Version:           2.13.6
  * Requires at least: 6.4
  * Requires PHP:      8.1
  * Author:            Diamond Rubinny
@@ -21,7 +21,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
-define( 'GSM_VERSION', '2.13.5' );
+define( 'GSM_VERSION', '2.13.6' );
 define( 'GSM_DB_VERSION', '8' );
 define( 'GSM_PLUGIN_FILE', __FILE__ );
 define( 'GSM_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
@@ -140,6 +140,8 @@ add_action( 'send_headers', array( 'GSM_Security', 'headers' ) );
 // query, so template_redirect — still before any output).
 add_action( 'template_redirect', array( 'GSM_Security', 'csp' ), 1 );
 add_action( 'template_redirect', array( 'GSM_Security', 'app_page_privacy' ), 1 );
+// App + bridge pages are Hebrew regardless of the site language (WCAG 3.1.1).
+add_filter( 'language_attributes', array( 'GSM_Public', 'app_language_attributes' ), 20 );
 add_filter( 'wp_inline_script_attributes', array( 'GSM_Security', 'script_nonce_attr' ) );
 add_filter( 'wp_script_attributes', array( 'GSM_Security', 'script_nonce_attr' ) );
 add_action( 'gsm_daily_reminders', array( 'GSM_Comm', 'run_reminders' ) );

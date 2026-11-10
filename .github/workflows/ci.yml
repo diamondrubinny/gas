@@ -119,6 +119,24 @@ jobs:
           USER_NAME: admin
           WP_PATH: ${{ runner.temp }}/wp/site
         run: PASS="$WP_TEST_PASS" node tests/e2e/csp-e2e.js
+      - name: Accessibility — keyboard & focus management
+        env:
+          BASE: http://127.0.0.1:8899
+          USER_NAME: admin
+        run: PASS="$WP_TEST_PASS" node tests/e2e/keyboard-a11y.js
+      - name: Accessibility — axe-core WCAG 2.1 A/AA scan (all screens, forms, bridge, dashboard)
+        env:
+          BASE: http://127.0.0.1:8899
+          USER_NAME: admin
+        run: PASS="$WP_TEST_PASS" node tests/e2e/a11y-audit.js --report "$RUNNER_TEMP/a11y-report.json"
+      - name: Upload accessibility report
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: a11y-report-wp-${{ matrix.wp }}
+          path: ${{ runner.temp }}/a11y-report.json
+          if-no-files-found: ignore
+          retention-days: 14
       - name: Server log
         if: failure()
         run: tail -200 "$RUNNER_TEMP/wp/server.log" || true

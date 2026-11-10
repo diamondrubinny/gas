@@ -13,7 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'GST_VERSION', '1.2.2' );
+define( 'GST_VERSION', '1.2.3' );
 define( 'GST_DIR', get_template_directory() );
 define( 'GST_URI', get_template_directory_uri() );
 
@@ -73,10 +73,16 @@ add_action( 'wp_enqueue_scripts', 'gst_assets' );
  * @return string
  */
 function gst_rtl_lang_attr( $output ) {
-	if ( false === strpos( $output, 'dir=' ) ) {
-		$output .= ' dir="rtl"';
+	// All theme text is Hebrew: declare it even when the site language is
+	// set to something else, so screen readers use a Hebrew voice (WCAG 3.1.1).
+	if ( ! preg_match( '/\blang="he\b/', $output ) ) {
+		$output = preg_replace( '/\blang="[^"]*"\s*/', '', $output );
+		$output = 'lang="he-IL" ' . trim( $output );
 	}
-	return $output;
+	if ( false === strpos( $output, 'dir=' ) ) {
+		$output = trim( $output ) . ' dir="rtl"';
+	}
+	return trim( $output );
 }
 add_filter( 'language_attributes', 'gst_rtl_lang_attr' );
 

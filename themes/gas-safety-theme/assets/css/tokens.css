@@ -11,13 +11,14 @@
   --gs-navy-2: #0b2545;
   --gs-gold: #e0a526;
   --gs-gold-2: #e6b54a;
+  --gs-gold-text: #936c19;    /* gold for TEXT on light backgrounds (4.6:1+) */
 
   /* Surfaces */
   --gs-bg: #f4f6f9;
   --gs-surface: #ffffff;
   --gs-surface-2: #fafbfd;
   --gs-border: #d9dee6;
-  --gs-muted: #7a8699;
+  --gs-muted: #626c7b;        /* was #7a8699 — 4.9:1 on --gs-bg (WCAG AA) */
 
   /* Status */
   --gs-ok: #1a9b54;
@@ -27,6 +28,7 @@
   --gs-danger-border: #f5b5b5;
   --gs-warn: #e0a526;
   --gs-warn-bg: #fff7e6;
+  --gs-warn-text: #966717;    /* text on --gs-warn-bg (4.6:1) */
   --gs-warn-border: #f0dca8;
 
   /* Type */

@@ -9,9 +9,11 @@
   "scripts": {
     "lint:js": "node scripts/check-js.js",
     "test:dashboard": "node tests/public-dashboard-test.js plugins/gas-safety-manager/public/gas-public-dashboard.html",
-    "test:e2e": "node tests/e2e/csp-e2e.js"
+    "test:e2e": "node tests/e2e/csp-e2e.js",
+    "test:a11y": "node tests/e2e/a11y-audit.js && node tests/e2e/keyboard-a11y.js"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.14.0",
     "playwright": "1.63.0"
   }
 }

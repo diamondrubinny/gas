@@ -11,13 +11,14 @@
   --gs-navy-2: #0b2545;
   --gs-gold: #e0a526;
   --gs-gold-2: #e6b54a;
+  --gs-gold-text: #936c19;    /* gold for TEXT on light backgrounds (4.6:1+) */
 
   /* Surfaces */
   --gs-bg: #f4f6f9;
   --gs-surface: #ffffff;
   --gs-surface-2: #fafbfd;
   --gs-border: #d9dee6;
-  --gs-muted: #7a8699;
+  --gs-muted: #626c7b;        /* was #7a8699 — 4.9:1 on --gs-bg (WCAG AA) */
 
   /* Status */
   --gs-ok: #1a9b54;
@@ -27,6 +28,7 @@
   --gs-danger-border: #f5b5b5;
   --gs-warn: #e0a526;
   --gs-warn-bg: #fff7e6;
+  --gs-warn-text: #966717;    /* text on --gs-warn-bg (4.6:1) */
   --gs-warn-border: #f0dca8;
 
   /* Type */
@@ -222,7 +224,7 @@
 }
 .gs-pill--ok { background: #e8f6ee; color: var(--gs-ok-dark); }
 .gs-pill--danger { background: var(--gs-danger-bg); color: var(--gs-danger); }
-.gs-pill--warn { background: var(--gs-warn-bg); color: #a9741a; }
+.gs-pill--warn { background: var(--gs-warn-bg); color: var(--gs-warn-text, #966717); }
 
 /* ---------- Tabs ---------- */
 .gs-tabs {
@@ -335,7 +337,7 @@
 }
 .gs-home__logo { display: block; height: 78px; width: auto; margin: 0 auto 14px; border-radius: 10px; }
 .gs-home__title { font-size: 24px; color: var(--gs-navy); margin: 0 0 6px; font-weight: 800; }
-.gs-home__sub { color: var(--gs-gold); font-weight: 600; margin: 0 0 18px; }
+.gs-home__sub { color: var(--gs-gold-text, #936c19); font-weight: 600; margin: 0 0 18px; }
 .gs-home__desc { color: var(--gs-muted); font-size: 15px; line-height: 1.6; margin: 0 0 26px; }
 .gs-home__actions { margin-bottom: 20px; }
 .gs-home__note { font-size: 12.5px; color: var(--gs-muted); border-top: 1px solid var(--gs-border); padding-top: 16px; margin: 0; }
@@ -463,7 +465,7 @@
 }
 .gs-form-section:first-of-type { margin-top: 4px; }
 /* Export button in list toolbars */
-.gs-btn--export { background: var(--gs-ok, #1a9b54); color: #fff; }
+.gs-btn--export { background: var(--gs-ok-dark, #157a43); color: #fff; } /* white text needs the darker green (5.4:1) */
 .gs-btn--export:hover { filter: brightness(1.05); }
 
 /* ---- Grouped dropdown navigation (v2.4.0) ------------------------------ */
@@ -574,3 +576,55 @@
 .gs-table--db { font-size:12.5px; }
 .gs-table--db td { max-width:280px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .gs-table--db th { white-space:nowrap; }
+
+/* ---------- Accessibility (WCAG 2.1 AA) ---------- */
+
+/* Visually hidden but still focusable / announced (e.g. the attachment file input). */
+.gs-visually-hidden {
+  position: absolute !important;
+  width: 1px; height: 1px;
+  margin: -1px; padding: 0; border: 0;
+  overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Skip link: hidden until focused (first Tab stop). */
+.gs-skip {
+  position: absolute; top: 8px; inset-inline-start: 8px; z-index: 10000;
+  transform: translateY(-200%);
+  background: var(--gs-gold); color: var(--gs-navy);
+  border: 0; border-radius: var(--gs-r-sm); padding: 10px 16px;
+  font: 600 14px var(--gs-font); cursor: pointer;
+}
+.gs-skip:focus { transform: none; }
+
+/* One clear focus ring for every interactive element (keyboard users only).
+   Navy on light surfaces; gold on the navy header. Both are >= 3:1. */
+/* (app-ui.css is only loaded on the plugin's own pages, so global selectors are safe.) */
+a:focus-visible, button:focus-visible, [tabindex]:focus-visible, summary:focus-visible,
+input[type="checkbox"]:focus-visible, input[type="radio"]:focus-visible {
+  outline: 3px solid var(--gs-navy);
+  outline-offset: 2px;
+}
+.gs-header a:focus-visible, .gs-header button:focus-visible, .gs-skip:focus-visible {
+  outline-color: var(--gs-gold);
+}
+/* Text fields: keep the border change, make the halo clearly visible. */
+.gs-input:focus-visible, .gs-select:focus-visible, .gs-textarea:focus-visible {
+  border-color: var(--gs-navy);
+  box-shadow: 0 0 0 3px rgba(0, 33, 71, 0.45);
+}
+/* Hidden file input: show the ring on its visible label button. */
+.gs-file-btn:focus-within { outline: 3px solid var(--gs-navy); outline-offset: 2px; }
+/* Focus target for headings / main after a screen change: no ring needed. */
+.gs-main:focus, .gs-main h1[tabindex="-1"]:focus, .gs-main h2[tabindex="-1"]:focus,
+.gs-h2[tabindex="-1"]:focus, h1[tabindex="-1"]:focus, h2[tabindex="-1"]:focus { outline: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

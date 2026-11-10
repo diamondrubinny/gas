@@ -3,7 +3,7 @@ Contributors: diamondrubinny
 Tags: safety, equipment, inspections, hebrew, rtl
 Requires at least: 6.4
 Requires PHP: 8.1
-Stable tag: 2.13.5
+Stable tag: 2.13.6
 License: Proprietary — Technion Safety Unit
 
 Gas systems maintenance management for the Technion Safety Unit. Manages equipment, inspections, faults, and QR codes with native WordPress storage.
@@ -31,6 +31,17 @@ Pairs with the companion "Gas Safety" theme for the portal look (navy/gold, RTL,
 4. To import from Monday: open "Gas Migration", generate a key, run the console script in the portal, then revoke the key.
 
 == Changelog ==
+
+= 2.13.6 =
+* Accessibility (WCAG 2.1 AA / IS 5568): automated axe-core scan of 35 views went from 344 failing elements to 0, plus 22 keyboard / focus checks. See docs/accessibility.md.
+* Every form field has a programmatically linked label; unnamed selects/checkboxes got explicit names; the QR image has alt text.
+* Color contrast fixed in the design tokens (muted text, gold text, warning pills, the Excel button) — brand navy/gold unchanged.
+* Dialogs (equipment / fault / inspection forms, QR-page fault report): role="dialog", focus moves in and is trapped, Escape closes, focus returns to the opener.
+* Attachment upload is reachable with the keyboard (the file input was display:none).
+* Screen changes update the page title and move focus to the new heading; "skip to main content" link; labelled main navigation.
+* Status and error messages are live regions (announced by screen readers).
+* App and QR pages always declare lang="he-IL" (screen readers use a Hebrew voice), clear focus ring, prefers-reduced-motion support.
+* No DB change — stays v8.
 
 = 2.13.5 =
 * Privacy: the Rubik font is now bundled with the plugin (public/assets/fonts, SIL OFL 1.1) instead of loading from Google Fonts — visitors' IP addresses are no longer sent to Google, and the font now also works on networks that block external CDNs. Applies to the app, the QR bridge page, the sticker print sheet and the public dashboard.

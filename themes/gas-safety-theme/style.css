@@ -2,7 +2,7 @@
 Theme Name: Gas Safety
 Theme URI: https://safety-tech.dev
 Description: Companion theme for the Gas Safety Manager plugin — Technion Safety Unit. Recreates the original portal's navy/gold RTL identity and provides full-bleed templates for the gas systems management UI.
-Version: 1.2.2
+Version: 1.2.3
 Author: Diamond Rubinny
 Text Domain: gas-safety-theme
 Requires at least: 6.4
@@ -98,3 +98,18 @@ body.gs-fullbleed .site-footer-widgets {
 .gst-btn--primary { background: var(--gs-gold, #e0a526); color: #2a1c00; }
 .gst-btn--ghost { background: transparent; color: #fff; border-color: rgba(255, 255, 255, 0.35); }
 .gst-hero__note { margin-top: 22px; color: rgba(255, 255, 255, 0.6); font-size: 13px; }
+
+/* ---- Accessibility (WCAG 2.1 AA) ---------------------------------------- */
+a:focus-visible, button:focus-visible, [tabindex]:focus-visible, summary:focus-visible {
+  outline: 3px solid var(--gs-navy, #002147);
+  outline-offset: 2px;
+}
+.gst-hero a:focus-visible, .gst-hero button:focus-visible { outline-color: var(--gs-gold, #e0a526); }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

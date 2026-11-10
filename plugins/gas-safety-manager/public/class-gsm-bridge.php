@@ -37,10 +37,13 @@ class GSM_Bridge {
 			array(),
 			GSM_VERSION
 		);
+		if ( ! wp_script_is( 'gsm-a11y', 'registered' ) ) {
+			wp_register_script( 'gsm-a11y', GSM_PLUGIN_URL . 'public/assets/js/a11y.js', array(), GSM_VERSION, true );
+		}
 		wp_register_script(
 			'gsm-bridge',
 			GSM_PLUGIN_URL . 'public/assets/js/bridge.js',
-			array(),
+			array( 'gsm-a11y' ),
 			GSM_VERSION,
 			true
 		);

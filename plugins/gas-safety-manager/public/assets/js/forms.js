@@ -54,6 +54,9 @@
       '<button class="gs-btn gs-btn--ghost" id="gsm-modal-cancel">ביטול</button>' +
       '</div></div>';
     document.body.appendChild(backdrop);
+    if (window.GSM_A11Y) {
+      backdrop._release = GSM_A11Y.dialog(backdrop.querySelector('.gs-modal'), { onEscape: closeModal });
+    }
 
     backdrop.addEventListener('click', function (e) {
       if (e.target === backdrop) closeModal();
@@ -73,12 +76,14 @@
 
   function closeModal() {
     var m = document.getElementById('gsm-modal');
-    if (m) m.remove();
+    if (!m) return;
+    m.remove();
+    if (m._release) m._release(); // focus back to the button that opened it
   }
 
   function showModalErr(msg) {
     var e = document.getElementById('gsm-modal-err');
-    if (e) e.innerHTML = '<div class="gs-error" style="margin-top:12px">' + esc(msg) + '</div>';
+    if (e) e.innerHTML = '<div class="gs-error" role="alert" style="margin-top:12px">' + esc(msg) + '</div>';
   }
 
   function val(id) {
@@ -89,12 +94,12 @@
   // ---- field helpers -------------------------------------------------------
 
   function field(label, id, value, type) {
-    return '<div class="gs-field"><label class="gs-label">' + esc(label) + '</label>' +
+    return '<div class="gs-field"><label class="gs-label" for="' + esc(id) + '">' + esc(label) + '</label>' +
       '<input class="gs-input" id="' + id + '" type="' + (type || 'text') + '" value="' + esc(value || '') + '"></div>';
   }
 
   function textarea(label, id, value) {
-    return '<div class="gs-field"><label class="gs-label">' + esc(label) + '</label>' +
+    return '<div class="gs-field"><label class="gs-label" for="' + esc(id) + '">' + esc(label) + '</label>' +
       '<textarea class="gs-textarea" id="' + id + '" rows="3">' + esc(value || '') + '</textarea></div>';
   }
 
@@ -102,7 +107,7 @@
     var opts = options.map(function (o) {
       return '<option value="' + esc(o[0]) + '"' + (o[0] === value ? ' selected' : '') + '>' + esc(o[1]) + '</option>';
     }).join('');
-    return '<div class="gs-field"><label class="gs-label">' + esc(label) + '</label>' +
+    return '<div class="gs-field"><label class="gs-label" for="' + esc(id) + '">' + esc(label) + '</label>' +
       '<select class="gs-select" id="' + id + '">' + opts + '</select></div>';
   }
 
@@ -164,7 +169,7 @@
         });
       });
     }).catch(function (e) {
-      listEl.innerHTML = '<div class="gs-error">' + esc(e.message || e) + '</div>';
+      listEl.innerHTML = '<div class="gs-error" role="alert">' + esc(e.message || e) + '</div>';
     });
   }
 
@@ -172,9 +177,11 @@
     if (!host) return;
     host.innerHTML =
       '<div class="gsm-att-list" style="margin-bottom:8px"></div>' +
-      '<label class="gs-btn gs-btn--ghost gs-btn--sm" style="cursor:pointer;display:inline-block">+ העלה קובץ' +
-      '<input type="file" class="gsm-att-input" accept=".jpg,.jpeg,.png,.webp,.pdf,image/jpeg,image/png,image/webp,application/pdf" style="display:none"></label>' +
-      '<span class="gsm-att-status" style="margin-inline-start:10px;font-size:12px;color:var(--gs-muted)"></span>' +
+      // The file input stays focusable (visually hidden, NOT display:none) so
+      // keyboard users can reach it; the label shows the focus ring.
+      '<label class="gs-btn gs-btn--ghost gs-btn--sm gs-file-btn" style="cursor:pointer;display:inline-block">+ העלה קובץ' +
+      '<input type="file" class="gsm-att-input gs-visually-hidden" accept=".jpg,.jpeg,.png,.webp,.pdf,image/jpeg,image/png,image/webp,application/pdf"></label>' +
+      '<span class="gsm-att-status" role="status" aria-live="polite" style="margin-inline-start:10px;font-size:12px;color:var(--gs-muted)"></span>' +
       '<div style="font-size:11px;color:var(--gs-muted);margin-top:4px">JPG · PNG · WEBP · PDF · עד 8MB · עד 10 קבצים</div>';
     var input = host.querySelector('.gsm-att-input');
     var status = host.querySelector('.gsm-att-status');

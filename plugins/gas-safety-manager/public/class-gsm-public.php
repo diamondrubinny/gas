@@ -33,6 +33,23 @@ class GSM_Public {
 	}
 
 	/**
+	 * language_attributes filter: the app and the QR bridge page are always in
+	 * Hebrew, whatever the site language is, so declare lang="he-IL" (and RTL)
+	 * on them — screen readers pick the voice from it (WCAG 3.1.1).
+	 *
+	 * @param string $output Attributes for the <html> tag.
+	 * @return string
+	 */
+	public static function app_language_attributes( $output ) {
+		if ( ! class_exists( 'GSM_Security' ) || ! GSM_Security::is_app_request() ) {
+			return $output;
+		}
+		$output = preg_replace( '/\blang="[^"]*"/', '', (string) $output );
+		$output = preg_replace( '/\bdir="[^"]*"/', '', $output );
+		return trim( 'lang="he-IL" dir="rtl" ' . trim( $output ) );
+	}
+
+	/**
 	 * admin-ajax: return a fresh wp_rest nonce for the current login cookie.
 	 */
 	public function ajax_nonce() {
@@ -59,7 +76,8 @@ class GSM_Public {
 
 		// SPA scripts in dependency order. app.js depends on all of them.
 		$base = GSM_PLUGIN_URL . 'public/assets/js/';
-		wp_register_script( 'gsm-router', $base . 'router.js', array(), GSM_VERSION, true );
+		wp_register_script( 'gsm-a11y', $base . 'a11y.js', array(), GSM_VERSION, true );
+		wp_register_script( 'gsm-router', $base . 'router.js', array( 'gsm-a11y' ), GSM_VERSION, true );
 		wp_register_script( 'gsm-auth', $base . 'auth.js', array( 'gsm-router' ), GSM_VERSION, true );
 		wp_register_script( 'gsm-forms', $base . 'forms.js', array( 'gsm-auth' ), GSM_VERSION, true );
 		wp_register_script( 'gsm-view-homelogin', $base . 'views/home-login.js', array( 'gsm-auth' ), GSM_VERSION, true );

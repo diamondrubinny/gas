@@ -63,7 +63,7 @@
       var remember = document.getElementById('gsm-lg-remember').checked;
       errBox.innerHTML = '';
       if (!user || !pass) {
-        errBox.innerHTML = '<div class="gs-error">יש להזין שם משתמש וסיסמה</div>';
+        errBox.innerHTML = '<div class="gs-error" role="alert">יש להזין שם משתמש וסיסמה</div>';
         return;
       }
       submit.disabled = true;
@@ -71,7 +71,7 @@
       GSM.login(user, pass, remember).then(function () {
         GSM.navigate('/dashboard');
       }).catch(function (e) {
-        errBox.innerHTML = '<div class="gs-error">' + esc(e.message) + '</div>';
+        errBox.innerHTML = '<div class="gs-error" role="alert">' + esc(e.message) + '</div>';
         submit.disabled = false;
         submit.textContent = 'התחבר';
       });

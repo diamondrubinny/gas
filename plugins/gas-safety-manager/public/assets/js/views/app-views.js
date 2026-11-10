@@ -92,6 +92,7 @@
 
     return '' +
       '<div class="gs-shell">' +
+      '<button type="button" class="gs-skip" data-gsm-action="skipToMain">דלג לתוכן הראשי</button>' +
       '<header class="gs-header">' +
       '<img class="gs-header__logo" src="' + esc(brand.logo_url || GSM.asset('img/brand/logo-header.png')) + '" alt="יחידת הבטיחות — הטכניון">' +
       '<h1 class="gs-header__title">' + esc(brand.title || 'מערכת גזים') + '</h1>' +
@@ -100,8 +101,8 @@
       (u.roleLabel ? ' · ' + esc(u.roleLabel) : '') + '</span>' +
       '<button class="gs-header__logout" type="button" data-gsm-action="logout">יציאה</button>' +
       '</header>' +
-      '<nav class="gs-nav gs-nav--grouped">' + navHtml + '</nav>' +
-      '<main class="gs-main">' + bodyHtml + '</main>' +
+      '<nav class="gs-nav gs-nav--grouped" aria-label="תפריט ראשי">' + navHtml + '</nav>' +
+      '<main class="gs-main" id="gsm-main" tabindex="-1">' + bodyHtml + '</main>' +
       '</div>';
   }
 
@@ -129,6 +130,7 @@
   // Ids come from data-id and are passed through as positive integers only.
   function idOf(el) { var n = parseInt(el.getAttribute('data-id'), 10); return n > 0 ? n : 0; }
   GSM.registerAction('navToggle', function (el) { GSM._navToggle(el); });
+  GSM.registerAction('skipToMain', function () { var m = document.getElementById('gsm-main'); if (m) m.focus(); });
   GSM.registerAction('logout', function () { GSM._logout(); });
   GSM.registerAction('export', function (el) { GSM._export(el.getAttribute('data-type'), el); });
   GSM.registerAction('rpRestore', function (el) { var id = idOf(el); if (id) GSM._rpRestore(id, el); });
@@ -231,7 +233,7 @@
           });
         }
       } catch (_e) { /* trend chart is optional */ }
-    }).catch(function (e) { main.innerHTML = '<div class="gs-error">' + esc(e.message) + '</div>'; });
+    }).catch(function (e) { main.innerHTML = '<div class="gs-error" role="alert">' + esc(e.message) + '</div>'; });
   });
 
   // ---- PANEL NUMBERING -----------------------------------------------------
@@ -246,7 +248,7 @@
       '<div class="gs-field"><label class="gs-label">תחילית (אופציונלי)</label><input class="gs-input" id="pn-prefix" placeholder="למשל: P-"></div>' +
       '<div class="gs-field"><label class="gs-label">מספר התחלה</label><input class="gs-input" id="pn-start" type="number" value="1" style="max-width:140px"></div>' +
       '<label class="gs-check"><input type="checkbox" id="pn-over"> דרוס מספרי פאנל קיימים</label>' +
-      '<div style="margin-top:12px"><button class="gs-btn" id="pn-apply">הקצה מספרים</button><span id="pn-status" style="margin-inline-start:10px;color:var(--gs-muted)"></span></div>' +
+      '<div style="margin-top:12px"><button class="gs-btn" id="pn-apply">הקצה מספרים</button><span id="pn-status" role="status" aria-live="polite" style="margin-inline-start:10px;color:var(--gs-muted)"></span></div>' +
       '</div>');
     var btn = mount.querySelector('#pn-apply');
     btn.addEventListener('click', function () {
@@ -288,13 +290,13 @@
           roleSelect('ca-role') +
           '<div class="gs-field"><label class="gs-label">שם</label><input class="gs-input" id="ca-name"></div>' +
           '<div class="gs-field"><label class="gs-label">בניין (ריק = הכל)</label><input class="gs-input" id="ca-building"></div>' +
-          '<button class="gs-btn" id="ca-apply">שייך</button><span id="ca-status" style="margin-inline-start:8px;color:var(--gs-muted)"></span>' +
+          '<button class="gs-btn" id="ca-apply">שייך</button><span id="ca-status" role="status" aria-live="polite" style="margin-inline-start:8px;color:var(--gs-muted)"></span>' +
           '<p style="color:var(--gs-muted);font-size:12px;margin-top:8px">חוקר ראשי — נקבע (מחליף). מנהל מעבדה / תחזוקה — מתווסף אם חסר.</p></div>' +
           '<div class="gs-card"><div class="gs-card__title">החלפת / הסרת שם בכל הציוד</div>' +
           roleSelect('cr-role') +
           '<div class="gs-field"><label class="gs-label">שם קיים</label><input class="gs-input" id="cr-from"></div>' +
           '<div class="gs-field"><label class="gs-label">שם חדש (ריק = הסרה)</label><input class="gs-input" id="cr-to"></div>' +
-          '<button class="gs-btn" id="cr-apply">החלף בכל הציוד</button><span id="cr-status" style="margin-inline-start:8px;color:var(--gs-muted)"></span></div>' +
+          '<button class="gs-btn" id="cr-apply">החלף בכל הציוד</button><span id="cr-status" role="status" aria-live="polite" style="margin-inline-start:8px;color:var(--gs-muted)"></span></div>' +
           '</div>' +
           '<div class="gs-card" style="margin-top:16px"><div class="gs-card__title">רשימת אנשי קשר</div>' +
           (list.length ? '<table class="gs-table"><thead><tr><th>שם</th><th>תפקיד</th><th>כמות ציוד</th></tr></thead><tbody>' + rows + '</tbody></table>' : '<div class="gs-empty">אין אנשי קשר</div>') +
@@ -314,7 +316,7 @@
           } }).then(function (r) { st.textContent = '✓ ' + (r.updated || 0) + ' עודכנו'; rp.disabled = false; load(); })
             .catch(function (e) { st.textContent = '✗ ' + (e.message || e); rp.disabled = false; });
         });
-      }).catch(function (e) { main.innerHTML = '<div class="gs-error">' + esc(e.message) + '</div>'; });
+      }).catch(function (e) { main.innerHTML = '<div class="gs-error" role="alert">' + esc(e.message) + '</div>'; });
     }
     load();
   });
@@ -343,7 +345,7 @@
         (items.length
           ? '<table class="gs-table"><thead><tr><th>מספר</th><th>שם</th><th>התפקיד שלי</th><th>גז</th><th>בניין</th><th>חדר</th><th>סטטוס</th><th>רבעונית הבאה</th></tr></thead><tbody>' + rows + '</tbody></table>'
           : '<div class="gs-empty">לא נמצא ציוד המשויך אליך לפי השם או האימייל שלך. אם צריך — עדכנו בכרטיס הציוד את שם החוקר הראשי / מנהל המעבדה / איש התחזוקה.</div>');
-    }).catch(function (e) { main.innerHTML = '<div class="gs-error">' + esc(e.message) + '</div>'; });
+    }).catch(function (e) { main.innerHTML = '<div class="gs-error" role="alert">' + esc(e.message) + '</div>'; });
   });
 
   // ---- EQUIPMENT -----------------------------------------------------------
@@ -392,7 +394,7 @@
           });
         });
       });
-    }).catch(function (e) { main.innerHTML = '<div class="gs-error">' + esc(e.message) + '</div>'; });
+    }).catch(function (e) { main.innerHTML = '<div class="gs-error" role="alert">' + esc(e.message) + '</div>'; });
   });
 
   function equipmentDetail(mount, id) {
@@ -419,7 +421,7 @@
       var ed = document.getElementById('gsm-eq-edit');
       if (ed) ed.addEventListener('click', function () { GSM_Forms.openEquipment(it, function () { GSM.navigate('/equipment/' + id); }); });
       wireQr(it);
-    }).catch(function (e) { main.innerHTML = '<div class="gs-error">' + esc(e.message) + '</div>'; });
+    }).catch(function (e) { main.innerHTML = '<div class="gs-error" role="alert">' + esc(e.message) + '</div>'; });
   }
 
   // QR card: shows the printable QR for this equipment + actions.
@@ -461,6 +463,13 @@
     var url = bridgeUrl(it.qr_token);
     // Render QR into the box.
     var qr = new QRCode(box, { text: url, width: 180, height: 180, correctLevel: QRCode.CorrectLevel.M });
+    // The library renders both a <canvas> and an <img>: name the image, hide
+    // the duplicate canvas from assistive tech (WCAG 1.1.1).
+    var qrAlt = 'קוד QR לציוד ' + (it.name || '') + ' — מוביל לעמוד הפרטים';
+    box.setAttribute('role', 'img');
+    box.setAttribute('aria-label', qrAlt);
+    Array.prototype.forEach.call(box.querySelectorAll('img'), function (im) { im.alt = qrAlt; });
+    Array.prototype.forEach.call(box.querySelectorAll('canvas'), function (cv) { cv.setAttribute('aria-hidden', 'true'); });
 
     var printBtn = document.getElementById('gsm-qr-print');
     if (printBtn) printBtn.addEventListener('click', function () { printQr(it, box); });
@@ -574,7 +583,8 @@
         return '<tr class="gsm-qr-row"' + ready + ' data-id="' + it.id + '" data-building="' + esc(it.building || '') + '">' +
           '<td style="width:36px;text-align:center"><input type="checkbox" class="gsm-qr-cb" ' +
             'data-token="' + esc(it.qr_token || '') + '" data-code="' + esc(it.asset_code || '') + '" ' +
-            'data-name="' + esc(it.name || '') + '" data-loc="' + esc(loc) + '"' + (it.qr_token ? '' : ' disabled') + '></td>' +
+            'data-name="' + esc(it.name || '') + '" data-loc="' + esc(loc) + '"' + (it.qr_token ? '' : ' disabled') +
+            ' aria-label="' + esc('בחירת מדבקה: ' + (it.asset_code ? it.asset_code + ' ' : '') + (it.name || '')) + '"></td>' +
           '<td><span class="gs-code">' + esc(it.asset_code || '—') + '</span></td>' +
           '<td>' + esc(it.name || '') + '</td>' +
           '<td>' + esc(loc || '—') + '</td>' +
@@ -588,11 +598,11 @@
         '<p style="color:var(--gs-muted);margin:0 0 14px">בחרו ציוד → "צור גיליון להדפסה". כל מדבקה כוללת את <b>מספר הציוד</b>, קוד QR, שם ומיקום. מספרי Monday הקיימים נשמרים; ציוד חדש מקבל מספר חדש (G-####).</p>' +
         '<div class="gs-qr-controls">' +
         '<input class="gs-input" id="gsm-qr-search" placeholder="חיפוש…" style="max-width:220px">' +
-        '<select class="gs-select" id="gsm-qr-building" style="max-width:200px">' + buildingOpts + '</select>' +
-        '<select class="gs-select" id="gsm-qr-size" style="max-width:200px">' + sizeOpts + '</select>' +
+        '<select class="gs-select" id="gsm-qr-building" style="max-width:200px" aria-label="סינון לפי בניין">' + buildingOpts + '</select>' +
+        '<select class="gs-select" id="gsm-qr-size" style="max-width:200px" aria-label="גודל מדבקה">' + sizeOpts + '</select>' +
         '<button class="gs-btn gs-btn--ghost gs-btn--sm" id="gsm-qr-all">בחר הכל</button>' +
         '<button class="gs-btn gs-btn--ghost gs-btn--sm" id="gsm-qr-none">נקה</button>' +
-        '<span class="gs-qr-count" id="gsm-qr-count">0 נבחרו</span>' +
+        '<span class="gs-qr-count" id="gsm-qr-count" role="status" aria-live="polite">0 נבחרו</span>' +
         '<button class="gs-btn gs-btn--gold" id="gsm-qr-make">🖨️ צור גיליון להדפסה</button>' +
         '</div>' +
         '<table class="gs-table gs-qr-table"><thead><tr>' +
@@ -602,7 +612,7 @@
         '</tbody></table></div>';
 
       wireStickerControls();
-    }).catch(function (e) { main.innerHTML = '<div class="gs-error">' + esc(e.message) + '</div>'; });
+    }).catch(function (e) { main.innerHTML = '<div class="gs-error" role="alert">' + esc(e.message) + '</div>'; });
   });
 
   function wireStickerControls() {
@@ -752,7 +762,7 @@
           api('/faults/' + b.getAttribute('data-fedit')).then(function (f) { GSM_Forms.openFault(f, function () { GSM.navigate('/faults'); }); });
         });
       });
-    }).catch(function (e) { main.innerHTML = '<div class="gs-error">' + esc(e.message) + '</div>'; });
+    }).catch(function (e) { main.innerHTML = '<div class="gs-error" role="alert">' + esc(e.message) + '</div>'; });
   });
 
   function priCls(p) { return (p === 'urgent' || p === 'high') ? 'danger' : (p === 'normal' ? 'warn' : 'ok'); }
@@ -779,7 +789,7 @@
         '<tbody>' + (rows || '<tr><td colspan="5"><div class="gs-empty">אין ביקורות</div></td></tr>') + '</tbody></table>';
       var add = document.getElementById('gsm-in-add');
       if (add) add.addEventListener('click', function () { GSM_Forms.openInspection(null, function () { GSM.navigate('/inspections'); }); });
-    }).catch(function (e) { main.innerHTML = '<div class="gs-error">' + esc(e.message) + '</div>'; });
+    }).catch(function (e) { main.innerHTML = '<div class="gs-error" role="alert">' + esc(e.message) + '</div>'; });
   });
 
   function typeLabel(t) { return { quarterly: 'רבעונית', monthly: 'חודשית', adhoc: 'אד-הוק' }[t] || t; }
@@ -831,14 +841,15 @@
         var cells = GSM_ROLES.map(function (r) {
           var list = perms[r[0]];
           var checked = it.locked || (list ? list.indexOf(it.id) > -1 : true);
-          return '<td style="text-align:center"><input type="checkbox" class="gsm-pm" data-role="' + r[0] + '" data-id="' + it.id + '"' + (checked ? ' checked' : '') + (it.locked ? ' disabled' : '') + '></td>';
+          return '<td style="text-align:center"><input type="checkbox" class="gsm-pm" data-role="' + r[0] + '" data-id="' + it.id + '"' + (checked ? ' checked' : '') + (it.locked ? ' disabled' : '') +
+            ' aria-label="' + esc(it.label + ' — ' + r[1]) + '"></td>';
         }).join('');
         return '<tr><td>' + esc(it.label) + '</td>' + cells + '</tr>';
       }).join('');
       var matrix = '<div class="gs-card" style="margin-top:16px"><div class="gs-card__title">🔐 הרשאות לפי תפקיד</div>' +
         '<p style="color:var(--gs-muted);font-size:13px">סמן אילו פריטי תפריט כל תפקיד רואה. מנהל רואה הכול. פריטים נעולים תמיד מוצגים.</p>' +
         '<table class="gs-table"><thead><tr>' + head + '</tr></thead><tbody>' + rows + '</tbody></table>' +
-        '<button class="gs-btn" id="pm-save">שמור הרשאות</button> <button class="gs-btn gs-btn--ghost" id="pm-reset">אפס לברירת מחדל</button> <span id="pm-status" style="margin-inline-start:8px;color:var(--gs-muted)"></span></div>';
+        '<button class="gs-btn" id="pm-save">שמור הרשאות</button> <button class="gs-btn gs-btn--ghost" id="pm-reset">אפס לברירת מחדל</button> <span id="pm-status" role="status" aria-live="polite" style="margin-inline-start:8px;color:var(--gs-muted)"></span></div>';
 
       var menuRows = GSM_NAV_ITEMS.map(function (it) {
         var visible = hidden.indexOf(it.id) === -1;
@@ -846,7 +857,7 @@
       }).join('');
       var menu = '<div class="gs-card" style="margin-top:16px"><div class="gs-card__title">🧭 הצגת תפריט</div>' +
         '<p style="color:var(--gs-muted);font-size:13px">בטל סימון כדי להסתיר פריט מהתפריט (לכל המשתמשים). פריטים נעולים לא ניתנים להסתרה.</p>' +
-        menuRows + '<div style="margin-top:8px"><button class="gs-btn" id="menu-save">שמור תפריט</button> <span id="menu-status" style="margin-inline-start:8px;color:var(--gs-muted)"></span></div></div>';
+        menuRows + '<div style="margin-top:8px"><button class="gs-btn" id="menu-save">שמור תפריט</button> <span id="menu-status" role="status" aria-live="polite" style="margin-inline-start:8px;color:var(--gs-muted)"></span></div></div>';
 
       var savedOrder = (window.GSM_CONFIG && window.GSM_CONFIG.navOrder) || [];
       var ordered = GSM_NAV_ITEMS.slice().sort(function (a, b) {
@@ -862,7 +873,7 @@
       var orderCard = '<div class="gs-card" style="margin-top:16px"><div class="gs-card__title">↕ סידור תפריט</div>' +
         '<p style="color:var(--gs-muted);font-size:13px">שנה את סדר הפריטים בתפריט (בתוך הקבוצות) בעזרת החיצים, ושמור.</p>' +
         '<div id="gsm-ord-list">' + orderRows + '</div>' +
-        '<div style="margin-top:8px"><button class="gs-btn" id="ord-save">שמור סדר</button> <span id="ord-status" style="margin-inline-start:8px;color:var(--gs-muted)"></span></div></div>';
+        '<div style="margin-top:8px"><button class="gs-btn" id="ord-save">שמור סדר</button> <span id="ord-status" role="status" aria-live="polite" style="margin-inline-start:8px;color:var(--gs-muted)"></span></div></div>';
 
       container.innerHTML = matrix + menu + orderCard;
 
@@ -920,7 +931,7 @@
         '<div class="gs-field"><label class="gs-label">כותרת המערכת (האדר)</label><input class="gs-input" id="br-title" value="' + esc(brb.title || '') + '" placeholder="מערכת גזים"></div>' +
         '<div class="gs-field"><label class="gs-label">תת-כותרת (מסך הבית)</label><input class="gs-input" id="br-sub" value="' + esc(brb.subtitle || '') + '" placeholder="יחידת הבטיחות · הטכניון"></div>' +
         '<div class="gs-field"><label class="gs-label">כתובת לוגו (URL, אופציונלי — להאדר)</label><input class="gs-input" id="br-logo" value="' + esc(brb.logo_url || '') + '" placeholder="https://..."></div>' +
-        '<button class="gs-btn" id="br-save">שמור מיתוג</button><span id="br-status" style="margin-inline-start:10px;color:var(--gs-muted)"></span>' +
+        '<button class="gs-btn" id="br-save">שמור מיתוג</button><span id="br-status" role="status" aria-live="polite" style="margin-inline-start:10px;color:var(--gs-muted)"></span>' +
         '<p style="color:var(--gs-muted);font-size:12px;margin-top:8px">ייכנס לתוקף מלא לאחר רענון הדף.</p></div>';
       main.innerHTML =
         '<div class="gs-toolbar"><h2 class="gs-h2">הגדרות אתר</h2></div>' +
@@ -930,7 +941,7 @@
         '<div class="gs-field"><label class="gs-label">ביקורת חודשית נחשבת באיחור אחרי (ימים)</label>' +
         '<input class="gs-input" id="gsm-set-m" type="number" value="' + esc(cfg.monthly_days || 30) + '" style="max-width:160px"></div>' +
         '<button class="gs-btn" id="gsm-set-save">שמור הגדרות</button>' +
-        '<span id="gsm-set-status" style="margin-inline-start:10px;color:var(--gs-muted)"></span>' +
+        '<span id="gsm-set-status" role="status" aria-live="polite" style="margin-inline-start:10px;color:var(--gs-muted)"></span>' +
         '</div>' +
         brandCard +
         '<div id="gsm-gov"></div>' +
@@ -974,7 +985,7 @@
           }).catch(function (e) { st.textContent = '✗ ' + (e.message || e); btn.disabled = false; });
         });
       }
-    }).catch(function (e) { main.innerHTML = '<div class="gs-error">' + esc(e.message) + '</div>'; });
+    }).catch(function (e) { main.innerHTML = '<div class="gs-error" role="alert">' + esc(e.message) + '</div>'; });
   });
 
   // ---- USERS (staff management) -------------------------------------------
@@ -1018,7 +1029,7 @@
             .catch(function (e) { alert('שגיאה: ' + (e.message || e)); });
         });
       });
-    }).catch(function (e) { main.innerHTML = '<div class="gs-error">' + esc(e.message) + '</div>'; });
+    }).catch(function (e) { main.innerHTML = '<div class="gs-error" role="alert">' + esc(e.message) + '</div>'; });
   });
 
   // ---- QR ISSUANCE MANAGER -------------------------------------------------
@@ -1042,7 +1053,7 @@
       api('/qr-issuance').then(function (d) {
         state.items = (d && d.items) || [];
         render();
-      }).catch(function (e) { main.innerHTML = '<div class="gs-error">' + esc(e.message) + '</div>'; });
+      }).catch(function (e) { main.innerHTML = '<div class="gs-error" role="alert">' + esc(e.message) + '</div>'; });
     }
 
     function card(it) {
@@ -1141,7 +1152,7 @@
         '<div class="gs-field"><label class="gs-label">תאריך הנפקה</label><input class="gs-input" id="qri-date" type="date"></div>' +
         '<div class="gs-field"><label class="gs-label">סטטוס</label><select class="gs-input" id="qri-st">' +
         QRI_STATUSES.map(function (s) { return '<option value="' + s[0] + '">' + esc(s[1]) + '</option>'; }).join('') + '</select></div>' +
-        '<button class="gs-btn" id="qri-save">שמור</button> <span id="qri-sv-status" style="margin-inline-start:8px;color:var(--gs-muted)"></span></div>';
+        '<button class="gs-btn" id="qri-save">שמור</button> <span id="qri-sv-status" role="status" aria-live="polite" style="margin-inline-start:8px;color:var(--gs-muted)"></span></div>';
       api('/equipment?per_page=1000').then(function (d) {
         var list = (d && d.items) || (Array.isArray(d) ? d : []);
         var sel = document.getElementById('qri-eq');
@@ -1199,7 +1210,7 @@
       if (state.tables.length) state.key = state.tables[0].key;
       shell();
       loadTable();
-    }).catch(function (e) { main.innerHTML = '<div class="gs-error">' + esc(e.message) + '</div>'; });
+    }).catch(function (e) { main.innerHTML = '<div class="gs-error" role="alert">' + esc(e.message) + '</div>'; });
 
     function shell() {
       var opts = state.tables.map(function (t) {
@@ -1209,7 +1220,7 @@
         '<div class="gs-toolbar"><h2 class="gs-h2">מסד נתונים פנימי</h2></div>' +
         '<p style="color:var(--gs-muted);font-size:13px;margin:0 0 12px">צפייה, חיפוש וייצוא של טבלאות המערכת. עריכה מתבצעת דרך הטפסים המאומתים (ולידציה + יומן בקרה); טבלאות יומן הן לקריאה בלבד.</p>' +
         '<div class="gs-toolbar" style="gap:8px">' +
-        '<select class="gs-input" id="db-table" style="max-width:260px">' + opts + '</select>' +
+        '<select class="gs-input" id="db-table" style="max-width:260px" aria-label="בחירת טבלה">' + opts + '</select>' +
         '<input class="gs-input" id="db-search" placeholder="חיפוש…" style="max-width:220px" value="' + esc(state.search) + '">' +
         '<button class="gs-btn gs-btn--ghost gs-btn--sm" id="db-export">⬇️ CSV</button>' +
         '</div><div id="db-grid">' + loading() + '</div>';
@@ -1256,7 +1267,7 @@
         document.querySelectorAll('[data-edit]').forEach(function (b) {
           b.addEventListener('click', function () { editRow(d.editableVia, b.getAttribute('data-edit')); });
         });
-      }).catch(function (e) { if (grid) grid.innerHTML = '<div class="gs-error">' + esc(e.message) + '</div>'; });
+      }).catch(function (e) { if (grid) grid.innerHTML = '<div class="gs-error" role="alert">' + esc(e.message) + '</div>'; });
     }
 
     function editRow(via, id) {
@@ -1285,8 +1296,9 @@
         '<div class="gs-toolbar"><h2 class="gs-h2">ייבוא ציוד מקובץ</h2></div>' +
         '<div class="gs-card"><div class="gs-card__title">1. בחר קובץ</div>' +
         '<p style="color:var(--gs-muted);font-size:13px">העלה קובץ <b>Excel (.xlsx)</b> או <b>CSV</b> שורה ראשונה = כותרות עמודות. אח״כ תמפה כל עמודה לשדה במערכת.</p>' +
+        '<label class="gs-label" for="imp-file">קובץ לייבוא (xlsx / csv)</label>' +
         '<input type="file" id="imp-file" accept=".xlsx,.csv,.txt" class="gs-input" style="padding:8px">' +
-        '<div style="margin-top:12px"><button class="gs-btn" id="imp-analyze">נתח קובץ ←</button> <span id="imp-status" style="margin-inline-start:8px;color:var(--gs-muted)"></span></div>' +
+        '<div style="margin-top:12px"><button class="gs-btn" id="imp-analyze">נתח קובץ ←</button> <span id="imp-status" role="status" aria-live="polite" style="margin-inline-start:8px;color:var(--gs-muted)"></span></div>' +
         '<p style="color:var(--gs-muted);font-size:12px;margin-top:10px">הערה: לעברית מומלץ XLSX (קידוד אמין). ייבוא דרך טפסים מאומתים — כל שורה עוברת ולידציה ונרשמת ביומן הבקרה. גודל מרבי 5MB.</p>' +
         '</div>';
       document.getElementById('imp-analyze').addEventListener('click', doAnalyze);
@@ -1366,7 +1378,7 @@
         '<div class="gs-card" style="margin-top:14px"><div class="gs-card__title">תצוגה מקדימה (8 שורות ראשונות)</div>' +
         '<div style="overflow:auto"><table class="gs-table gs-table--db"><thead><tr>' + prevHead + '</tr></thead><tbody>' + (prevBody || '') + '</tbody></table></div></div>' +
 
-        '<div style="margin-top:14px"><button class="gs-btn" id="imp-run">ייבא עכשיו</button> <span id="imp-run-status" style="margin-inline-start:8px;color:var(--gs-muted)"></span></div>' +
+        '<div style="margin-top:14px"><button class="gs-btn" id="imp-run">ייבא עכשיו</button> <span id="imp-run-status" role="status" aria-live="polite" style="margin-inline-start:8px;color:var(--gs-muted)"></span></div>' +
         '<div id="imp-result"></div>';
 
       document.getElementById('imp-back').addEventListener('click', screen1);
@@ -1480,7 +1492,7 @@
         mkBar('bi-bld', d.buildingBreakdown || []);
         mkBar('bi-pi', d.topPIs || []);
       }
-    }).catch(function (e) { main.innerHTML = '<div class="gs-error">' + esc(e.message) + '</div>'; });
+    }).catch(function (e) { main.innerHTML = '<div class="gs-error" role="alert">' + esc(e.message) + '</div>'; });
   });
 
   // ---- INTEGRATIONS (outgoing webhook + BI export links) ------------------
@@ -1529,7 +1541,7 @@
         '<input class="gs-input" id="int-secret" type="password" placeholder="' + (cfg.hasSecret ? '••••••• (השאר ריק כדי לא לשנות)' : 'אופציונלי') + '" style="direction:ltr" autocomplete="new-password"></div>' +
         (cfg.hasSecret ? '<label style="display:inline-flex;gap:6px;align-items:center;margin:0 0 10px"><input type="checkbox" id="int-clear"><span>מחק את הסוד הקיים</span></label>' : '') +
         '<div class="gs-field"><label class="gs-label">אילו אירועים לשלוח</label>' + evRows + '</div>' +
-        '<button class="gs-btn" id="int-save">שמור</button> <span id="int-status" style="margin-inline-start:8px;color:var(--gs-muted)"></span>' +
+        '<button class="gs-btn" id="int-save">שמור</button> <span id="int-status" role="status" aria-live="polite" style="margin-inline-start:8px;color:var(--gs-muted)"></span>' +
         '</div>' +
 
         '<div class="gs-card" style="margin-top:16px"><div class="gs-card__title">📤 קישורי ייצוא (Power BI / Excel / יומן)</div>' +
@@ -1537,7 +1549,7 @@
         '<b>כל מי שמחזיק בקישור יכול לקרוא את כל הנתונים, כולל פרטי אנשי קשר</b> — שתף רק עם מערכות ואנשים מורשים. החלפת הטוקן מבטלת מיד את כל הקישורים הישנים. (ללוח המצב הציבורי יש טוקן נפרד, במסך "תקשורת והתראות".)</p>' +
         '<div class="gs-field"><label class="gs-label">טוקן BI</label>' +
         '<input class="gs-input" id="tok-val" readonly value="' + esc(token) + '" data-gsm-action="select" style="direction:ltr;font-family:monospace"></div>' +
-        '<button class="gs-btn gs-btn--danger gs-btn--sm" id="tok-rotate">החלף טוקן</button> <span id="tok-status" style="margin-inline-start:8px;color:var(--gs-muted)"></span>' +
+        '<button class="gs-btn gs-btn--danger gs-btn--sm" id="tok-rotate">החלף טוקן</button> <span id="tok-status" role="status" aria-live="polite" style="margin-inline-start:8px;color:var(--gs-muted)"></span>' +
         '<div id="int-links" style="margin-top:14px">' + exportLinks(token) + '</div>' +
         '</div>';
 
@@ -1568,7 +1580,7 @@
           st.textContent = '✓ הוחלף'; btn.disabled = false;
         }).catch(function (e) { st.textContent = '✗ ' + (e.message || e); btn.disabled = false; });
       });
-    }).catch(function (e) { main.innerHTML = '<div class="gs-error">' + esc(e.message) + '</div>'; });
+    }).catch(function (e) { main.innerHTML = '<div class="gs-error" role="alert">' + esc(e.message) + '</div>'; });
   });
 
   // ---- COMMUNICATION & ALERTS (reminders, urgent alerts, broadcast, log) --
@@ -1641,7 +1653,7 @@
         '<input class="gs-input" id="cm-wa-alert" placeholder="05XXXXXXXX" value="' + esc(c.whatsapp_alert_to || '') + '" style="direction:ltr"></div>' +
         '</div>' +
 
-        '<div style="margin-top:14px"><button class="gs-btn" id="cm-save">שמור הגדרות</button> <span id="cm-status" style="margin-inline-start:8px;color:var(--gs-muted)"></span></div>' +
+        '<div style="margin-top:14px"><button class="gs-btn" id="cm-save">שמור הגדרות</button> <span id="cm-status" role="status" aria-live="polite" style="margin-inline-start:8px;color:var(--gs-muted)"></span></div>' +
 
         '<div class="gs-card" style="margin-top:20px"><div class="gs-card__title">📣 שליחת הודעה (Broadcast)</div>' +
         '<div class="gs-field"><label class="gs-label">נמענים</label>' +
@@ -1654,7 +1666,7 @@
         '</select></div>' +
         '<div class="gs-field"><label class="gs-label">נושא</label><input class="gs-input" id="cm-sub"></div>' +
         '<div class="gs-field"><label class="gs-label">תוכן</label><textarea class="gs-textarea" id="cm-msg" rows="4"></textarea></div>' +
-        '<button class="gs-btn" id="cm-send">שלח הודעה</button> <span id="cm-send-status" style="margin-inline-start:8px;color:var(--gs-muted)"></span>' +
+        '<button class="gs-btn" id="cm-send">שלח הודעה</button> <span id="cm-send-status" role="status" aria-live="polite" style="margin-inline-start:8px;color:var(--gs-muted)"></span>' +
         '</div>' +
 
         (shareUrl ? ('<div class="gs-card" style="margin-top:16px"><div class="gs-card__title">🌐 לוח מצב ציבורי</div>' +
@@ -1728,7 +1740,7 @@
           btn.disabled = false;
         }).catch(function (e) { if (st) st.textContent = '✗ ' + (e.message || e); btn.disabled = false; });
       });
-    }).catch(function (e) { main.innerHTML = '<div class="gs-error">' + esc(e.message) + '</div>'; });
+    }).catch(function (e) { main.innerHTML = '<div class="gs-error" role="alert">' + esc(e.message) + '</div>'; });
   });
 
   // ---- INSPECTION CONFIG (role-based checklists + rules) ------------------
@@ -1757,7 +1769,7 @@
       }
 
       main.innerHTML =
-        '<div class="gs-toolbar"><h2 class="gs-h2">הגדרות ביקורת</h2><div class="gs-toolbar__actions"><button class="gs-btn gs-btn--export" type="button" data-gsm-action="export" data-type="checklists">⬇️ ייצוא צ׳ק-ליסטים</button><button class="gs-btn" id="cfg-save">שמור</button><span id="cfg-status" style="margin-inline-start:10px;color:var(--gs-muted)"></span></div></div>' +
+        '<div class="gs-toolbar"><h2 class="gs-h2">הגדרות ביקורת</h2><div class="gs-toolbar__actions"><button class="gs-btn gs-btn--export" type="button" data-gsm-action="export" data-type="checklists">⬇️ ייצוא צ׳ק-ליסטים</button><button class="gs-btn" id="cfg-save">שמור</button><span id="cfg-status" role="status" aria-live="polite" style="margin-inline-start:10px;color:var(--gs-muted)"></span></div></div>' +
         editor('quarterly', 'צ׳קליסט רבעוני — אחמ"ת (ארוך)', cl.quarterly) +
         editor('monthly', 'צ׳קליסט חודשי — מנהל מעבדה / חוקר ראשי (קצר)', cl.monthly) +
         '<div class="gs-card"><div class="gs-card__title">כללי תזכורת</div>' +
@@ -1803,7 +1815,7 @@
         }).then(function () { status.textContent = '✓ נשמר'; btn.disabled = false; })
           .catch(function (e) { status.textContent = '✗ ' + (e.message || e); btn.disabled = false; });
       });
-    }).catch(function (e) { main.innerHTML = '<div class="gs-error">' + esc(e.message) + '</div>'; });
+    }).catch(function (e) { main.innerHTML = '<div class="gs-error" role="alert">' + esc(e.message) + '</div>'; });
   });
 
   // ---- REPORTS (Excel export center) --------------------------------------
@@ -1853,7 +1865,7 @@
         '<div class="gs-toolbar"><h2 class="gs-h2">טיוב מידע</h2><div class="gs-toolbar__actions" style="color:var(--gs-muted)">סה"כ ציוד: ' + esc(d.total) + '</div></div>' +
         '<div class="gs-grid gs-grid--stats">' + tiles + '</div>' +
         '<div style="margin-top:20px">' + (lists || '<div class="gs-empty">אין חוסרים — המידע תקין 🎉</div>') + '</div>';
-    }).catch(function (e) { main.innerHTML = '<div class="gs-error">' + esc(e.message) + '</div>'; });
+    }).catch(function (e) { main.innerHTML = '<div class="gs-error" role="alert">' + esc(e.message) + '</div>'; });
   });
 
   // ---- MY PROFILE ---------------------------------------------------------
@@ -1876,13 +1888,13 @@
         '<div class="gs-field"><label class="gs-label">שם מלא</label><input class="gs-input" id="pf-name" value="' + esc(p.name || '') + '"></div>' +
         '<div class="gs-field"><label class="gs-label">אימייל (מזהה כניסה)</label><input class="gs-input" value="' + esc(p.email || '') + '" readonly style="background:#f1f4f8"></div>' +
         '<div class="gs-field"><label class="gs-label">טלפון נייד (לוואטסאפ/תזכורות)</label><input class="gs-input" id="pf-phone" value="' + esc(p.phone || '') + '"></div>' +
-        '<button class="gs-btn" id="pf-save">שמור פרופיל</button><span id="pf-status" style="margin-inline-start:10px;color:var(--gs-muted)"></span>' +
+        '<button class="gs-btn" id="pf-save">שמור פרופיל</button><span id="pf-status" role="status" aria-live="polite" style="margin-inline-start:10px;color:var(--gs-muted)"></span>' +
         '</div>' +
         '<div class="gs-card" style="max-width:480px;margin-top:16px;border-inline-start:4px solid var(--gs-danger)">' +
         '<div class="gs-card__title">מחיקת פרטים — חוק הגנת הפרטיות (תיקון 13)</div>' +
         '<p style="color:var(--gs-muted);font-size:13px">בקשה למחיקת הפרטים האישיים שלך. הטלפון והאווטאר יימחקו מיד, והבקשה תועבר למנהל.</p>' +
         '<textarea class="gs-textarea" id="pf-del-reason" rows="2" placeholder="סיבת הבקשה (אופציונלי)"></textarea>' +
-        '<button class="gs-btn gs-btn--danger" id="pf-del" style="margin-top:8px">בקש מחיקת פרטים</button><span id="pf-del-status" style="margin-inline-start:10px;color:var(--gs-muted)"></span>' +
+        '<button class="gs-btn gs-btn--danger" id="pf-del" style="margin-top:8px">בקש מחיקת פרטים</button><span id="pf-del-status" role="status" aria-live="polite" style="margin-inline-start:10px;color:var(--gs-muted)"></span>' +
         '</div>';
 
       main.querySelectorAll('.gsm-av').forEach(function (b) {
@@ -1907,7 +1919,7 @@
           .then(function () { st.textContent = '✓ הבקשה נשלחה'; })
           .catch(function (e) { st.textContent = '✗ ' + e.message; btn.disabled = false; });
       });
-    }).catch(function (e) { main.innerHTML = '<div class="gs-error">' + esc(e.message) + '</div>'; });
+    }).catch(function (e) { main.innerHTML = '<div class="gs-error" role="alert">' + esc(e.message) + '</div>'; });
   });
 
   // ---- SECURITY (guidance) ------------------------------------------------
@@ -1941,7 +1953,7 @@
         return '<label style="display:flex;gap:8px;align-items:center;margin:6px 0"><input type="checkbox" id="' + id + '"' + (c[id.replace('bc-', '')] !== false ? ' checked' : '') + '><span>' + esc(label) + '</span></label>';
       }
       main.innerHTML =
-        '<div class="gs-toolbar"><h2 class="gs-h2">עיצוב עמוד סריקה</h2><div class="gs-toolbar__actions"><button class="gs-btn" id="bc-save">שמור</button><span id="bc-status" style="margin-inline-start:10px;color:var(--gs-muted)"></span></div></div>' +
+        '<div class="gs-toolbar"><h2 class="gs-h2">עיצוב עמוד סריקה</h2><div class="gs-toolbar__actions"><button class="gs-btn" id="bc-save">שמור</button><span id="bc-status" role="status" aria-live="polite" style="margin-inline-start:10px;color:var(--gs-muted)"></span></div></div>' +
         '<div class="gs-card" style="max-width:520px"><div class="gs-card__title">שדות וכפתורים מוצגים בדף הגשר</div>' +
         chk('bc-showStatus', 'הצג סטטוס') +
         chk('bc-showPI', 'הצג חוקר ראשי') +
@@ -1967,7 +1979,7 @@
         } }).then(function () { st.textContent = '✓ נשמר'; btn.disabled = false; })
           .catch(function (e) { st.textContent = '✗ ' + e.message; btn.disabled = false; });
       });
-    }).catch(function (e) { main.innerHTML = '<div class="gs-error">' + esc(e.message) + '</div>'; });
+    }).catch(function (e) { main.innerHTML = '<div class="gs-error" role="alert">' + esc(e.message) + '</div>'; });
   });
 
   // ---- AUDIT LOG ----------------------------------------------------------
@@ -2046,7 +2058,7 @@
             });
           });
         }
-      }).catch(function (e) { main.innerHTML = '<div class="gs-error">' + esc(e.message) + '</div>'; });
+      }).catch(function (e) { main.innerHTML = '<div class="gs-error" role="alert">' + esc(e.message) + '</div>'; });
     }
     GSM._rpReload = load;
     load();
@@ -2073,7 +2085,7 @@
         '<div class="gs-toolbar"><h2 class="gs-h2">יומן בקרה</h2><div class="gs-toolbar__actions" style="color:var(--gs-muted)">' + rows.length + ' רשומות אחרונות</div></div>' +
         '<table class="gs-table"><thead><tr><th>תאריך</th><th>מבצע</th><th>פעולה</th><th>ישות</th><th>פריט</th><th>פירוט</th><th></th></tr></thead>' +
         '<tbody>' + (body || '<tr><td colspan="7"><div class="gs-empty">אין רשומות עדיין</div></td></tr>') + '</tbody></table>';
-    }).catch(function (e) { main.innerHTML = '<div class="gs-error">' + esc(e.message) + '</div>'; });
+    }).catch(function (e) { main.innerHTML = '<div class="gs-error" role="alert">' + esc(e.message) + '</div>'; });
   });
 
   // ---- HELP ---------------------------------------------------------------

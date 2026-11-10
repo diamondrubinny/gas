@@ -151,7 +151,7 @@
 }
 .gs-pill--ok { background: #e8f6ee; color: var(--gs-ok-dark); }
 .gs-pill--danger { background: var(--gs-danger-bg); color: var(--gs-danger); }
-.gs-pill--warn { background: var(--gs-warn-bg); color: #a9741a; }
+.gs-pill--warn { background: var(--gs-warn-bg); color: var(--gs-warn-text, #966717); }
 
 /* ---------- Tabs ---------- */
 .gs-tabs {

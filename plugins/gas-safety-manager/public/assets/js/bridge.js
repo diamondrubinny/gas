@@ -125,14 +125,17 @@
       '<button class="gs-btn gs-btn--ghost" id="br-cancel">ביטול</button>' +
       '</div></div>';
     document.body.appendChild(backdrop);
+    var release = window.GSM_A11Y
+      ? GSM_A11Y.dialog(backdrop.querySelector('.gs-modal'), { onEscape: function () { close(); }, initialFocus: '#br-desc' })
+      : function () {};
 
-    function close() { backdrop.remove(); }
+    function close() { backdrop.remove(); release(); }
     backdrop.addEventListener('click', function (e) { if (e.target === backdrop) close(); });
     document.getElementById('br-cancel').addEventListener('click', close);
     document.getElementById('br-send').addEventListener('click', function () {
       var desc = document.getElementById('br-desc').value.trim();
       if (!desc) {
-        document.getElementById('br-err').innerHTML = '<div class="gs-error" style="margin-top:10px">תיאור התקלה חובה</div>';
+        document.getElementById('br-err').innerHTML = '<div class="gs-error" role="alert" style="margin-top:10px">תיאור התקלה חובה</div>';
         return;
       }
       this.disabled = true;
@@ -147,20 +150,22 @@
           ts: openedAt
         }
       }).then(function () {
-        backdrop.querySelector('.gs-modal').innerHTML =
-          '<div style="text-align:center;padding:20px">' +
-          '<div style="font-size:40px">✓</div>' +
-          '<h3 style="color:var(--gs-ok-dark)">הדיווח נשלח בהצלחה</h3>' +
+        var box = backdrop.querySelector('.gs-modal');
+        box.setAttribute('aria-labelledby', 'br-done-title');
+        box.innerHTML =
+          '<div style="text-align:center;padding:20px" role="status">' +
+          '<div style="font-size:40px" aria-hidden="true">✓</div>' +
+          '<h3 id="br-done-title" style="color:var(--gs-ok-dark)">הדיווח נשלח בהצלחה</h3>' +
           '<p style="color:var(--gs-muted)">תודה. הצוות יטפל בתקלה.</p>' +
           '<button class="gs-btn" type="button" id="br-done">סגור</button>' +
           '</div>';
         var done = document.getElementById('br-done');
         if (done) {
-          done.addEventListener('click', function () { backdrop.remove(); });
+          done.addEventListener('click', close);
           done.focus();
         }
       }).catch(function (e) {
-        document.getElementById('br-err').innerHTML = '<div class="gs-error" style="margin-top:10px">' + esc(e.message) + '</div>';
+        document.getElementById('br-err').innerHTML = '<div class="gs-error" role="alert" style="margin-top:10px">' + esc(e.message) + '</div>';
         document.getElementById('br-send').disabled = false;
       });
     });
@@ -168,7 +173,7 @@
 
   function showError(msg) {
     MOUNT.innerHTML = '<div class="gs-card" style="max-width:560px;margin:0 auto">' +
-      '<div class="gs-error">' + esc(msg) + '</div></div>';
+      '<div class="gs-error" role="alert">' + esc(msg) + '</div></div>';
   }
 
   // ---- boot ----------------------------------------------------------------
