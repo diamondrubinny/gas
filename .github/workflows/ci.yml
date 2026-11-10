@@ -129,6 +129,11 @@ jobs:
           BASE: http://127.0.0.1:8899
           USER_NAME: admin
         run: PASS="$WP_TEST_PASS" node tests/e2e/a11y-audit.js --report "$RUNNER_TEMP/a11y-report.json"
+      - name: Public QR API — data minimisation + rate limits (runs last, trips the limit)
+        env:
+          BASE: http://127.0.0.1:8899
+          USER_NAME: admin
+        run: PASS="$WP_TEST_PASS" node tests/e2e/bridge-privacy.js
       - name: Upload accessibility report
         if: always()
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0

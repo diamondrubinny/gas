@@ -88,7 +88,7 @@
       (on('showPI') ? field('חוקר ראשי', eq.pi_name) : '') +
       (on('showLabManager') ? field('מנהלי מעבדה', eq.lab_managers) : '') +
       (on('showMaintenance') ? field('אנשי תחזוקה', eq.maint_staff) : '') +
-      field('טלפון', eq.phone) +
+      (on('showPhone') ? field('טלפון', eq.phone) : '') +
       field('ביקורת רבעונית אחרונה', eq.last_quarterly) +
       field('ביקורת רבעונית הבאה', eq.next_quarterly) +
       (on('showFaultButton')

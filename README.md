@@ -4,7 +4,7 @@
 
 | רכיב | נתיב | גרסה | דרישות |
 |---|---|---|---|
-| תוסף **Gas Safety Manager** | [`plugins/gas-safety-manager/`](plugins/gas-safety-manager/) | 2.13.7 (DB v8) | WordPress 6.4+, PHP 8.1+ |
+| תוסף **Gas Safety Manager** | [`plugins/gas-safety-manager/`](plugins/gas-safety-manager/) | 2.13.8 (DB v8) | WordPress 6.4+, PHP 8.1+ |
 | ערכת עיצוב **Gas Safety** | [`themes/gas-safety-theme/`](themes/gas-safety-theme/) | 1.2.3 | WordPress 6.4+, PHP 8.1+ |
 
 היסטוריית שינויים: [`plugins/gas-safety-manager/readme.txt`](plugins/gas-safety-manager/readme.txt) (Changelog) ו-[`VERSION.txt`](plugins/gas-safety-manager/VERSION.txt). מצב הפרויקט וממצאים פתוחים: [`STATUS.md`](STATUS.md).
@@ -35,6 +35,8 @@
 | סקירת XSS והקשחות | [`docs/xss-review.md`](docs/xss-review.md) |
 | מדיניות אבטחת תוכן (CSP) | [`docs/csp.md`](docs/csp.md) |
 | נגישות (WCAG 2.1 AA / ת״י 5568) | [`docs/accessibility.md`](docs/accessibility.md) |
+| מיפוי מידע אישי, ספקים ועוגיות | [`docs/privacy-data-map.md`](docs/privacy-data-map.md) |
+| **רשימת בדיקות לפני פרודקשן** | [`docs/production-checklist.md`](docs/production-checklist.md) |
 | ממצאים, תיקונים ופתוחים | [`STATUS.md`](STATUS.md) |
 
 ### מדיניות אבטחת תוכן (CSP)

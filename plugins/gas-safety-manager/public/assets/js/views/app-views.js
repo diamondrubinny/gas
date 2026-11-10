@@ -1980,6 +1980,7 @@
         chk('bc-showPI', 'הצג חוקר ראשי') +
         chk('bc-showLabManager', 'הצג מנהלי מעבדה') +
         chk('bc-showMaintenance', 'הצג אנשי תחזוקה') +
+        chk('bc-showPhone', 'הצג טלפון') +
         chk('bc-showFaultButton', 'הצג כפתור "דווח תקלה"') +
         chk('bc-compactMode', 'מצב מצומצם (פחות שדות)') +
         '<div class="gs-field" style="margin-top:12px"><label class="gs-label">צבע ראשי</label><input class="gs-input" id="bc-primaryColor" type="color" value="' + esc(c.primaryColor || '#002147') + '" style="max-width:80px;height:40px;padding:2px"></div>' +
@@ -1993,6 +1994,7 @@
           showPI: document.getElementById('bc-showPI').checked,
           showLabManager: document.getElementById('bc-showLabManager').checked,
           showMaintenance: document.getElementById('bc-showMaintenance').checked,
+          showPhone: document.getElementById('bc-showPhone').checked,
           showFaultButton: document.getElementById('bc-showFaultButton').checked,
           compactMode: document.getElementById('bc-compactMode').checked,
           primaryColor: document.getElementById('bc-primaryColor').value,

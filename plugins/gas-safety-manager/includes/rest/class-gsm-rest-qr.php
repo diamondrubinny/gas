@@ -208,12 +208,24 @@ class GSM_REST_QR {
 	public function bridge( $req ) {
 		$code = (string) $req['code'];
 
+		// Public, unauthenticated: cap lookups per IP, and much harder cap on
+		// lookups that MISS — legacy numeric Monday IDs are not secret, so
+		// misses are what an enumeration attempt looks like.
+		if ( GSM_Rate_Limit::too_many( 'qr-lookup', 60, 300 ) ) {
+			return GSM_Rate_Limit::error();
+		}
+		$miss_key = 'gsm_rl_' . md5( 'qr-miss|' . GSM_Rate_Limit::client_ip() );
+		if ( (int) get_transient( $miss_key ) >= 20 ) {
+			return GSM_Rate_Limit::error();
+		}
+
 		// Try token first (new), then Monday ID (legacy printed labels).
 		$row = GSM_Equipment_Repo::get_by_token( $code );
 		if ( ! $row && ctype_digit( $code ) ) {
 			$row = GSM_Equipment_Repo::get_by_monday_id( $code );
 		}
 		if ( ! $row ) {
+			set_transient( $miss_key, (int) get_transient( $miss_key ) + 1, 600 );
 			return new WP_Error(
 				'gsm_not_found',
 				__( 'הציוד לא נמצא. ייתכן שקוד ה-QR אינו מעודכן.', 'gas-safety-manager' ),
@@ -223,6 +235,13 @@ class GSM_REST_QR {
 
 		// Log the scan (privacy: only a hashed IP).
 		self::record_scan( (int) $row['id'] );
+
+		$cfg  = get_option( 'gsm_bridge_config', array() );
+		$cfg  = is_array( $cfg ) ? $cfg : array();
+		$cfg  = class_exists( 'GSM_REST_Tools' ) ? array_merge( GSM_REST_Tools::bridge_defaults(), $cfg ) : $cfg;
+		$show = function ( $key ) use ( $cfg ) {
+			return ! isset( $cfg[ $key ] ) || false !== $cfg[ $key ];
+		};
 
 		// Open faults + open defects for context on the bridge page.
 		$open_faults  = GSM_Faults_Repo::count( array( 'equipment_id' => (int) $row['id'], 'status' => 'open' ) );
@@ -243,10 +262,13 @@ class GSM_REST_QR {
 				'panel_number'   => $row['panel_number'],
 				'work_pressure'  => $row['work_pressure'],
 				'status'         => $row['status'],
-				'pi_name'        => $row['pi_name'],
-				'lab_managers'   => $row['lab_managers'],
-				'maint_staff'    => $row['maint_staff'],
-				'phone'          => $row['phone'],
+				// Contact data only when the manager chose to show it on the
+				// public page ("עיצוב עמוד סריקה"): hiding it in the UI alone
+				// would still expose it to anyone calling this API.
+				'pi_name'        => $show( 'showPI' ) ? $row['pi_name'] : '',
+				'lab_managers'   => $show( 'showLabManager' ) ? $row['lab_managers'] : '',
+				'maint_staff'    => $show( 'showMaintenance' ) ? $row['maint_staff'] : '',
+				'phone'          => $show( 'showPhone' ) ? $row['phone'] : '',
 				'next_quarterly' => $row['next_quarterly'],
 				'last_quarterly' => $row['last_quarterly'],
 				'open_faults'    => (int) $open_faults,

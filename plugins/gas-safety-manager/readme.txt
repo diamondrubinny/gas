@@ -3,7 +3,7 @@ Contributors: diamondrubinny
 Tags: safety, equipment, inspections, hebrew, rtl
 Requires at least: 6.4
 Requires PHP: 8.1
-Stable tag: 2.13.7
+Stable tag: 2.13.8
 License: Proprietary — Technion Safety Unit
 
 Gas systems maintenance management for the Technion Safety Unit. Manages equipment, inspections, faults, and QR codes with native WordPress storage.
@@ -31,6 +31,12 @@ Pairs with the companion "Gas Safety" theme for the portal look (navy/gold, RTL,
 4. To import from Monday: open "Gas Migration", generate a key, run the console script in the portal, then revoke the key.
 
 == Changelog ==
+
+= 2.13.8 =
+* Privacy fix: the public QR API (GET /gas/v1/qr/{code}, no login) returned the PI, lab managers, maintenance staff and phone even when the manager had hidden them on the scan page ("עיצוב עמוד סריקה") — hiding was UI-only. The API now returns contact fields only when they are shown. New toggle: "הצג טלפון" (default on, so nothing changes until you switch it off).
+* Rate limits on the public QR API: 60 lookups / 5 min per IP, and 20 failed lookups / 10 min per IP — legacy printed labels use numeric Monday IDs, which are not secret, so this blocks enumerating them to harvest equipment and contact data.
+* Docs: personal-data map (docs/privacy-data-map.md) and pre-production checklist (docs/production-checklist.md), built from the code.
+* No DB change — stays v8.
 
 = 2.13.7 =
 * Security / privacy: access tokens are kept out of URLs where clients allow it, so they are not written to web-server or proxy access logs and never leak through a Referer.

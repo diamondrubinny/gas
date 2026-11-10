@@ -218,6 +218,7 @@ class GSM_REST_Tools {
 			'showPI'           => true,
 			'showLabManager'   => true,
 			'showMaintenance'  => true,
+			'showPhone'        => true,
 			'showFaultButton'  => true,
 			'compactMode'      => false,
 			'primaryColor'     => '#002147',
@@ -250,7 +251,7 @@ class GSM_REST_Tools {
 			$body = array();
 		}
 		$d    = self::bridge_defaults();
-		$bool = array( 'showStatus', 'showPI', 'showLabManager', 'showMaintenance', 'showFaultButton', 'compactMode' );
+		$bool = array( 'showStatus', 'showPI', 'showLabManager', 'showMaintenance', 'showPhone', 'showFaultButton', 'compactMode' );
 		$clean = array();
 		foreach ( $bool as $k ) {
 			$clean[ $k ] = isset( $body[ $k ] ) ? (bool) $body[ $k ] : $d[ $k ];
