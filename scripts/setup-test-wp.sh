@@ -52,6 +52,12 @@ if [ ! -f "$SITE/wp-config.php" ]; then
   ln -sfn "$REPO/themes/gas-safety-theme" "$SITE/wp-content/themes/gas-safety-theme"
 
   $WP config create --dbname=wp --dbuser=unused --dbpass=unused --skip-check
+  # Keep the site exactly at WP_VERSION and free of background work: an
+  # outdated core (e.g. 6.4.5) otherwise auto-updates itself from WP-Cron in
+  # the middle of a test run, blocking the server for a minute.
+  $WP config set AUTOMATIC_UPDATER_DISABLED true --raw
+  $WP config set WP_AUTO_UPDATE_CORE false --raw
+  $WP config set DISABLE_WP_CRON true --raw
   $WP core install --url="http://127.0.0.1:$PORT" --title="Gas Safety Test" \
     --admin_user=admin --admin_password="$WP_TEST_PASS" \
     --admin_email=admin@example.test --skip-email
@@ -79,7 +85,8 @@ PHP
 if curl -fs -o /dev/null "http://127.0.0.1:$PORT/wp-login.php"; then
   echo "Server already running on port $PORT"
 else
-  nohup php -S "127.0.0.1:$PORT" -t "$SITE" "$TARGET/router.php" > "$TARGET/server.log" 2>&1 &
+  # Several workers, so one slow request cannot block the others.
+  PHP_CLI_SERVER_WORKERS=4 nohup php -S "127.0.0.1:$PORT" -t "$SITE" "$TARGET/router.php" > "$TARGET/server.log" 2>&1 &
   for _ in $(seq 1 30); do
     curl -fs -o /dev/null "http://127.0.0.1:$PORT/wp-login.php" && break
     sleep 0.5
@@ -87,4 +94,8 @@ else
 fi
 
 curl -fs -o /dev/null "http://127.0.0.1:$PORT/gas-app/" || { echo "App page not reachable"; tail -20 "$TARGET/server.log"; exit 1; }
-echo "WordPress $($WP core version) ready at http://127.0.0.1:$PORT  (site: $SITE)"
+actual="$($WP core version)"
+if [ "$WP_VERSION" != "latest" ] && [ "$actual" != "$WP_VERSION" ]; then
+  echo "Expected WordPress $WP_VERSION but found $actual"; exit 1
+fi
+echo "WordPress $actual ready at http://127.0.0.1:$PORT  (site: $SITE)"
