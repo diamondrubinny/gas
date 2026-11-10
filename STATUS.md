@@ -3,13 +3,15 @@
 ## תוכן
 | רכיב | נתיב | גרסה |
 |---|---|---|
-| תוסף WordPress | `plugins/gas-safety-manager/` | 2.13.1 (DB v8) |
+| תוסף WordPress | `plugins/gas-safety-manager/` | 2.13.2 (DB v8) |
 | ערכת עיצוב | `themes/gas-safety-theme/` | 1.2.0 |
 
-יובא מקבצי ה-ZIP שהועלו (2.13.0); מאז תוקן הממצא הגבוה (2.13.1).
+יובא מקבצי ה-ZIP שהועלו (2.13.0); מאז תוקן הממצא הגבוה (2.13.1) ובוצעה סקירת XSS (2.13.2).
 
 ## בדיקות שבוצעו (2026-11-10)
 - `php tests/bi-token-test.php plugins/gas-safety-manager` — 20/20.
+- `php tests/csv-injection-test.php plugins/gas-safety-manager` — 14/14.
+- `node tests/public-dashboard-test.js plugins/gas-safety-manager/public/gas-public-dashboard.html` — 7/7.
 - `php -l` על כל קבצי ה-PHP (PHP 8.3) — נקי.
 - `node --check` על כל קבצי ה-JS (ללא vendor) — נקי.
 - 62 קריאות `register_rest_route`.
@@ -23,12 +25,14 @@
 - **בדיקה:** `tests/bi-token-test.php` (20/20).
 - **השפעה בשדרוג:** קישורי דשבורד ציבורי ישנים מפסיקים לעבוד, וזה מכוון. אם הקישור הישן הופץ מחוץ לצוות, צריך להחליף גם את טוקן ה-BI.
 
+### ✅ סקירת XSS מלאה (2.13.2)
+לא נמצא XSS שניתן לנצל. תוקנו CSV formula injection (בינוני), `?api=` בלוח המצב הציבורי (בינוני-נמוך) ו-3 הקשחות. פירוט מלא: [`docs/xss-review.md`](docs/xss-review.md).
+
 ### 🟡 לבדיקה
 - שאילתות SQL עם interpolation — נבדקו מדגמית; שמות הטבלאות מגיעים מ-whitelist/prefix ולא מקלט המשתמש. ה-`ORDER BY` ב-`class-gsm-rest-db.php` מגיע מה-registry הקשיח.
-- 107 שימושים ב-`innerHTML` ב-JS: יש פונקציות `esc()` ב-`bridge.js`/`forms.js`, אבל לא בדקתי כל שימוש — מומלצת סקירת XSS ייעודית.
 - טוקנים ב-query string (`?token=`) עלולים להירשם בלוגים של השרת או של proxy.
 
 ## הצעד הבא המומלץ
 1. ~~תיקון הממצא הגבוה~~ — בוצע (2.13.1). נשאר לבדוק ידנית על סביבת staging.
-2. סקירת XSS מלאה ב-`public/assets/js/views/`.
+2. ~~סקירת XSS מלאה~~ — בוצע (2.13.2). השלב הבא: refactor של `onclick` inline ואז CSP.
 3. הוספת `.gitignore`, `README.md` ו-CI בסיסי (`php -l`, `node --check`, PHPCS).

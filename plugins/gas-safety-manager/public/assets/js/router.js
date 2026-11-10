@@ -53,7 +53,11 @@
     try {
       view(mount, r.param);
     } catch (e) {
-      mount.innerHTML = '<div class="gs-error">שגיאה בטעינת המסך: ' + String(e.message) + '</div>';
+      var box = document.createElement('div');
+      box.className = 'gs-error';
+      box.textContent = 'שגיאה בטעינת המסך: ' + String(e && e.message);
+      mount.innerHTML = '';
+      mount.appendChild(box);
     }
   }
 

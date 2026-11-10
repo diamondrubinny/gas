@@ -111,7 +111,7 @@ class GSM_Public {
 			'navOrder'  => array_values( (array) get_option( 'gsm_nav_order', array() ) ),
 		);
 		// Attach config to the first script in the chain so all have it.
-		wp_add_inline_script( 'gsm-router', 'window.GSM_CONFIG = ' . wp_json_encode( $config ) . ';', 'before' );
+		wp_add_inline_script( 'gsm-router', 'window.GSM_CONFIG = ' . wp_json_encode( $config, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT ) . ';', 'before' );
 
 		return '<div id="gsm-app" class="gs-app"><div class="gs-loading">טוען מערכת…</div></div>';
 	}

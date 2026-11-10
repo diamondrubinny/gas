@@ -3,7 +3,7 @@ Contributors: diamondrubinny
 Tags: safety, equipment, inspections, hebrew, rtl
 Requires at least: 6.4
 Requires PHP: 8.1
-Stable tag: 2.13.1
+Stable tag: 2.13.2
 License: Proprietary — Technion Safety Unit
 
 Gas systems maintenance management for the Technion Safety Unit. Manages equipment, inspections, faults, and QR codes with native WordPress storage.
@@ -31,6 +31,14 @@ Pairs with the companion "Gas Safety" theme for the portal look (navy/gold, RTL,
 4. To import from Monday: open "Gas Migration", generate a key, run the console script in the portal, then revoke the key.
 
 == Changelog ==
+
+= 2.13.2 =
+* Security review (XSS) of all front-end rendering — no exploitable XSS found: every server/user value rendered into HTML goes through esc(). Hardening and adjacent fixes:
+* Public status dashboard: the ?api= URL parameter is now restricted to the site's own origin. Before, a crafted link (?api=https://other-site) made the page on the trusted domain fetch and display someone else's numbers (content spoofing) and send the token there.
+* CSV formula injection (CWE-1236): cells starting with = + - @ (or tab/CR) are prefixed with an apostrophe in every CSV export (BI CSV, database CSV, Excel CSV fallback). Anonymous fault reports from the QR page could otherwise plant =HYPERLINK/DDE payloads that run when a manager opens the export in Excel. Plain numbers are unchanged. XLSX exports were already safe (inline strings).
+* Inline config (window.GSM_CONFIG / GSM_BRIDGE) is JSON-encoded with JSON_HEX_TAG|AMP|APOS|QUOT so no setting value can break out of the script block.
+* Router error messages are rendered as text; #/equipment/<id> accepts numeric ids only.
+* No DB change — stays v8.
 
 = 2.13.1 =
 * Security fix (High): the public status dashboard link no longer exposes the full data export. Until now /bi/public, /bi/data and /bi/ical all accepted the same BI token, so anyone holding the "aggregate-only" dashboard link could download every equipment row, including contact names and emails. The dashboard now uses its own token (gsm_public_token), managed and rotated from "תקשורת והתראות"; /bi/public rejects the BI token and /bi/data + /bi/ical reject the public token. New routes: GET /gas/v1/bi/public-token, POST /gas/v1/bi/public-token/rotate (manager).

@@ -385,6 +385,7 @@
   });
 
   function equipmentDetail(mount, id) {
+    if (!/^\d+$/.test(String(id))) { GSM.navigate('/equipment'); return; }
     mount.innerHTML = chrome('equipment', loading());
     var main = mount.querySelector('.gs-main');
     api('/equipment/' + id).then(function (it) {

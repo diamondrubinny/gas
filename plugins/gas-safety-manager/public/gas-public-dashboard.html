@@ -35,7 +35,19 @@
 (function () {
   function qs(k){ return new URLSearchParams(location.search).get(k) || ''; }
   var token = qs('t') || qs('token');
-  var api = qs('api') || '/wp-json/gas/v1';
+  // The API base comes from the URL, so only same-origin values are accepted:
+  // a crafted ?api=https://evil.example link must not make this page (on the
+  // trusted domain) fetch and display someone else's data, nor send the token away.
+  function sameOriginApi(v) {
+    var fallback = '/wp-json/gas/v1';
+    if (!v) return fallback;
+    try {
+      var u = new URL(v, location.href);
+      if (u.origin !== location.origin || (u.protocol !== 'https:' && u.protocol !== 'http:')) return fallback;
+      return u.href;
+    } catch (e) { return fallback; }
+  }
+  var api = sameOriginApi(qs('api'));
   var root = document.getElementById('root');
   if (!token) { root.innerHTML = '<div class="err">חסר אסימון גישה בקישור.</div>'; return; }
 

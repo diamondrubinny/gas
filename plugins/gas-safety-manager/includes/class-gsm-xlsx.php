@@ -197,7 +197,7 @@ class GSM_Xlsx {
 		foreach ( (array) $rows as $row ) {
 			$cells = array();
 			foreach ( (array) $row as $cell ) {
-				$v       = (string) ( null === $cell ? '' : $cell );
+				$v       = GSM_Security::csv_cell( $cell );
 				$v       = str_replace( '"', '""', $v );
 				$cells[] = '"' . $v . '"';
 			}

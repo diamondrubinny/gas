@@ -449,7 +449,7 @@ class GSM_REST_BI {
 	private static function csv_line( $cells ) {
 		$out = array();
 		foreach ( $cells as $c ) {
-			$v = (string) ( null === $c ? '' : $c );
+			$v = GSM_Security::csv_cell( $c );
 			$v = str_replace( '"', '""', $v );
 			$out[] = '"' . $v . '"';
 		}

@@ -49,4 +49,25 @@ class GSM_Security {
 		header( 'X-Frame-Options: SAMEORIGIN' );
 		header( 'Cache-Control: private, no-store, max-age=0' );
 	}
+
+	/**
+	 * Neutralize a CSV cell against formula / DDE injection (CWE-1236).
+	 *
+	 * Spreadsheet apps (Excel, LibreOffice, Google Sheets) evaluate a cell that
+	 * starts with = + - @ (or a tab / CR before one) as a formula. Untrusted
+	 * text such as a public, anonymous fault report could otherwise run
+	 * =HYPERLINK(...) or DDE payloads on the manager's machine when the export
+	 * is opened. Such cells get a leading apostrophe, which spreadsheets show
+	 * as plain text. Plain numbers (e.g. "-5", "+972...") are left unchanged.
+	 *
+	 * @param mixed $value Cell value.
+	 * @return string Safe, unquoted cell text (caller still applies CSV quoting).
+	 */
+	public static function csv_cell( $value ) {
+		$v = (string) ( null === $value ? '' : $value );
+		if ( '' !== $v && preg_match( '/^[=+\-@\t\r]/', $v ) && ! is_numeric( $v ) ) {
+			$v = "'" . $v;
+		}
+		return $v;
+	}
 }

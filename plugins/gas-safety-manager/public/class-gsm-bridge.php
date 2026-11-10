@@ -71,7 +71,7 @@ class GSM_Bridge {
 		);
 		wp_add_inline_script(
 			'gsm-bridge',
-			'window.GSM_BRIDGE = ' . wp_json_encode( $config ) . ';',
+			'window.GSM_BRIDGE = ' . wp_json_encode( $config, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT ) . ';',
 			'before'
 		);
 

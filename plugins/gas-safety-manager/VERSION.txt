@@ -1,3 +1,15 @@
+Gas Safety Manager v2.13.2 — XSS review + hardening.
+
+- Full XSS review: no exploitable XSS found (all rendered values pass esc()).
+- Public dashboard: ?api= limited to same origin (was: content spoofing / token
+  sent to an external host via a crafted link).
+- CSV formula injection guard (GSM_Security::csv_cell) on all CSV exports —
+  anonymous QR fault reports could plant =HYPERLINK/DDE payloads.
+- Inline config JSON hex-encodes < > & ' ".
+- Router error text-only; equipment detail route numeric-only.
+- No DB change — stays v8.
+
+----
 Gas Safety Manager v2.13.1 — Security fix: separate public-dashboard token.
 
 FIX in v2.13.1:
