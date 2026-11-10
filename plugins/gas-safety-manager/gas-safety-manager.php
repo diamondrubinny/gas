@@ -3,7 +3,7 @@
  * Plugin Name:       Gas Safety Manager
  * Plugin URI:        https://safety-tech.dev
  * Description:       Gas systems maintenance management for the Technion Safety Unit. Manages equipment, inspections, faults, and QR codes. Full replacement for the Monday.com backend with native WordPress storage, including a batch QR sticker generator.
- * Version:           2.13.8
+ * Version:           2.13.9
  * Requires at least: 6.4
  * Requires PHP:      8.1
  * Author:            Diamond Rubinny
@@ -21,7 +21,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
-define( 'GSM_VERSION', '2.13.8' );
+define( 'GSM_VERSION', '2.13.9' );
 define( 'GSM_DB_VERSION', '8' );
 define( 'GSM_PLUGIN_FILE', __FILE__ );
 define( 'GSM_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
@@ -65,6 +65,8 @@ require_once GSM_PLUGIN_DIR . 'includes/db/class-gsm-attachments-repo.php';
 require_once GSM_PLUGIN_DIR . 'includes/services/class-gsm-attachments-service.php';
 require_once GSM_PLUGIN_DIR . 'includes/rest/class-gsm-rest-attachments.php';
 require_once GSM_PLUGIN_DIR . 'includes/rest/class-gsm-rest-comm.php';
+require_once GSM_PLUGIN_DIR . 'includes/class-gsm-retention.php';
+require_once GSM_PLUGIN_DIR . 'includes/rest/class-gsm-rest-retention.php';
 
 // Auth helpers.
 require_once GSM_PLUGIN_DIR . 'includes/auth/class-gsm-auth.php';
@@ -146,12 +148,16 @@ add_filter( 'wp_inline_script_attributes', array( 'GSM_Security', 'script_nonce_
 add_filter( 'wp_script_attributes', array( 'GSM_Security', 'script_nonce_attr' ) );
 add_action( 'gsm_daily_reminders', array( 'GSM_Comm', 'run_reminders' ) );
 add_action( 'init', array( 'GSM_Comm', 'sync_cron' ) );
+// Data retention: daily cleanup of old log records (starts after a grace period).
+add_action( GSM_Retention::CRON, array( 'GSM_Retention', 'run_scheduled' ) );
+add_action( 'init', array( 'GSM_Retention', 'sync_cron' ) );
 register_deactivation_hook( __FILE__, 'gsm_deactivate_cron' );
 /**
  * Clear scheduled reminders on deactivation.
  */
 function gsm_deactivate_cron() {
 	wp_clear_scheduled_hook( 'gsm_daily_reminders' );
+	wp_clear_scheduled_hook( 'gsm_daily_retention' );
 }
 
 /**

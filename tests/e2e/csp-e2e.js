@@ -282,6 +282,19 @@ const SCREENS = ['dashboard', 'bi', 'reports', 'audit', 'myequip', 'quality', 'e
   check('legacy ?t= link works and is moved to #t=', !!(await dash.$('.tile')) && !legacyAfter.searchParams.has('t') && legacyAfter.hash.indexOf('t=') === 1, legacyAfter.href);
   await dash.close();
 
+  // 14c. Data-retention card (הגדרות אתר): defaults shown, save round-trips.
+  await page.evaluate(() => GSM.navigate('/admin'));
+  await page.waitForSelector('#ret-scans', { timeout: 8000 }).catch(() => null);
+  const retVals = await page.evaluate(() => ['scans', 'comm', 'audit', 'deletions'].map((k) => (document.getElementById('ret-' + k) || {}).value));
+  check('retention card shows conservative defaults 24/24/84/24', retVals.join('/') === '24/24/84/24', retVals.join('/'));
+  await page.fill('#ret-scans', '25');
+  await page.click('#ret-save');
+  await page.waitForFunction(() => /נשמר/.test((document.getElementById('ret-status') || {}).textContent || ''), null, { timeout: 8000 }).catch(() => null);
+  const saved = await page.evaluate(() => GSM.api('/retention'));
+  check('retention save persists', saved.config && saved.config.scans === 25, JSON.stringify(saved.config));
+  await page.evaluate(() => GSM.api('/retention', { method: 'POST', body: { config: { scans: 24 } } }));
+  check('retention grace period shown (not active yet, start date d/m/Y)', saved.active === false && /^\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}$/.test(saved.active_from || ''), JSON.stringify({ active: saved.active, from: saved.active_from }));
+
   // 15. Logout via delegated action.
   await page.evaluate(() => GSM.navigate('/dashboard'));
   await page.waitForSelector('[data-gsm-action="logout"]');

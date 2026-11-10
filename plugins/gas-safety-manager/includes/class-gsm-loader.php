@@ -117,6 +117,9 @@ class GSM_Loader {
 
 		$comm = new GSM_REST_Comm();
 		$comm->register_routes();
+
+		$retention = new GSM_REST_Retention();
+		$retention->register_routes();
 	}
 
 	/**

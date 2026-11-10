@@ -3,7 +3,7 @@ Contributors: diamondrubinny
 Tags: safety, equipment, inspections, hebrew, rtl
 Requires at least: 6.4
 Requires PHP: 8.1
-Stable tag: 2.13.8
+Stable tag: 2.13.9
 License: Proprietary — Technion Safety Unit
 
 Gas systems maintenance management for the Technion Safety Unit. Manages equipment, inspections, faults, and QR codes with native WordPress storage.
@@ -31,6 +31,13 @@ Pairs with the companion "Gas Safety" theme for the portal look (navy/gold, RTL,
 4. To import from Monday: open "Gas Migration", generate a key, run the console script in the portal, then revoke the key.
 
 == Changelog ==
+
+= 2.13.9 =
+* Data retention ("מדיניות שמירת מידע" in הגדרות אתר, manager only): old records are deleted automatically once a day — QR scan log 24 months, delivery log 24 months, audit log 84 months, handled deletion requests 24 months (conservative defaults, adjustable; 0 = keep forever). Open deletion requests are never removed. Each cleanup is written to the audit log; the screen shows how many rows the next run would delete, plus a "run now" button with confirmation.
+* Safety: automatic cleanup starts only 7 days after this version is installed, so nothing is deleted on upgrade day — time to review the periods. Deletion is irreversible (these logs are not part of restore points).
+* Fix: deleting the plugin left personal data behind — 6 of 12 tables (audit log, restore points, delivery log, deletion requests, QR issuance, attachments), the private attachment files, user meta (phone, avatar), several options, 2 roles and capabilities. Uninstall now removes all of it (unless gsm_keep_data_on_uninstall is set). App pages are left as site content.
+* New routes: GET/POST /gas/v1/retention, POST /gas/v1/retention/run (manager).
+* No DB change — stays v8.
 
 = 2.13.8 =
 * Privacy fix: the public QR API (GET /gas/v1/qr/{code}, no login) returned the PI, lab managers, maintenance staff and phone even when the manager had hidden them on the scan page ("עיצוב עמוד סריקה") — hiding was UI-only. The API now returns contact fields only when they are shown. New toggle: "הצג טלפון" (default on, so nothing changes until you switch it off).

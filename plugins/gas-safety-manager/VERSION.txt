@@ -1,3 +1,14 @@
+Gas Safety Manager v2.13.9 — Data retention + complete uninstall.
+
+- Daily cleanup (WP-Cron): scans 24m, delivery log 24m, audit 84m, handled
+  deletion requests 24m (defaults; 0 = keep). Open requests never deleted.
+- 7-day grace period before the first automatic run; audit-logged; preview +
+  manual run in הגדרות אתר.
+- FIX: uninstall left 6 tables, private files, user meta, options, roles.
+- Tests: integration retention (19) + uninstall (7) on real WordPress, in CI.
+- No DB change — stays v8.
+
+----
 Gas Safety Manager v2.13.8 — Public QR API privacy.
 
 - /qr/{code}: contact fields only when shown on the scan page (was: always).

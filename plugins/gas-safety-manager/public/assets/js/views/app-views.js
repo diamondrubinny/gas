@@ -826,6 +826,67 @@
   ];
   var GSM_ROLES = [['ahmat', 'אחמ"ת'], ['lab_manager', 'מנהל מעבדה'], ['pi', 'חוקר ראשי']];
 
+  // ---- Data retention (privacy: storage limitation) ----------------------
+  function renderRetention(host) {
+    if (!host) return;
+    function draw(d) {
+      var keys = Object.keys(d.labels || {});
+      var rows = keys.map(function (k) {
+        var id = 'ret-' + k;
+        return '<div class="gs-field" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">' +
+          '<label class="gs-label" for="' + id + '" style="flex:1 1 220px;margin:0">' + esc(d.labels[k]) + '</label>' +
+          '<input class="gs-input" id="' + id + '" type="number" min="0" max="1200" step="1" inputmode="numeric" value="' + esc(d.config[k]) + '" style="max-width:110px" aria-describedby="ret-help">' +
+          '<span style="color:var(--gs-muted);font-size:13px">חודשים · יימחקו בהרצה הבאה: <b>' + esc((d.preview || {})[k] || 0) + '</b></span></div>';
+      }).join('');
+      var last = d.last && d.last._at
+        ? ('הרצה אחרונה: <bdi dir="ltr">' + esc(d.last._at) + '</bdi> (' + (d.last._trigger === 'auto' ? 'אוטומטית' : 'ידנית') + ') — נמחקו: ' +
+           keys.map(function (k) { return esc(d.labels[k]) + ' ' + esc(d.last[k] || 0); }).join(', '))
+        : 'טרם בוצעה הרצה.';
+      var state = d.active
+        ? 'הניקוי האוטומטי פעיל ורץ פעם ביום.'
+        : ('הניקוי האוטומטי יתחיל ב-<bdi dir="ltr">' + esc(d.active_from) + '</bdi>. עד אז אפשר לשנות את התקופות, ושום דבר לא יימחק אוטומטית.');
+      host.innerHTML =
+        '<div class="gs-card" style="margin-top:16px"><div class="gs-card__title">🗂 מדיניות שמירת מידע</div>' +
+        '<p id="ret-help" style="color:var(--gs-muted);font-size:13px;margin-top:0">רשומות ישנות מהתקופה שנקבעה נמחקות אוטומטית (צמצום שמירת מידע אישי). <b>0 = שמירה ללא הגבלה.</b> ' +
+        'בקשות מחיקה פתוחות לעולם לא נמחקות. כל ניקוי נרשם ביומן הבקרה. <b>מחיקה היא בלתי הפיכה</b>: הרשומות האלה לא כלולות בנקודות השחזור.</p>' +
+        '<p style="font-size:13px" role="status">' + state + '</p>' +
+        rows +
+        '<div style="margin-top:8px"><button type="button" class="gs-btn" id="ret-save">שמור תקופות</button> ' +
+        '<button type="button" class="gs-btn gs-btn--danger" id="ret-run">הרץ ניקוי עכשיו</button> ' +
+        '<span id="ret-status" role="status" aria-live="polite" style="margin-inline-start:8px;color:var(--gs-muted)"></span></div>' +
+        '<p style="color:var(--gs-muted);font-size:12px;margin-top:10px">' + last + '</p>' +
+        '<p style="color:var(--gs-muted);font-size:12px">ברירות המחדל (24 / 24 / 84 / 24 חודשים) הן נקודת פתיחה שמרנית, ויש לאשר אותן מול ממונה הפרטיות או היועץ המשפטי.</p>' +
+        '</div>';
+      function collect() {
+        var out = {};
+        keys.forEach(function (k) { var v = parseInt(document.getElementById('ret-' + k).value, 10); out[k] = isNaN(v) || v < 0 ? 0 : v; });
+        return out;
+      }
+      document.getElementById('ret-save').addEventListener('click', function () {
+        var b = this, st = document.getElementById('ret-status'); b.disabled = true; st.textContent = 'שומר…';
+        api('/retention', { method: 'POST', body: { config: collect() } })
+          .then(function (nd) { draw(nd); document.getElementById('ret-status').textContent = '✓ נשמר'; })
+          .catch(function (e) { st.textContent = '✗ ' + (e.message || e); b.disabled = false; });
+      });
+      document.getElementById('ret-run').addEventListener('click', function () {
+        var pv = d.preview || {};
+        var n = keys.reduce(function (a, k) { return a + (pv[k] || 0); }, 0);
+        if (!confirm('למחוק עכשיו ' + n + ' רשומות ישנות לפי התקופות השמורות? הפעולה בלתי הפיכה.\n(שינויים שלא נשמרו לא ישפיעו. כדאי לשמור קודם.)')) return;
+        var b = this, st = document.getElementById('ret-status'); b.disabled = true; st.textContent = 'מנקה…';
+        api('/retention/run', { method: 'POST' })
+          .then(function (nd) {
+            draw(nd);
+            var r = nd.result || {}, tot = keys.reduce(function (a, k) { return a + (r[k] || 0); }, 0);
+            document.getElementById('ret-status').textContent = '✓ נמחקו ' + tot + ' רשומות';
+          })
+          .catch(function (e) { st.textContent = '✗ ' + (e.message || e); b.disabled = false; });
+      });
+    }
+    api('/retention').then(draw).catch(function (e) {
+      host.innerHTML = '<div class="gs-error" role="alert">' + esc(e.message || e) + '</div>';
+    });
+  }
+
   function refreshNav() { GSM.checkSession().then(function () { GSM.render(); }); }
 
   function renderGovernance(container) {
@@ -945,10 +1006,12 @@
         '</div>' +
         brandCard +
         '<div id="gsm-gov"></div>' +
+        '<div id="gsm-retention"></div>' +
         '<div class="gs-card" style="margin-top:16px"><div class="gs-card__title">📥 הגירה וגיבוי</div>' +
         '<p style="color:var(--gs-muted)">ייבוא/גיבוי נתונים ומפתח הגירה נמצאים בעמוד "Gas Migration" בפאנל הניהול של WordPress.</p></div>';
 
       renderGovernance(document.getElementById('gsm-gov'));
+      renderRetention(document.getElementById('gsm-retention'));
 
       var save = document.getElementById('gsm-set-save');
       save.addEventListener('click', function () {
