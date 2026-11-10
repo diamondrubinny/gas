@@ -21,7 +21,7 @@ jobs:
       matrix:
         php: ['8.1', '8.2', '8.3', '8.4']
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php }}
@@ -29,7 +29,7 @@ jobs:
           tools: none
       - name: PHP syntax
         run: find plugins themes tests scripts -name '*.php' -not -path '*/vendor/*' -print0 | xargs -0 -n1 -P4 php -l
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         if: matrix.php == '8.3'
         with:
           node-version: '22'
@@ -50,7 +50,7 @@ jobs:
     name: PHPCS (security + compatibility)
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
@@ -68,7 +68,7 @@ jobs:
     name: Unit tests
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
@@ -87,14 +87,14 @@ jobs:
         # Minimum supported ("Requires at least: 6.4") and the current release.
         wp: ['6.4.5', 'latest']
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
           extensions: pdo_sqlite, sqlite3, mbstring, zip, gd
           coverage: none
           tools: none
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: '22'
           cache: npm
@@ -128,9 +128,9 @@ jobs:
     runs-on: ubuntu-24.04
     needs: [phpcs, e2e]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - run: scripts/build-release.sh
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: gas-safety-zips
           path: dist/*.zip
