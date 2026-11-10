@@ -247,17 +247,39 @@ const SCREENS = ['dashboard', 'bi', 'reports', 'audit', 'myequip', 'quality', 'e
   await page.waitForSelector('#pub-url', { timeout: 8000 });
   const shareUrl = await page.$eval('#pub-url', (i) => i.value);
   const biTok = await page.evaluate(async () => (await GSM.api('/bi/token')).token);
+  const share = new URL(shareUrl);
+  const pubTok = new URLSearchParams(share.hash.replace(/^#/, '')).get('t') || '';
+  check('share link: token in #fragment, not in ?query', !!pubTok && !share.searchParams.has('t') && !share.searchParams.has('token'), shareUrl);
   const dash = await ctx.newPage();
-  const dashViol = [];
+  const dashViol = [], dashReqs = [];
   dash.on('console', (m) => { if (/Content Security Policy/.test(m.text())) dashViol.push(m.text()); });
+  dash.on('request', (r) => dashReqs.push({ url: r.url(), header: r.headers()['x-gsm-token'] || '' }));
   await dash.goto(shareUrl);
   await dash.waitForSelector('.tile', { timeout: 8000 }).catch(() => null);
   check('public dashboard renders from share link', !!(await dash.$('.tile')));
   check('public dashboard: no CSP violations', dashViol.length === 0, dashViol.join(' | '));
   check('share link does not carry the BI export token', !shareUrl.includes(biTok));
-  const leak = await dash.evaluate(async (t) => (await fetch('/wp-json/gas/v1/bi/data/equipment?format=json&token=' + encodeURIComponent(t))).status,
-    new URL(shareUrl).searchParams.get('t'));
-  check('public token cannot read /bi/data (403)', leak === 403, 'status=' + leak);
+  check('no dashboard request has the token in its URL', !dashReqs.some((r) => r.url.includes(pubTok)), dashReqs.filter((r) => r.url.includes(pubTok)).map((r) => r.url).join(' | '));
+  check('dashboard sends the token in X-GSM-Token', dashReqs.some((r) => /\/bi\/public/.test(r.url) && r.header === pubTok));
+  const st = await dash.evaluate(async (a) => {
+    const f = (url, tok) => fetch(url, tok ? { headers: { 'X-GSM-Token': tok } } : {}).then((r) => r.status);
+    return {
+      pubQuery: await f('/wp-json/gas/v1/bi/data/equipment?format=json&token=' + encodeURIComponent(a.pub)),
+      pubHeader: await f('/wp-json/gas/v1/bi/data/equipment?format=json', a.pub),
+      biHeader: await f('/wp-json/gas/v1/bi/data/equipment?format=json', a.bi),
+      biQuery: await f('/wp-json/gas/v1/bi/data/equipment?format=json&token=' + encodeURIComponent(a.bi)),
+      icalQuery: await f('/wp-json/gas/v1/bi/ical?token=' + encodeURIComponent(a.bi))
+    };
+  }, { pub: pubTok, bi: biTok });
+  check('public token cannot read /bi/data (query 403, header 403)', st.pubQuery === 403 && st.pubHeader === 403, JSON.stringify(st));
+  check('BI token works in X-GSM-Token header (200)', st.biHeader === 200, JSON.stringify(st));
+  check('BI token still works in ?token= (back-compat) + iCal (200)', st.biQuery === 200 && st.icalQuery === 200, JSON.stringify(st));
+  // Old-style link (?t=…) still opens and is rewritten to #t=… (no token in the address bar query).
+  const legacy = share.origin + share.pathname + '?t=' + encodeURIComponent(pubTok) + '&api=' + encodeURIComponent(share.searchParams.get('api') || '');
+  await dash.goto(legacy);
+  await dash.waitForSelector('.tile', { timeout: 8000 }).catch(() => null);
+  const legacyAfter = new URL(await dash.evaluate(() => location.href));
+  check('legacy ?t= link works and is moved to #t=', !!(await dash.$('.tile')) && !legacyAfter.searchParams.has('t') && legacyAfter.hash.indexOf('t=') === 1, legacyAfter.href);
   await dash.close();
 
   // 15. Logout via delegated action.

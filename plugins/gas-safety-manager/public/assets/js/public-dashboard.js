@@ -4,7 +4,21 @@
  */
 (function () {
   function qs(k){ return new URLSearchParams(location.search).get(k) || ''; }
-  var token = qs('t') || qs('token');
+  function hs(k){ return new URLSearchParams(location.hash.replace(/^#/, '')).get(k) || ''; }
+  // The token lives in the URL fragment (#t=…): browsers never send the
+  // fragment to the server, so it stays out of access logs and Referer.
+  // Older links carried it in the query (?t=…): accept them once and move
+  // the token into the fragment, so reloads / bookmarks stop exposing it.
+  var token = hs('t');
+  if (!token && (qs('t') || qs('token'))) {
+    token = qs('t') || qs('token');
+    try {
+      var keep = new URLSearchParams(location.search);
+      keep.delete('t'); keep.delete('token');
+      var q = keep.toString();
+      history.replaceState(null, '', location.pathname + (q ? '?' + q : '') + '#t=' + encodeURIComponent(token));
+    } catch (e) { /* history API unavailable: keep working */ }
+  }
   // The API base comes from the URL, so only same-origin values are accepted:
   // a crafted ?api=https://evil.example link must not make this page (on the
   // trusted domain) fetch and display someone else's data, nor send the token away.
@@ -41,14 +55,18 @@
   function tile(n,l,c){ return '<div class="tile'+c+'"><div class="n">'+esc(n)+'</div><div class="l">'+esc(l)+'</div></div>'; }
   function cls(c){ return c?(' '+c):''; }
 
-  function fetchJson(url){ return fetch(url, { credentials:'omit' }).then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); }); }
+  // Token goes in a request header, never in the request URL.
+  function fetchJson(url){
+    return fetch(url, { credentials: 'omit', headers: { 'X-GSM-Token': token } })
+      .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); });
+  }
 
-  var url = api.replace(/\/$/,'') + '/bi/public?token=' + encodeURIComponent(token);
+  var url = api.replace(/\/$/,'') + '/bi/public';
   fetchJson(url)
     .then(render)
     .catch(function(){
       // Fallback for sites on "plain" permalinks.
-      fetchJson('/?rest_route=/gas/v1/bi/public&token=' + encodeURIComponent(token))
+      fetchJson('/?rest_route=/gas/v1/bi/public')
         .then(render)
         .catch(function(e){ root.innerHTML = '<div class="err">טעינת הנתונים נכשלה ('+esc(e.message||e)+'). ייתכן שהאסימון אינו תקף.</div>'; });
     });

@@ -1511,17 +1511,37 @@
       var labels = cfg.eventLabels || {};
       var selected = cfg.webhookEvents || [];
 
+      // Export links. Recommended: URL without the token + the token in the
+      // X-GSM-Token header (not written to server / proxy access logs).
+      // Calendar subscriptions cannot send headers, so iCal keeps ?token=.
       function exportLinks(tok) {
-        function u(set, fmt) { return GSM.restUrl('/bi/data/' + set + '?token=' + encodeURIComponent(tok) + '&format=' + fmt); }
+        function u(set, fmt) { return GSM.restUrl('/bi/data/' + set + '?format=' + fmt); }
+        function uTok(set, fmt) { return GSM.restUrl('/bi/data/' + set + '?token=' + encodeURIComponent(tok) + '&format=' + fmt); }
         function row(lbl, url) {
           return '<div class="gs-field"><label class="gs-label">' + esc(lbl) + '</label>' +
             '<input class="gs-input" readonly value="' + esc(url) + '" data-gsm-action="select" style="font-size:12px;direction:ltr"></div>';
         }
-        return row('ציוד — CSV (Excel / Power BI)', u('equipment', 'csv')) +
+        function pq(set) {
+          // Power Query (Excel: Data > Get Data > Blank Query > Advanced Editor; Power BI: same editor).
+          return 'let\n  Source = Csv.Document(\n    Web.Contents("' + u(set, 'csv') + '",\n      [Headers = [#"X-GSM-Token" = "' + tok + '"]]),\n    [Encoding = 65001]),\n' +
+            '  Data = Table.PromoteHeaders(Source, [PromoteAllScalars = true])\nin\n  Data';
+        }
+        return '<p style="font-size:13px;margin:0 0 10px"><b>מומלץ:</b> כתובת בלי טוקן, והטוקן נשלח בכותרת <code>X-GSM-Token</code>. ' +
+            'כותרת לא נרשמת ביומני השרת וה-proxy, בניגוד לטוקן בכתובת.</p>' +
+          row('ציוד — CSV (Excel / Power BI)', u('equipment', 'csv')) +
           row('ציוד — JSON', u('equipment', 'json')) +
           row('תקלות — CSV', u('faults', 'csv')) +
           row('ביקורות — CSV', u('inspections', 'csv')) +
-          row('יומן ביקורות רבעוניות — iCal (Outlook / Google Calendar)', GSM.restUrl('/bi/ical?token=' + encodeURIComponent(tok)));
+          '<div class="gs-field"><label class="gs-label" for="pq-sample">דוגמת Power Query (Excel / Power BI) — ציוד</label>' +
+            '<textarea class="gs-textarea" id="pq-sample" readonly rows="7" data-gsm-action="select" style="direction:ltr;font-family:monospace;font-size:12px">' + esc(pq('equipment')) + '</textarea></div>' +
+          row('יומן ביקורות רבעוניות — iCal (Outlook / Google Calendar)', GSM.restUrl('/bi/ical?token=' + encodeURIComponent(tok))) +
+          '<p style="color:var(--gs-muted);font-size:12px;margin-top:-6px">ביומן הטוקן חייב להופיע בכתובת, כי מנויי יומן לא יכולים לשלוח כותרות. מומלץ לשתף את קישור היומן רק עם מי שצריך אותו.</p>' +
+          '<details style="margin-top:10px"><summary style="cursor:pointer;font-size:13px">קישורים עם הטוקן בכתובת (תאימות לאחור, פחות מומלץ)</summary>' +
+            row('ציוד — CSV', uTok('equipment', 'csv')) +
+            row('ציוד — JSON', uTok('equipment', 'json')) +
+            row('תקלות — CSV', uTok('faults', 'csv')) +
+            row('ביקורות — CSV', uTok('inspections', 'csv')) +
+          '</details>';
       }
 
       var evRows = Object.keys(labels).map(function (k) {
@@ -1620,7 +1640,8 @@
       var restRoot = cfgRoot.restRoot || '';
       var pubBase = assetsUrl.replace(/assets\/?$/, '') + 'gas-public-dashboard.html';
       function shareUrlFor(tok) {
-        return tok ? (pubBase + '?t=' + encodeURIComponent(tok) + '&api=' + encodeURIComponent(restRoot)) : '';
+        // Token in the fragment (#t=): never sent to the server or in a Referer.
+        return tok ? (pubBase + '?api=' + encodeURIComponent(restRoot) + '#t=' + encodeURIComponent(tok)) : '';
       }
       var shareUrl = shareUrlFor(token);
 

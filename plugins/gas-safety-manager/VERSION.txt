@@ -1,3 +1,11 @@
+Gas Safety Manager v2.13.7 — Tokens out of URLs.
+
+- Public dashboard: token in #fragment + X-GSM-Token header (legacy ?t= upgraded).
+- BI /bi/data: X-GSM-Token header preferred; Power Query snippet in the UI.
+- ?token= kept for back-compat and iCal (calendar clients cannot send headers).
+- No DB change — stays v8.
+
+----
 Gas Safety Manager v2.13.6 — Accessibility (WCAG 2.1 AA).
 
 - axe-core: 344 failing elements -> 0 (35 views). Keyboard/focus: 22/22.

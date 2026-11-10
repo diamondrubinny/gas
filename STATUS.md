@@ -3,13 +3,13 @@
 ## תוכן
 | רכיב | נתיב | גרסה |
 |---|---|---|
-| תוסף WordPress | `plugins/gas-safety-manager/` | 2.13.6 (DB v8) |
+| תוסף WordPress | `plugins/gas-safety-manager/` | 2.13.7 (DB v8) |
 | ערכת עיצוב | `themes/gas-safety-theme/` | 1.2.3 |
 
-יובא מקבצי ה-ZIP שהועלו (2.13.0); מאז תוקן הממצא הגבוה (2.13.1) ובוצעה סקירת XSS (2.13.2) ונוספה CSP (2.13.3), ואחר כך PHPCS ו-CI (2.13.4) ופונט מקומי בלי פניות לשרתים חיצוניים (2.13.5), ונגישות (2.13.6). מדריך התקנה ופיתוח: [`README.md`](README.md).
+יובא מקבצי ה-ZIP שהועלו (2.13.0); מאז תוקן הממצא הגבוה (2.13.1) ובוצעה סקירת XSS (2.13.2) ונוספה CSP (2.13.3), ואחר כך PHPCS ו-CI (2.13.4) ופונט מקומי בלי פניות לשרתים חיצוניים (2.13.5), ונגישות (2.13.6), וטוקנים מחוץ לכתובות URL (2.13.7). מדריך התקנה ופיתוח: [`README.md`](README.md).
 
 ## בדיקות שבוצעו (2026-11-10)
-- `php tests/bi-token-test.php plugins/gas-safety-manager` — 20/20.
+- `php tests/bi-token-test.php plugins/gas-safety-manager` — 26/26.
 - `php tests/csv-injection-test.php plugins/gas-safety-manager` — 14/14.
 - `node tests/public-dashboard-test.js plugins/gas-safety-manager/public/gas-public-dashboard.html` — 8/8.
 - `node tests/e2e/csp-e2e.js` מול WordPress **6.4.5 (מינימום) ו-7.1.4** אמיתיים (SQLite) — הכל עובר, 0 הפרות CSP, 0 שגיאות JS. כולל צרופות (העלאה/הורדה/מחיקה מהדיסק/דחיית קובץ מזויף).
@@ -60,7 +60,7 @@ CSP קשיחה (`script-src 'self' 'nonce-…'`) בעמודי המערכת, ~25 
 
 ### 🟡 לבדיקה
 - שאילתות SQL עם interpolation — נבדקו מדגמית; שמות הטבלאות מגיעים מ-whitelist/prefix ולא מקלט המשתמש. ה-`ORDER BY` ב-`class-gsm-rest-db.php` מגיע מה-registry הקשיח.
-- טוקנים ב-query string (`?token=`) עלולים להירשם בלוגים של השרת או של proxy.
+- ~~טוקנים ב-query string עלולים להירשם בלוגים~~: טופל ב-2.13.7. לוח המצב שולח את הטוקן ב-`#fragment` ובכותרת `X-GSM-Token`, והייצוא תומך בכותרת. נשארו בכתובת, במודע: קישור ה-iCal (מנויי יומן לא שולחים כותרות), קישורי `?token=` ישנים (תאימות לאחור), ה-nonce של WordPress בהורדת צרופות (קצר-טווח וחסר ערך בלי עוגיית ההתחברות), ו-`?eq=` של מדבקות ה-QR (ציבורי, מודפס על המדבקה).
 
 ## הצעד הבא המומלץ
 1. ~~תיקון הממצא הגבוה~~ — בוצע (2.13.1). נשאר לבדוק ידנית על סביבת staging.

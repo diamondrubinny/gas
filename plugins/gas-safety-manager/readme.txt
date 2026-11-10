@@ -3,7 +3,7 @@ Contributors: diamondrubinny
 Tags: safety, equipment, inspections, hebrew, rtl
 Requires at least: 6.4
 Requires PHP: 8.1
-Stable tag: 2.13.6
+Stable tag: 2.13.7
 License: Proprietary — Technion Safety Unit
 
 Gas systems maintenance management for the Technion Safety Unit. Manages equipment, inspections, faults, and QR codes with native WordPress storage.
@@ -31,6 +31,12 @@ Pairs with the companion "Gas Safety" theme for the portal look (navy/gold, RTL,
 4. To import from Monday: open "Gas Migration", generate a key, run the console script in the portal, then revoke the key.
 
 == Changelog ==
+
+= 2.13.7 =
+* Security / privacy: access tokens are kept out of URLs where clients allow it, so they are not written to web-server or proxy access logs and never leak through a Referer.
+* Public status dashboard: the share link now carries the token in the URL fragment (#t=…), which browsers never send to the server; the page sends it in an X-GSM-Token header. Older ?t=… links keep working and are rewritten to #t=… on open.
+* BI exports (/bi/data): accept the token in the X-GSM-Token header (preferred, wins over ?token=). The Integrations screen shows the URLs without the token plus a ready Power Query (Excel / Power BI) snippet that sends the header. ?token= still works for existing links; the iCal feed keeps it because calendar subscriptions cannot send headers.
+* No DB change — stays v8.
 
 = 2.13.6 =
 * Accessibility (WCAG 2.1 AA / IS 5568): automated axe-core scan of 35 views went from 344 failing elements to 0, plus 22 keyboard / focus checks. See docs/accessibility.md.

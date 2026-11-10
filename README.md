@@ -4,7 +4,7 @@
 
 | רכיב | נתיב | גרסה | דרישות |
 |---|---|---|---|
-| תוסף **Gas Safety Manager** | [`plugins/gas-safety-manager/`](plugins/gas-safety-manager/) | 2.13.6 (DB v8) | WordPress 6.4+, PHP 8.1+ |
+| תוסף **Gas Safety Manager** | [`plugins/gas-safety-manager/`](plugins/gas-safety-manager/) | 2.13.7 (DB v8) | WordPress 6.4+, PHP 8.1+ |
 | ערכת עיצוב **Gas Safety** | [`themes/gas-safety-theme/`](themes/gas-safety-theme/) | 1.2.3 | WordPress 6.4+, PHP 8.1+ |
 
 היסטוריית שינויים: [`plugins/gas-safety-manager/readme.txt`](plugins/gas-safety-manager/readme.txt) (Changelog) ו-[`VERSION.txt`](plugins/gas-safety-manager/VERSION.txt). מצב הפרויקט וממצאים פתוחים: [`STATUS.md`](STATUS.md).
@@ -47,6 +47,10 @@ define( 'GSM_CSP_MODE', 'report-only' ); // enforce (ברירת מחדל) | repo
 - **טוקן BI** (מסך "אינטגרציות") פותח ייצוא **מלא**, כולל פרטי אנשי קשר. יש לשתף אותו רק עם מערכות מורשות כמו Power BI ו-Excel.
 - **טוקן לוח המצב הציבורי** (מסך "תקשורת והתראות") פותח **נתונים מצטברים בלבד**.
 - החלפת טוקן מבטלת מיד את כל הקישורים הקודמים.
+- **הטוקנים נשמרים מחוץ לכתובות ה-URL** ככל שהלקוח מאפשר, כדי שלא יירשמו ביומני השרת וה-proxy:
+  - **בקישור לוח המצב,** הטוקן נמצא אחרי `#`. הדפדפן לא שולח את החלק הזה לשרת, והטוקן עצמו נשלח בכותרת `X-GSM-Token`.
+  - **בייצוא ל-Power BI ו-Excel** מומלץ לשלוח את הטוקן בכותרת `X-GSM-Token`. מסך "אינטגרציות" מציג דוגמת Power Query מוכנה.
+  - **קישור היומן (iCal) חייב להכיל את הטוקן בכתובת,** כי מנויי יומן לא יכולים לשלוח כותרות.
 
 ### פרטיות: אין פניות לשרתים חיצוניים
 בעמודי המערכת הדפדפן לא פונה לאף שרת חיצוני:

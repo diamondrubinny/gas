@@ -246,11 +246,29 @@ class GSM_REST_BI {
 	 * @return bool
 	 */
 	private static function token_matches( $req, $expected ) {
-		$provided = $req->get_param( 'token' );
-		if ( ! is_string( $provided ) || '' === $provided || '' === (string) $expected ) {
+		$provided = self::provided_token( $req );
+		if ( '' === $provided || '' === (string) $expected ) {
 			return false;
 		}
 		return hash_equals( (string) $expected, $provided );
+	}
+
+	/**
+	 * The token a client sent. The X-GSM-Token header is preferred: a header is
+	 * not written to web-server / proxy access logs and never leaks through a
+	 * Referer, unlike a query string. ?token= stays supported for clients that
+	 * cannot send headers (calendar subscriptions) and for existing links.
+	 *
+	 * @param WP_REST_Request $req Request.
+	 * @return string
+	 */
+	private static function provided_token( $req ) {
+		$h = $req->get_header( 'x_gsm_token' );
+		if ( is_string( $h ) && '' !== trim( $h ) ) {
+			return trim( $h );
+		}
+		$q = $req->get_param( 'token' );
+		return is_string( $q ) ? $q : '';
 	}
 
 	/**

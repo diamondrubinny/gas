@@ -18,8 +18,11 @@ function register_rest_route($ns,$r,$a){ $GLOBALS['routes'][$r]=$a; }
 class WP_Error { public $code; function __construct($c,$m='',$d=[]){ $this->code=$c; $this->data=$d; } }
 class WP_REST_Server { const READABLE='GET'; const CREATABLE='POST'; }
 class WP_REST_Request implements ArrayAccess {
-  private $p; function __construct($p){ $this->p=$p; }
+  // Mirrors WP: header names are case-insensitive and '-' == '_'.
+  private $p; private $h;
+  function __construct($p, $h = array()){ $this->p=$p; $this->h=array(); foreach($h as $k=>$v){ $this->h[str_replace('-','_',strtolower($k))]=$v; } }
   function get_param($k){ return $this->p[$k] ?? null; }
+  function get_header($k){ return $this->h[str_replace('-','_',strtolower($k))] ?? null; }
   function offsetExists($k):bool{ return isset($this->p[$k]); }
   function offsetGet($k):mixed{ return $this->p[$k] ?? null; }
   function offsetSet($k,$v):void{} function offsetUnset($k):void{}
@@ -78,6 +81,21 @@ t('/bi/data rate-limited after 60', $last instanceof WP_Error && $last->code==='
 resetRL(); $last=null;
 for($i=0;$i<61;$i++){ $last=$bi->ical(new WP_REST_Request(['token'=>'bad'])); }
 t('/bi/ical rate-limited after 60', $last instanceof WP_Error && $last->code==='gsm_rate_limited');
+
+// X-GSM-Token header (preferred over ?token=, keeps the secret out of access logs)
+resetRL();
+$r = $bi->public_summary(new WP_REST_Request([], ['X-GSM-Token'=>$pubTok]));
+t('/bi/public accepts public token in X-GSM-Token header', is_array($r));
+$r = $bi->public_summary(new WP_REST_Request([], ['X-GSM-Token'=>$biTok]));
+t('/bi/public REJECTS BI token in header', $r instanceof WP_Error);
+$r = $bi->export_data(new WP_REST_Request(['set'=>'equipment','format'=>'json'], ['X-GSM-Token'=>$pubTok]));
+t('/bi/data REJECTS public token in header', $r instanceof WP_Error && $r->code==='gsm_bi_token');
+try { $bi->export_data(new WP_REST_Request(['set'=>'equipment','format'=>'json'], ['x-gsm-token'=>$biTok])); t('/bi/data accepts BI token in header (any case)', false); }
+catch (ExportReached $e) { t('/bi/data accepts BI token in header (any case)', true); }
+$r = $bi->export_data(new WP_REST_Request(['set'=>'equipment','token'=>$biTok], ['X-GSM-Token'=>'wrong']));
+t('header wins over query (wrong header + right query = rejected)', $r instanceof WP_Error);
+$r = $bi->public_summary(new WP_REST_Request([], ['X-GSM-Token'=>'   ']));
+t('blank header falls back to query (none) = rejected', $r instanceof WP_Error);
 
 // rotation
 resetRL();
