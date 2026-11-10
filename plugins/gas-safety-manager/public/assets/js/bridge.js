@@ -152,8 +152,13 @@
           '<div style="font-size:40px">✓</div>' +
           '<h3 style="color:var(--gs-ok-dark)">הדיווח נשלח בהצלחה</h3>' +
           '<p style="color:var(--gs-muted)">תודה. הצוות יטפל בתקלה.</p>' +
-          '<button class="gs-btn" onclick="this.closest(\'.gs-modal-backdrop\').remove()">סגור</button>' +
+          '<button class="gs-btn" type="button" id="br-done">סגור</button>' +
           '</div>';
+        var done = document.getElementById('br-done');
+        if (done) {
+          done.addEventListener('click', function () { backdrop.remove(); });
+          done.focus();
+        }
       }).catch(function (e) {
         document.getElementById('br-err').innerHTML = '<div class="gs-error" style="margin-top:10px">' + esc(e.message) + '</div>';
         document.getElementById('br-send').disabled = false;

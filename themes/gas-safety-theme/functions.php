@@ -13,7 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'GST_VERSION', '1.2.0' );
+define( 'GST_VERSION', '1.2.1' );
 define( 'GST_DIR', get_template_directory() );
 define( 'GST_URI', get_template_directory_uri() );
 
@@ -182,13 +182,19 @@ function gst_render_footer_legal() {
  * @return void
  */
 function gst_render_landing() {
-	$logo    = GST_URI . '/assets/img/logo.png';
-	$app_url = gst_app_url();
+	// Server-side fallback instead of an inline onerror="" handler (CSP-safe).
+	$has_logo = file_exists( GST_DIR . '/assets/img/logo.png' );
+	$logo     = GST_URI . '/assets/img/logo.png';
+	$app_url  = gst_app_url();
 	?>
 	<section class="gst-hero">
 		<div class="gst-hero__card">
 			<div class="gst-hero__logo">
-				<img src="<?php echo esc_url( $logo ); ?>" alt="" onerror="this.parentNode.textContent='🛡️'">
+				<?php if ( $has_logo ) : ?>
+					<img src="<?php echo esc_url( $logo ); ?>" alt="">
+				<?php else : ?>
+					<span aria-hidden="true">🛡️</span>
+				<?php endif; ?>
 			</div>
 			<h1 class="gst-hero__title"><?php esc_html_e( 'מערכת ניהול תחזוקה — מערכות גזים', 'gas-safety-theme' ); ?></h1>
 			<p class="gst-hero__sub"><?php esc_html_e( 'יחידת הבטיחות · הטכניון', 'gas-safety-theme' ); ?></p>

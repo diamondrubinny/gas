@@ -1,3 +1,17 @@
+Gas Safety Manager v2.13.3 — CSP + inline-handler refactor.
+
+- CSP on [gas_app] + [gas_bridge] pages: script-src 'self' 'nonce-…' (no
+  unsafe-inline/eval). WP core scripts get the nonce via script attribute
+  filters. Kill switch: GSM_CSP_MODE = enforce | report-only | off.
+- ~25 inline onclick="" -> data-gsm-nav / data-gsm-action + delegated listener.
+  Print popups: no inline script; opener calls print().
+- Public dashboard: external JS + meta CSP.
+- FIX: Excel export fatal (wp_tempnam undefined on REST).
+- FIX: fault-form time-trap used 1s clock -> false "too fast" rejections.
+- Verified end-to-end on WordPress 7.1.4 (Playwright, 0 CSP violations).
+- No DB change — stays v8.
+
+----
 Gas Safety Manager v2.13.2 — XSS review + hardening.
 
 - Full XSS review: no exploitable XSS found (all rendered values pass esc()).

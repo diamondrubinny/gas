@@ -3,7 +3,7 @@ Contributors: diamondrubinny
 Tags: safety, equipment, inspections, hebrew, rtl
 Requires at least: 6.4
 Requires PHP: 8.1
-Stable tag: 2.13.2
+Stable tag: 2.13.3
 License: Proprietary — Technion Safety Unit
 
 Gas systems maintenance management for the Technion Safety Unit. Manages equipment, inspections, faults, and QR codes with native WordPress storage.
@@ -31,6 +31,15 @@ Pairs with the companion "Gas Safety" theme for the portal look (navy/gold, RTL,
 4. To import from Monday: open "Gas Migration", generate a key, run the console script in the portal, then revoke the key.
 
 == Changelog ==
+
+= 2.13.3 =
+* Content-Security-Policy on the app ([gas_app]) and QR bridge ([gas_bridge]) pages: script-src 'self' + a per-request nonce — no 'unsafe-inline', no 'unsafe-eval'. Even if an XSS bug ever slipped in, injected <script> tags and on*="" handlers would not run. WordPress's own scripts (including core inline ones) get the nonce automatically via wp_script_attributes / wp_inline_script_attributes. Other pages of the site are not affected.
+* CSP mode switch for rollout / troubleshooting: define( 'GSM_CSP_MODE', 'report-only' ) (or 'off') in wp-config.php, or the gsm_csp_mode filter. Directives are filterable via gsm_csp_directives.
+* Refactor: all inline onclick="" handlers (about 25) replaced by data-gsm-nav / data-gsm-action attributes and one delegated listener. Print windows (QR + sticker sheet) no longer contain inline scripts; the app triggers printing itself.
+* Public status dashboard: script moved to an external file + a meta CSP (default-src 'none').
+* Fix: Excel exports crashed on sites where nothing else loads wp-admin/includes/file.php ("Call to undefined function wp_tempnam()").
+* Fix: the QR fault form's anti-spam timer used a one-second clock and sometimes rejected real people who submitted 2–3 seconds after opening the form ("שליחה מהירה מדי").
+* No DB change — stays v8.
 
 = 2.13.2 =
 * Security review (XSS) of all front-end rendering — no exploitable XSS found: every server/user value rendered into HTML goes through esc(). Hardening and adjacent fixes:

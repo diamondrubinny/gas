@@ -27,6 +27,33 @@
     return { name: parts[0] || 'home', param: parts[1] || null, raw: h };
   }
 
+  // ---- delegated actions (CSP-safe: no inline on*="" handlers) -------------
+  // Markup declares intent with data attributes; one listener dispatches:
+  //   data-gsm-nav="/route"        -> GSM.navigate(route)
+  //   data-gsm-action="name"       -> handler registered via GSM.registerAction
+  //   data-gsm-action="select"     -> select the text of a readonly input
+  var actions = {
+    select: function (el) { if (el.select) el.select(); }
+  };
+
+  GSM.registerAction = function (name, fn) {
+    actions[name] = fn;
+  };
+
+  document.addEventListener('click', function (e) {
+    var t = e.target;
+    var el = t && t.closest ? t.closest('[data-gsm-nav],[data-gsm-action]') : null;
+    if (!el) return;
+    var nav = el.getAttribute('data-gsm-nav');
+    if (nav !== null) {
+      e.preventDefault();
+      GSM.navigate(nav);
+      return;
+    }
+    var fn = actions[el.getAttribute('data-gsm-action')];
+    if (fn) fn(el, e);
+  });
+
   GSM.navigate = function (route) {
     if (('#' + route) === location.hash) {
       render(); // same hash — force re-render

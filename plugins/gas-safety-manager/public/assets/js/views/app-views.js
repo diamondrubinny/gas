@@ -83,10 +83,10 @@
       var hasActive = items.some(function (it) { return it[0] === active; });
       var itemsHtml = items.map(function (it) {
         return '<button class="gs-navgrp__item' + (it[0] === active ? ' is-active' : '') +
-          '" onclick="GSM.navigate(\'/' + it[0] + '\')">' + esc(it[1]) + '</button>';
+          '" type="button" data-gsm-nav="/' + esc(it[0]) + '">' + esc(it[1]) + '</button>';
       }).join('');
       return '<div class="gs-navgrp' + (hasActive ? ' is-current' : '') + '">' +
-        '<button class="gs-navgrp__btn" onclick="GSM._navToggle(this)">' + esc(g[0]) + ' <span class="gs-navgrp__caret">▾</span></button>' +
+        '<button class="gs-navgrp__btn" type="button" data-gsm-action="navToggle">' + esc(g[0]) + ' <span class="gs-navgrp__caret">▾</span></button>' +
         '<div class="gs-navgrp__menu">' + itemsHtml + '</div></div>';
     }).join('');
 
@@ -98,7 +98,7 @@
       '<span class="gs-header__spacer"></span>' +
       '<span class="gs-header__user">' + esc(u.name || '') +
       (u.roleLabel ? ' · ' + esc(u.roleLabel) : '') + '</span>' +
-      '<button class="gs-header__logout" onclick="GSM._logout()">יציאה</button>' +
+      '<button class="gs-header__logout" type="button" data-gsm-action="logout">יציאה</button>' +
       '</header>' +
       '<nav class="gs-nav gs-nav--grouped">' + navHtml + '</nav>' +
       '<main class="gs-main">' + bodyHtml + '</main>' +
@@ -125,6 +125,17 @@
     GSM.logout().then(function () { GSM.navigate('/'); });
   };
 
+  // Delegated click actions (see router.js) — replaces inline onclick="".
+  // Ids come from data-id and are passed through as positive integers only.
+  function idOf(el) { var n = parseInt(el.getAttribute('data-id'), 10); return n > 0 ? n : 0; }
+  GSM.registerAction('navToggle', function (el) { GSM._navToggle(el); });
+  GSM.registerAction('logout', function () { GSM._logout(); });
+  GSM.registerAction('export', function (el) { GSM._export(el.getAttribute('data-type'), el); });
+  GSM.registerAction('rpRestore', function (el) { var id = idOf(el); if (id) GSM._rpRestore(id, el); });
+  GSM.registerAction('rpDownload', function (el) { var id = idOf(el); if (id) GSM._rpDownload(id); });
+  GSM.registerAction('rpDelete', function (el) { var id = idOf(el); if (id) GSM._rpDelete(id, el); });
+  GSM.registerAction('auditUndo', function (el) { var id = idOf(el); if (id) GSM._auditUndo(id, el); });
+
   function loading() { return '<div class="gs-loading">טוען…</div>'; }
 
   // Download an Excel export of {type} via the authenticated REST endpoint.
@@ -148,7 +159,7 @@
   };
 
   function exportBtn(type) {
-    return '<button class="gs-btn gs-btn--sm gs-btn--export" onclick="GSM._export(\'' + type + '\', this)">⬇️ Excel</button>';
+    return '<button class="gs-btn gs-btn--sm gs-btn--export" type="button" data-gsm-action="export" data-type="' + esc(type) + '">⬇️ Excel</button>';
   }
 
   // ---- DASHBOARD -----------------------------------------------------------
@@ -196,10 +207,10 @@
         '<div class="gs-grid gs-grid--stats">' + stats + '</div>' + covCard +
         '<div class="gs-card" style="margin-top:20px"><div class="gs-card__title">⬇️ הנפקת דוחות (Excel)</div>' +
         '<div style="display:flex;flex-wrap:wrap;gap:8px">' +
-        '<button class="gs-btn gs-btn--sm gs-btn--export" onclick="GSM._export(\'equipment\', this)">⬇️ ציוד</button>' +
-        '<button class="gs-btn gs-btn--sm gs-btn--export" onclick="GSM._export(\'inspections\', this)">⬇️ ביקורות</button>' +
-        '<button class="gs-btn gs-btn--sm gs-btn--export" onclick="GSM._export(\'faults\', this)">⬇️ תקלות</button>' +
-        '<button class="gs-btn gs-btn--sm gs-btn--export" onclick="GSM._export(\'scans\', this)">⬇️ סריקות</button>' +
+        '<button class="gs-btn gs-btn--sm gs-btn--export" type="button" data-gsm-action="export" data-type="equipment">⬇️ ציוד</button>' +
+        '<button class="gs-btn gs-btn--sm gs-btn--export" type="button" data-gsm-action="export" data-type="inspections">⬇️ ביקורות</button>' +
+        '<button class="gs-btn gs-btn--sm gs-btn--export" type="button" data-gsm-action="export" data-type="faults">⬇️ תקלות</button>' +
+        '<button class="gs-btn gs-btn--sm gs-btn--export" type="button" data-gsm-action="export" data-type="scans">⬇️ סריקות</button>' +
         '</div></div>' +
         '<div class="gs-card" style="margin-top:20px"><div class="gs-card__title">⏳ דד-ליין ביקורות רבעוניות</div>' +
         (dl ? '<table class="gs-table"><thead><tr><th>ציוד</th><th>סטטוס</th><th>ליקויים</th><th>ביקורת אחרונה</th></tr></thead><tbody>' + dl + '</tbody></table>'
@@ -394,7 +405,7 @@
         '<div class="gs-toolbar"><h2 class="gs-h2">' + esc(it.name) + '</h2>' +
         '<div class="gs-toolbar__actions">' +
         (GSM.can('edit') ? '<button class="gs-btn gs-btn--sm" id="gsm-eq-edit">ערוך</button>' : '') +
-        '<button class="gs-btn gs-btn--sm gs-btn--ghost" onclick="GSM.navigate(\'/equipment\')">← חזרה</button></div></div>' +
+        '<button class="gs-btn gs-btn--sm gs-btn--ghost" type="button" data-gsm-nav="/equipment">← חזרה</button></div></div>' +
         '<div class="gs-card">' +
         f('מספר ציוד', it.asset_code) + f('סוג הגז', it.gas_type) + f('קטגוריה', it.category) + f('פקולטה', it.faculty) +
         f('בניין', it.building) + f('קומה', it.floor) + f('חדר', it.room) +
@@ -483,11 +494,30 @@
       '</head><body>' +
       '<h2>' + esc(it.name) + '</h2>' +
       (it.building ? '<p>' + esc(it.building) + (it.room ? ' · חדר ' + esc(it.room) : '') + '</p>' : '') +
-      '<img src="' + data + '" width="240" height="240">' +
+      '<img src="' + esc(data) + '" width="240" height="240" alt="QR">' +
       '<p>יחידת הבטיחות · הטכניון</p>' +
-      '<scr' + 'ipt>window.onload=function(){window.print();}</scr' + 'ipt>' +
       '</body></html>');
     w.document.close();
+    printWhenReady(w, 0);
+  }
+
+  // A window opened with window.open('') inherits this page's CSP, so it can
+  // not run inline <script>. The opener (same origin) triggers print instead,
+  // once the popup document and its images have loaded.
+  function printWhenReady(w, delay) {
+    var tries = 0;
+    (function wait() {
+      var d;
+      try { d = w.document; } catch (e) { return; } // popup closed
+      if (!d || w.closed) return;
+      var imgs = Array.prototype.slice.call(d.images || []);
+      var ready = d.readyState === 'complete' && imgs.every(function (i) { return i.complete; });
+      if (ready || tries++ > 50) {
+        setTimeout(function () { try { w.focus(); w.print(); } catch (e) { /* closed */ } }, delay || 0);
+        return;
+      }
+      setTimeout(wait, 100);
+    })();
   }
 
   function statusCls(s) {
@@ -686,13 +716,15 @@
       '<style>' + css + '</style></head><body>' +
       '<div class="noprint" style="padding:8px 6mm;background:#002147;color:#fff;display:flex;justify-content:space-between;align-items:center;margin:-6mm -6mm 6mm">' +
       '<span>' + items.length + ' מדבקות · מוכן להדפסה</span>' +
-      '<button onclick="window.print()" style="background:#f0b323;border:0;padding:8px 18px;border-radius:6px;font-weight:700;cursor:pointer">🖨️ הדפס</button>' +
+      '<button type="button" id="gsm-print-now" style="background:#f0b323;border:0;padding:8px 18px;border-radius:6px;font-weight:700;cursor:pointer">🖨️ הדפס</button>' +
       '</div>' +
       '<div class="sheet">' + labels + '</div>' +
-      '<scr' + 'ipt>window.onload=function(){setTimeout(function(){window.print();},400);}</scr' + 'ipt>' +
       '</body></html>'
     );
     w.document.close();
+    var printNow = w.document.getElementById('gsm-print-now');
+    if (printNow) printNow.addEventListener('click', function () { w.print(); });
+    printWhenReady(w, 400);
   }
 
   // ---- FAULTS --------------------------------------------------------------
@@ -1471,7 +1503,7 @@
         function u(set, fmt) { return GSM.restUrl('/bi/data/' + set + '?token=' + encodeURIComponent(tok) + '&format=' + fmt); }
         function row(lbl, url) {
           return '<div class="gs-field"><label class="gs-label">' + esc(lbl) + '</label>' +
-            '<input class="gs-input" readonly value="' + esc(url) + '" onclick="this.select()" style="font-size:12px;direction:ltr"></div>';
+            '<input class="gs-input" readonly value="' + esc(url) + '" data-gsm-action="select" style="font-size:12px;direction:ltr"></div>';
         }
         return row('ציוד — CSV (Excel / Power BI)', u('equipment', 'csv')) +
           row('ציוד — JSON', u('equipment', 'json')) +
@@ -1504,7 +1536,7 @@
         '<p style="color:var(--gs-muted);font-size:13px">הקישורים מוגנים בטוקן סודי (כמו "כתובת סודית" של יומן Google). ' +
         '<b>כל מי שמחזיק בקישור יכול לקרוא את כל הנתונים, כולל פרטי אנשי קשר</b> — שתף רק עם מערכות ואנשים מורשים. החלפת הטוקן מבטלת מיד את כל הקישורים הישנים. (ללוח המצב הציבורי יש טוקן נפרד, במסך "תקשורת והתראות".)</p>' +
         '<div class="gs-field"><label class="gs-label">טוקן BI</label>' +
-        '<input class="gs-input" id="tok-val" readonly value="' + esc(token) + '" onclick="this.select()" style="direction:ltr;font-family:monospace"></div>' +
+        '<input class="gs-input" id="tok-val" readonly value="' + esc(token) + '" data-gsm-action="select" style="direction:ltr;font-family:monospace"></div>' +
         '<button class="gs-btn gs-btn--danger gs-btn--sm" id="tok-rotate">החלף טוקן</button> <span id="tok-status" style="margin-inline-start:8px;color:var(--gs-muted)"></span>' +
         '<div id="int-links" style="margin-top:14px">' + exportLinks(token) + '</div>' +
         '</div>';
@@ -1627,7 +1659,7 @@
 
         (shareUrl ? ('<div class="gs-card" style="margin-top:16px"><div class="gs-card__title">🌐 לוח מצב ציבורי</div>' +
           '<p style="color:var(--gs-muted);font-size:13px">קישור לצפייה בנתונים מצטברים בלבד (ללא פרטים אישיים). הקישור משתמש בטוקן ציבורי נפרד, שאינו מאפשר גישה לקישורי הייצוא המלאים. החלפת הטוקן מבטלת מיד את הקישור הקודם.</p>' +
-          '<div class="gs-field"><label class="gs-label" for="pub-url">קישור לשיתוף</label><input class="gs-input" id="pub-url" readonly value="' + esc(shareUrl) + '" onclick="this.select()" style="direction:ltr;font-size:12px"></div>' +
+          '<div class="gs-field"><label class="gs-label" for="pub-url">קישור לשיתוף</label><input class="gs-input" id="pub-url" readonly value="' + esc(shareUrl) + '" data-gsm-action="select" style="direction:ltr;font-size:12px"></div>' +
           '<a class="gs-btn gs-btn--ghost gs-btn--sm" id="pub-open" href="' + esc(shareUrl) + '" target="_blank" rel="noopener noreferrer">פתח לוח מצב ↗</a> ' +
           '<button type="button" class="gs-btn gs-btn--danger gs-btn--sm" id="pub-rotate">החלף טוקן ציבורי</button> ' +
           '<span id="pub-status" role="status" aria-live="polite" style="margin-inline-start:8px;color:var(--gs-muted)"></span></div>') : '') +
@@ -1725,7 +1757,7 @@
       }
 
       main.innerHTML =
-        '<div class="gs-toolbar"><h2 class="gs-h2">הגדרות ביקורת</h2><div class="gs-toolbar__actions"><button class="gs-btn gs-btn--export" onclick="GSM._export(\'checklists\', this)">⬇️ ייצוא צ׳ק-ליסטים</button><button class="gs-btn" id="cfg-save">שמור</button><span id="cfg-status" style="margin-inline-start:10px;color:var(--gs-muted)"></span></div></div>' +
+        '<div class="gs-toolbar"><h2 class="gs-h2">הגדרות ביקורת</h2><div class="gs-toolbar__actions"><button class="gs-btn gs-btn--export" type="button" data-gsm-action="export" data-type="checklists">⬇️ ייצוא צ׳ק-ליסטים</button><button class="gs-btn" id="cfg-save">שמור</button><span id="cfg-status" style="margin-inline-start:10px;color:var(--gs-muted)"></span></div></div>' +
         editor('quarterly', 'צ׳קליסט רבעוני — אחמ"ת (ארוך)', cl.quarterly) +
         editor('monthly', 'צ׳קליסט חודשי — מנהל מעבדה / חוקר ראשי (קצר)', cl.monthly) +
         '<div class="gs-card"><div class="gs-card__title">כללי תזכורת</div>' +
@@ -1783,7 +1815,7 @@
       return '<div class="gs-card" style="max-width:320px;display:inline-block;vertical-align:top;margin:0 0 16px 16px">' +
         '<div class="gs-card__title">' + esc(title) + '</div>' +
         '<p style="color:var(--gs-muted);min-height:38px">' + esc(desc) + '</p>' +
-        '<button class="gs-btn gs-btn--export" onclick="GSM._export(\'' + type + '\', this)">⬇️ הורדה</button></div>';
+        '<button class="gs-btn gs-btn--export" type="button" data-gsm-action="export" data-type="' + esc(type) + '">⬇️ הורדה</button></div>';
     }
     main.innerHTML =
       '<div class="gs-toolbar"><h2 class="gs-h2">הנפקת דוחות אקסל</h2></div>' +
@@ -1992,9 +2024,9 @@
           return '<tr><td>' + esc(p.created_at) + '</td><td>' + esc(p.label) + ' ' + kind + '</td>' +
             '<td style="font-size:12px;color:var(--gs-muted)">' + esc(cnt) + '</td>' +
             '<td style="white-space:nowrap">' +
-              '<button class="gs-btn gs-btn--sm" onclick="GSM._rpRestore(' + p.id + ', this)">↩ שחזר</button> ' +
-              '<button class="gs-btn gs-btn--sm gs-btn--ghost" onclick="GSM._rpDownload(' + p.id + ')">⬇️</button> ' +
-              '<button class="gs-btn gs-btn--sm gs-btn--danger" onclick="GSM._rpDelete(' + p.id + ', this)">✕</button>' +
+              '<button class="gs-btn gs-btn--sm" type="button" data-gsm-action="rpRestore" data-id="' + esc(p.id) + '">↩ שחזר</button> ' +
+              '<button class="gs-btn gs-btn--sm gs-btn--ghost" type="button" data-gsm-action="rpDownload" data-id="' + esc(p.id) + '" aria-label="הורדת נקודת שחזור">⬇️</button> ' +
+              '<button class="gs-btn gs-btn--sm gs-btn--danger" type="button" data-gsm-action="rpDelete" data-id="' + esc(p.id) + '" aria-label="מחיקת נקודת שחזור">✕</button>' +
             '</td></tr>';
         }).join('');
         main.innerHTML =
@@ -2030,7 +2062,7 @@
       var body = rows.map(function (r) {
         var cls = actCls[r.action] || 'ok';
         var undo = r.undoable
-          ? '<button class="gs-btn gs-btn--sm" onclick="GSM._auditUndo(' + r.id + ', this)">↩ שחזר</button>'
+          ? '<button class="gs-btn gs-btn--sm" type="button" data-gsm-action="auditUndo" data-id="' + esc(r.id) + '">↩ שחזר</button>'
           : (r.undone ? '<span class="gs-pill gs-pill--ok">שוחזר</span>' : '');
         return '<tr><td>' + esc(r.created_at) + '</td><td>' + esc(r.actor) + '</td>' +
           '<td><span class="gs-pill gs-pill--' + cls + '">' + esc(r.action_label) + '</span></td>' +

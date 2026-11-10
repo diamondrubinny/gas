@@ -19,8 +19,8 @@
       '<p class="gs-home__desc">ניהול ציוד גזים, ביקורות תקופתיות, תקלות ומעקב — במקום אחד.</p>' +
       '<div class="gs-home__actions">' +
       (loggedIn
-        ? '<button class="gs-btn gs-btn--lg" onclick="GSM.navigate(\'/dashboard\')">כניסה לדשבורד ←</button>'
-        : '<button class="gs-btn gs-btn--lg" onclick="GSM.navigate(\'/login\')">כניסה למערכת ←</button>') +
+        ? '<button class="gs-btn gs-btn--lg" type="button" data-gsm-nav="/dashboard">כניסה לדשבורד ←</button>'
+        : '<button class="gs-btn gs-btn--lg" type="button" data-gsm-nav="/login">כניסה למערכת ←</button>') +
       '</div>' +
       '<p class="gs-home__note">סריקת קוד QR על ציוד פותחת את דף הציוד ישירות — ללא צורך בהתחברות.</p>' +
       '</div></div>';
@@ -51,7 +51,7 @@
       '<label class="gs-check"><input type="checkbox" id="gsm-lg-remember"> זכור אותי</label>' +
       '<div id="gsm-lg-err"></div>' +
       '<button class="gs-btn gs-btn--lg gs-btn--block" id="gsm-lg-submit">התחבר</button>' +
-      '<button class="gs-btn gs-btn--ghost gs-btn--block" onclick="GSM.navigate(\'/\')">חזרה לדף הבית</button>' +
+      '<button class="gs-btn gs-btn--ghost gs-btn--block" type="button" data-gsm-nav="/">חזרה לדף הבית</button>' +
       '</div></div>';
 
     var submit = document.getElementById('gsm-lg-submit');

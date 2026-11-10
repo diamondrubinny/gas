@@ -35,6 +35,11 @@ class GSM_Xlsx {
 			return self::csv_fallback( $sheets );
 		}
 
+		// wp_tempnam() lives in wp-admin/includes/file.php, which WordPress does
+		// not load on REST requests — without this the export fatals on a clean site.
+		if ( ! function_exists( 'wp_tempnam' ) ) {
+			require_once ABSPATH . 'wp-admin/includes/file.php';
+		}
 		$tmp = wp_tempnam( 'gsm_xlsx' );
 		$zip = new ZipArchive();
 		if ( true !== $zip->open( $tmp, ZipArchive::OVERWRITE ) ) {

@@ -100,7 +100,9 @@ class GSM_REST_QR {
 
 		// Time-trap: a real person needs a couple of seconds to fill the form.
 		if ( isset( $body['ts'] ) && is_numeric( $body['ts'] ) ) {
-			$elapsed = ( time() * 1000 ) - (int) $body['ts'];
+			// Millisecond clock: time() * 1000 floors to the second and wrongly
+			// rejected real people who submitted 2-3 s after opening the form.
+			$elapsed = (int) round( microtime( true ) * 1000 ) - (int) $body['ts'];
 			if ( $elapsed >= 0 && $elapsed < 2000 ) {
 				return new WP_Error( 'gsm_too_fast', __( 'שליחה מהירה מדי. נסו שוב.', 'gas-safety-manager' ), array( 'status' => 429 ) );
 			}
