@@ -7,9 +7,19 @@
  *   POST /gas/v1/bi/token/rotate                     (manage) — new token
  *   GET  /gas/v1/bi/data/{set}?format=csv|json&token= (public, token) — export
  *   GET  /gas/v1/bi/ical?token=                       (public, token) — calendar
+ *   GET  /gas/v1/bi/public-token                     (manage) — public dashboard token
+ *   POST /gas/v1/bi/public-token/rotate              (manage) — new public token
+ *   GET  /gas/v1/bi/public?token=                     (public, PUBLIC token) — aggregates
  *
  * The data/ical endpoints are public but gated by a long random token (like a
  * Google Calendar secret address), for Power BI / Excel / SAP / calendar subs.
+ *
+ * Two SEPARATE secrets (since 2.13.1):
+ *   - gsm_bi_token     : full row-level export (contains personal data). Never
+ *                        accepted by /bi/public.
+ *   - gsm_public_token : aggregate-only public dashboard. Never accepted by
+ *                        /bi/data or /bi/ical, so sharing the dashboard link
+ *                        can not leak row-level / personal data.
  *
  * @package GasSafetyManager
  */
@@ -58,6 +68,24 @@ class GSM_REST_BI {
 		);
 		register_rest_route(
 			self::NS,
+			'/bi/public-token',
+			array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => array( $this, 'get_public_token' ),
+				'permission_callback' => array( 'GSM_Auth', 'require_manage' ),
+			)
+		);
+		register_rest_route(
+			self::NS,
+			'/bi/public-token/rotate',
+			array(
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'rotate_public_token' ),
+				'permission_callback' => array( 'GSM_Auth', 'require_manage' ),
+			)
+		);
+		register_rest_route(
+			self::NS,
 			'/bi/data/(?P<set>equipment|faults|inspections)',
 			array(
 				'methods'             => WP_REST_Server::READABLE,
@@ -95,7 +123,8 @@ class GSM_REST_BI {
 		if ( GSM_Rate_Limit::too_many( 'bi-public', 120, 300 ) ) {
 			return GSM_Rate_Limit::error();
 		}
-		if ( ! $this->check_token( $req ) ) {
+		// Aggregate-only endpoint: accepts ONLY the public token, never the BI export token.
+		if ( ! self::token_matches( $req, self::public_token() ) ) {
 			return new WP_Error( 'gsm_bi_token', 'Invalid token', array( 'status' => 403 ) );
 		}
 		global $wpdb;
@@ -140,6 +169,43 @@ class GSM_REST_BI {
 	}
 
 	/**
+	 * Get or create the public-dashboard token (separate from the BI export token).
+	 *
+	 * @return string
+	 */
+	public static function public_token() {
+		$t = (string) get_option( 'gsm_public_token', '' );
+		if ( '' === $t ) {
+			$t = bin2hex( random_bytes( 16 ) );
+			update_option( 'gsm_public_token', $t, false );
+		}
+		return $t;
+	}
+
+	/**
+	 * GET /bi/public-token
+	 *
+	 * @return WP_REST_Response
+	 */
+	public function get_public_token() {
+		return rest_ensure_response( array( 'token' => self::public_token() ) );
+	}
+
+	/**
+	 * POST /bi/public-token/rotate
+	 *
+	 * @return WP_REST_Response
+	 */
+	public function rotate_public_token() {
+		$t = bin2hex( random_bytes( 16 ) );
+		update_option( 'gsm_public_token', $t, false );
+		if ( class_exists( 'GSM_Audit' ) ) {
+			GSM_Audit::log( 'update', 'system', 0, '', 'הוחלף טוקן לוח המצב הציבורי' );
+		}
+		return rest_ensure_response( array( 'token' => $t ) );
+	}
+
+	/**
 	 * GET /bi/token
 	 *
 	 * @return WP_REST_Response
@@ -156,6 +222,9 @@ class GSM_REST_BI {
 	public function rotate_token() {
 		$t = bin2hex( random_bytes( 16 ) );
 		update_option( 'gsm_bi_token', $t );
+		if ( class_exists( 'GSM_Audit' ) ) {
+			GSM_Audit::log( 'update', 'system', 0, '', 'הוחלף טוקן ה-BI (קישורי ייצוא)' );
+		}
 		return rest_ensure_response( array( 'token' => $t ) );
 	}
 
@@ -166,9 +235,35 @@ class GSM_REST_BI {
 	 * @return bool
 	 */
 	private function check_token( $req ) {
-		$provided = (string) $req->get_param( 'token' );
-		$stored   = self::token();
-		return '' !== $provided && hash_equals( $stored, $provided );
+		return self::token_matches( $req, self::token() );
+	}
+
+	/**
+	 * Constant-time compare of the request's token param against an expected secret.
+	 *
+	 * @param WP_REST_Request $req      Request.
+	 * @param string          $expected Expected token.
+	 * @return bool
+	 */
+	private static function token_matches( $req, $expected ) {
+		$provided = $req->get_param( 'token' );
+		if ( ! is_string( $provided ) || '' === $provided || '' === (string) $expected ) {
+			return false;
+		}
+		return hash_equals( (string) $expected, $provided );
+	}
+
+	/**
+	 * Headers for token-gated raw exports: no caching, no indexing, no framing.
+	 * No CORS header on purpose — Power BI / Excel / calendar clients fetch
+	 * server-side and do not need it; omitting it stops arbitrary web pages
+	 * from reading the data in a browser.
+	 */
+	private static function export_headers() {
+		header( 'Cache-Control: no-store, max-age=0' );
+		header( 'X-Robots-Tag: noindex, nofollow' );
+		header( 'X-Content-Type-Options: nosniff' );
+		header( 'Referrer-Policy: no-referrer' );
 	}
 
 	/**
@@ -245,6 +340,9 @@ class GSM_REST_BI {
 	 * @return WP_Error|void
 	 */
 	public function export_data( $req ) {
+		if ( GSM_Rate_Limit::too_many( 'bi-data', 60, 300 ) ) {
+			return GSM_Rate_Limit::error();
+		}
 		if ( ! $this->check_token( $req ) ) {
 			return new WP_Error( 'gsm_bi_token', 'Invalid token', array( 'status' => 403 ) );
 		}
@@ -267,9 +365,9 @@ class GSM_REST_BI {
 			unset( $r );
 		}
 
+		self::export_headers();
 		if ( 'json' === $format ) {
 			header( 'Content-Type: application/json; charset=utf-8' );
-			header( 'Access-Control-Allow-Origin: *' );
 			echo wp_json_encode( array_values( $rows ), JSON_UNESCAPED_UNICODE );
 			exit;
 		}
@@ -277,7 +375,6 @@ class GSM_REST_BI {
 		// CSV (UTF-8 BOM).
 		header( 'Content-Type: text/csv; charset=utf-8' );
 		header( 'Content-Disposition: inline; filename="gas-' . $set . '.csv"' );
-		header( 'Access-Control-Allow-Origin: *' );
 		echo "\xEF\xBB\xBF";
 		if ( ! empty( $rows ) ) {
 			$cols = array_keys( $rows[0] );
@@ -298,6 +395,9 @@ class GSM_REST_BI {
 	 * @return WP_Error|void
 	 */
 	public function ical( $req ) {
+		if ( GSM_Rate_Limit::too_many( 'bi-ical', 60, 300 ) ) {
+			return GSM_Rate_Limit::error();
+		}
 		if ( ! $this->check_token( $req ) ) {
 			return new WP_Error( 'gsm_bi_token', 'Invalid token', array( 'status' => 403 ) );
 		}
@@ -320,7 +420,7 @@ class GSM_REST_BI {
 		$lines[] = 'END:VCALENDAR';
 		header( 'Content-Type: text/calendar; charset=utf-8' );
 		header( 'Content-Disposition: inline; filename="gas-inspections.ics"' );
-		header( 'Access-Control-Allow-Origin: *' );
+		self::export_headers();
 		echo implode( "\r\n", $lines );
 		exit;
 	}

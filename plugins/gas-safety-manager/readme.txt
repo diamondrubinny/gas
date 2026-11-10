@@ -3,7 +3,7 @@ Contributors: diamondrubinny
 Tags: safety, equipment, inspections, hebrew, rtl
 Requires at least: 6.4
 Requires PHP: 8.1
-Stable tag: 2.13.0
+Stable tag: 2.13.1
 License: Proprietary — Technion Safety Unit
 
 Gas systems maintenance management for the Technion Safety Unit. Manages equipment, inspections, faults, and QR codes with native WordPress storage.
@@ -31,6 +31,12 @@ Pairs with the companion "Gas Safety" theme for the portal look (navy/gold, RTL,
 4. To import from Monday: open "Gas Migration", generate a key, run the console script in the portal, then revoke the key.
 
 == Changelog ==
+
+= 2.13.1 =
+* Security fix (High): the public status dashboard link no longer exposes the full data export. Until now /bi/public, /bi/data and /bi/ical all accepted the same BI token, so anyone holding the "aggregate-only" dashboard link could download every equipment row, including contact names and emails. The dashboard now uses its own token (gsm_public_token), managed and rotated from "תקשורת והתראות"; /bi/public rejects the BI token and /bi/data + /bi/ical reject the public token. New routes: GET /gas/v1/bi/public-token, POST /gas/v1/bi/public-token/rotate (manager).
+* UPGRADE NOTE: previously shared public dashboard links stop working. Copy the new link from "תקשורת והתראות". BI export links (Power BI / Excel / iCal) are unchanged — but if the old dashboard link was shared outside the team, rotate the BI token too ("אינטגרציות" > "החלף טוקן").
+* Hardening: per-IP rate limiting on /bi/data and /bi/ical (60 per 5 minutes); removed "Access-Control-Allow-Origin: *" from the exports (Power BI / Excel / calendar clients fetch server-side and do not need it); exports send no-store / noindex / nosniff / no-referrer headers; the public dashboard page sets referrer=no-referrer so the token does not leak via the Referer header; token rotations are written to the audit log; uninstall removes both tokens.
+* No DB change — stays v8.
 
 = 2.13.0 =
 * Secure attachments (photos / PDFs) on inspections and faults ("📎 צרופות"): upload, preview thumbnails, download, and delete from the edit forms. Security controls — allow-list by BOTH extension and real MIME (wp_check_filetype_and_ext + finfo + getimagesize for images), 8MB size cap, 10-per-item count cap, randomized stored filename, files stored OUTSIDE the public area under uploads/gas-private/ with a deny-all .htaccess/index.php/web.config, served only through an authorized REST endpoint (never a direct URL, never executed), SVG/exe/script payloads rejected, optional ClamAV/AV verdict via the gsm_attachment_scan filter, path-traversal-guarded streaming, and delete limited to a manager or the original uploader (IDOR-safe). New routes: POST /gas/v1/attachments, GET /gas/v1/attachments/list/{entity}/{id}, GET /gas/v1/attachments/{id}, DELETE /gas/v1/attachments/{id}.

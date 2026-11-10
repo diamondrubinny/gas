@@ -1501,7 +1501,7 @@
 
         '<div class="gs-card" style="margin-top:16px"><div class="gs-card__title">📤 קישורי ייצוא (Power BI / Excel / יומן)</div>' +
         '<p style="color:var(--gs-muted);font-size:13px">הקישורים מוגנים בטוקן סודי (כמו "כתובת סודית" של יומן Google). ' +
-        '<b>כל מי שמחזיק בקישור יכול לקרוא את הנתונים</b> — שתף בזהירות. החלפת הטוקן מבטלת מיידית את כל הקישורים הישנים.</p>' +
+        '<b>כל מי שמחזיק בקישור יכול לקרוא את כל הנתונים, כולל פרטי אנשי קשר</b> — שתף רק עם מערכות ואנשים מורשים. החלפת הטוקן מבטלת מיד את כל הקישורים הישנים. (ללוח המצב הציבורי יש טוקן נפרד, במסך "תקשורת והתראות".)</p>' +
         '<div class="gs-field"><label class="gs-label">טוקן BI</label>' +
         '<input class="gs-input" id="tok-val" readonly value="' + esc(token) + '" onclick="this.select()" style="direction:ltr;font-family:monospace"></div>' +
         '<button class="gs-btn gs-btn--danger gs-btn--sm" id="tok-rotate">החלף טוקן</button> <span id="tok-status" style="margin-inline-start:8px;color:var(--gs-muted)"></span>' +
@@ -1563,7 +1563,7 @@
 
     Promise.all([
       api('/comm'),
-      api('/bi/token').catch(function () { return {}; })
+      api('/bi/public-token').catch(function () { return {}; })
     ]).then(function (res) {
       var data = res[0] || {};
       var c = data.config || {};
@@ -1574,7 +1574,10 @@
       var assetsUrl = cfgRoot.assetsUrl || '';
       var restRoot = cfgRoot.restRoot || '';
       var pubBase = assetsUrl.replace(/assets\/?$/, '') + 'gas-public-dashboard.html';
-      var shareUrl = token ? (pubBase + '?t=' + encodeURIComponent(token) + '&api=' + encodeURIComponent(restRoot)) : '';
+      function shareUrlFor(tok) {
+        return tok ? (pubBase + '?t=' + encodeURIComponent(tok) + '&api=' + encodeURIComponent(restRoot)) : '';
+      }
+      var shareUrl = shareUrlFor(token);
 
       function chk(id, label, on, hint) {
         return '<label style="display:flex;gap:8px;align-items:flex-start;margin:8px 0;cursor:pointer"><input type="checkbox" id="' + id + '"' + (on ? ' checked' : '') + ' style="margin-top:3px">' +
@@ -1622,12 +1625,29 @@
         '</div>' +
 
         (shareUrl ? ('<div class="gs-card" style="margin-top:16px"><div class="gs-card__title">🌐 לוח מצב ציבורי</div>' +
-          '<p style="color:var(--gs-muted);font-size:13px">קישור לצפייה בנתונים מצטברים בלבד (ללא פרטים אישיים). מוגן בטוקן — שתף בזהירות. החלפת טוקן ה‑BI (במסך "אינטגרציות") מבטלת מיידית את הקישור.</p>' +
-          '<div class="gs-field"><input class="gs-input" readonly value="' + esc(shareUrl) + '" onclick="this.select()" style="direction:ltr;font-size:12px"></div>' +
-          '<a class="gs-btn gs-btn--ghost gs-btn--sm" href="' + esc(shareUrl) + '" target="_blank" rel="noopener">פתח לוח מצב ↗</a></div>') : '') +
+          '<p style="color:var(--gs-muted);font-size:13px">קישור לצפייה בנתונים מצטברים בלבד (ללא פרטים אישיים). הקישור משתמש בטוקן ציבורי נפרד, שאינו מאפשר גישה לקישורי הייצוא המלאים. החלפת הטוקן מבטלת מיד את הקישור הקודם.</p>' +
+          '<div class="gs-field"><label class="gs-label" for="pub-url">קישור לשיתוף</label><input class="gs-input" id="pub-url" readonly value="' + esc(shareUrl) + '" onclick="this.select()" style="direction:ltr;font-size:12px"></div>' +
+          '<a class="gs-btn gs-btn--ghost gs-btn--sm" id="pub-open" href="' + esc(shareUrl) + '" target="_blank" rel="noopener noreferrer">פתח לוח מצב ↗</a> ' +
+          '<button type="button" class="gs-btn gs-btn--danger gs-btn--sm" id="pub-rotate">החלף טוקן ציבורי</button> ' +
+          '<span id="pub-status" role="status" aria-live="polite" style="margin-inline-start:8px;color:var(--gs-muted)"></span></div>') : '') +
 
         '<div class="gs-card" style="margin-top:20px"><div class="gs-card__title">📜 יומן שליחות אחרונות</div>' +
         '<div id="cm-log">' + renderLog(log) + '</div></div>';
+
+      var pubRotate = document.getElementById('pub-rotate');
+      if (pubRotate) {
+        pubRotate.addEventListener('click', function () {
+          if (!confirm('להחליף את הטוקן של לוח המצב הציבורי? הקישור הקודם יפסיק לעבוד מיד.')) return;
+          var btn = this, st = document.getElementById('pub-status');
+          btn.disabled = true; st.textContent = 'מחליף…';
+          api('/bi/public-token/rotate', { method: 'POST' }).then(function (r) {
+            var nu = shareUrlFor((r && r.token) || '');
+            document.getElementById('pub-url').value = nu;
+            document.getElementById('pub-open').setAttribute('href', nu);
+            st.textContent = '✓ הוחלף'; btn.disabled = false;
+          }).catch(function (e) { st.textContent = '✗ ' + (e.message || e); btn.disabled = false; });
+        });
+      }
 
       document.getElementById('cm-save').addEventListener('click', function () {
         var btn = this, st = document.getElementById('cm-status');

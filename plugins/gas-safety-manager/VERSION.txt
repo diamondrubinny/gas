@@ -1,3 +1,18 @@
+Gas Safety Manager v2.13.1 — Security fix: separate public-dashboard token.
+
+FIX in v2.13.1:
+- HIGH: the public dashboard token was the same as the BI export token, so the
+  "aggregate-only" dashboard link also unlocked /bi/data (full rows incl. contact
+  names/emails, CORS *). Now: separate gsm_public_token for /bi/public only;
+  /bi/data + /bi/ical accept only gsm_bi_token. Routes: GET /bi/public-token,
+  POST /bi/public-token/rotate (manager). Rotate button in "תקשורת והתראות".
+- Old shared dashboard links stop working (intended) — share the new link.
+  If the old link left the team, also rotate the BI token.
+- Rate limit /bi/data + /bi/ical (60/5min/IP); no CORS on exports; no-store,
+  noindex, nosniff, no-referrer headers; audit log on token rotation.
+- No DB change — stays v8.
+
+----
 Gas Safety Manager v2.13.0 — Secure attachments + Communication/alerts + Public dashboard + Security hardening.
 
 NEW in v2.13.0:

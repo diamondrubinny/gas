@@ -44,6 +44,8 @@ delete_option( 'gsm_db_version' );
 delete_option( 'gsm_feature_enabled' );
 delete_option( 'gsm_settings' );
 delete_option( 'gsm_keep_data_on_uninstall' );
+delete_option( 'gsm_bi_token' );
+delete_option( 'gsm_public_token' );
 
 // Remove custom roles.
 remove_role( 'gsm_lab_manager' );
