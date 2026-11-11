@@ -3,7 +3,7 @@
   Blocking PHPCS ruleset (CI fails on any violation):
     1. WordPress security sniffs: output escaping, input sanitizing, nonces,
        prepared SQL, safe redirects, discouraged/restricted functions.
-    2. PHP compatibility for the plugin's minimum (PHP 8.1+).
+    2. PHP compatibility for the plugin's minimum (PHP 8.2+).
 
   Full WordPress coding style (formatting) is reported separately and is
   advisory only:  composer phpcs:style
@@ -33,8 +33,8 @@
     <rule ref="WordPress.PHP.RestrictedPHPFunctions"/>
     <rule ref="WordPress.PHP.DiscouragedPHPFunctions"/>
 
-    <!-- PHP compatibility (Requires PHP: 8.1) -->
-    <config name="testVersion" value="8.1-"/>
+    <!-- PHP compatibility (Requires PHP: 8.2) -->
+    <config name="testVersion" value="8.2-"/>
     <rule ref="PHPCompatibilityWP"/>
 
     <!-- WordPress minimum (Requires at least: 6.4) for deprecated-function sniffs -->

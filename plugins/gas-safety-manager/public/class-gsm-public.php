@@ -85,8 +85,11 @@ class GSM_Public {
 		// from a CDN — the Technion network blocks outside CDNs, which left QR
 		// codes blank and BI charts missing. Local copies always load.
 		$vendor = GSM_PLUGIN_URL . 'public/assets/vendor/';
-		wp_register_script( 'gsm-qrcode', $vendor . 'qrcode.min.js', array(), '1.0.0', true );
-		wp_register_script( 'gsm-chartjs', $vendor . 'chart.umd.min.js', array(), '4.4.1', true );
+		// qrcode-generator 2.0.4 (MIT, maintained) + a small UTF-8 / PNG helper;
+		// replaced the unmaintained qrcodejs. Chart.js 4.6.1.
+		wp_register_script( 'gsm-qrcode-lib', $vendor . 'qrcode-generator.js', array(), '2.0.4', true );
+		wp_register_script( 'gsm-qrcode', $base . 'qr.js', array( 'gsm-qrcode-lib', 'gsm-auth' ), GSM_VERSION, true );
+		wp_register_script( 'gsm-chartjs', $vendor . 'chart.umd.min.js', array(), '4.6.1', true );
 		wp_register_script( 'gsm-view-app', $base . 'views/app-views.js', array( 'gsm-auth', 'gsm-forms', 'gsm-qrcode', 'gsm-chartjs' ), GSM_VERSION, true );
 		wp_register_script( 'gsm-app', $base . 'app.js', array( 'gsm-router', 'gsm-auth', 'gsm-forms', 'gsm-view-homelogin', 'gsm-view-app' ), GSM_VERSION, true );
 	}

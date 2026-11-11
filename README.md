@@ -4,8 +4,8 @@
 
 | רכיב | נתיב | גרסה | דרישות |
 |---|---|---|---|
-| תוסף **Gas Safety Manager** | [`plugins/gas-safety-manager/`](plugins/gas-safety-manager/) | 2.14.1 (DB v8) | WordPress 6.4+, PHP 8.1+ |
-| ערכת עיצוב **Gas Safety** | [`themes/gas-safety-theme/`](themes/gas-safety-theme/) | 1.2.4 | WordPress 6.4+, PHP 8.1+ |
+| תוסף **Gas Safety Manager** | [`plugins/gas-safety-manager/`](plugins/gas-safety-manager/) | 2.14.2 (DB v8) | WordPress 6.4+, PHP **8.2+** |
+| ערכת עיצוב **Gas Safety** | [`themes/gas-safety-theme/`](themes/gas-safety-theme/) | 1.2.5 | WordPress 6.4+, PHP **8.2+** |
 
 היסטוריית שינויים: [`plugins/gas-safety-manager/readme.txt`](plugins/gas-safety-manager/readme.txt) (Changelog) ו-[`VERSION.txt`](plugins/gas-safety-manager/VERSION.txt). מצב הפרויקט וממצאים פתוחים: [`STATUS.md`](STATUS.md).
 
@@ -75,7 +75,9 @@ define( 'GSM_CSP_MODE', 'report-only' ); // enforce (ברירת מחדל) | repo
 ## פיתוח ובדיקות
 
 ### דרישות
-PHP 8.1+ עם `pdo_sqlite`, Composer 2, Node.js 20+.
+PHP 8.2+ עם `pdo_sqlite`, Composer 2, Node.js 20+.
+
+> ⚠️ **PHP 8.1 הגיעה לסוף חייה ב-31.12.2025, ו-8.2 תקבל עדכוני אבטחה רק עד 31.12.2026** (php.net). מומלץ לתכנן שדרוג של השרת ל-8.3 ומעלה.
 
 ```bash
 composer install
@@ -104,7 +106,7 @@ vendor/bin/phpcs
 npm run test:dashboard
 ```
 
-- `vendor/bin/phpcs` מריץ את ה-ruleset שב-[`phpcs.xml.dist`](phpcs.xml.dist): חוקי אבטחה של WordPress ותאימות ל-PHP 8.1+. **כל הפרה מכשילה את ה-CI.**
+- `vendor/bin/phpcs` מריץ את ה-ruleset שב-[`phpcs.xml.dist`](phpcs.xml.dist): חוקי אבטחה של WordPress ותאימות ל-PHP 8.2+. **כל הפרה מכשילה את ה-CI.**
 - סגנון WordPress המלא מדווח בנפרד (`composer phpcs:style`), לידיעה בלבד.
 
 ### בדיקת End-to-End מול WordPress אמיתי
@@ -133,10 +135,10 @@ BASE=http://127.0.0.1:8899 USER_NAME=admin PASS='local-test-password' WP_PATH=.w
 
 | Job | מה נבדק | חוסם? |
 |---|---|---|
-| Lint | תחביר PHP ב-8.1 / 8.2 / 8.3 / 8.4, תחביר JS, התאמת מספרי גרסה | כן |
-| PHPCS | אבטחה ותאימות PHP 8.1+ | כן |
+| Lint | תחביר PHP ב-8.2 / 8.3 / 8.4 / 8.5, תחביר JS, התאמת מספרי גרסה | כן |
+| PHPCS | אבטחה ותאימות PHP 8.2+ | כן |
 | PHPCS style | סגנון WordPress מלא | לא (לידיעה) |
-| Unit | טוקנים, rate limit, הגנת CSV | כן |
+| Unit | טוקנים, rate limit, הגנת CSV, קריאת CSV ו-XLSX, ופענוח קודי QR | כן |
 | Integration | מדיניות שמירה (19 בדיקות), תיקוני סקירת הקוד (24) והסרה מלאה של התוסף (7) על WordPress אמיתי | כן |
 | E2E | WordPress 6.4.5 (המינימום) ו-latest | כן |
 | נגישות | axe-core (WCAG 2.1 A/AA) על 35 תצוגות, ובדיקות מקלדת ופוקוס | כן |

@@ -121,6 +121,13 @@ const SCREENS = ['dashboard', 'bi', 'reports', 'audit', 'myequip', 'quality', 'e
     check('screen #/' + s + ' renders', !err, txt);
   }
 
+  // 4b. Bundled libraries: Chart.js 4.6.1 draws the BI charts.
+  await page.evaluate(() => GSM.navigate('/bi'));
+  await page.waitForSelector('#bi-status', { timeout: 8000 }).catch(() => null);
+  await page.waitForTimeout(600);
+  const charts = await page.evaluate(() => ({ v: window.Chart && window.Chart.version, n: Array.from(document.querySelectorAll('canvas')).filter((c) => window.Chart && window.Chart.getChart(c)).length }));
+  check('Chart.js 4.6.1 renders the BI charts', charts.v === '4.6.1' && charts.n >= 1, JSON.stringify(charts));
+
   // 5. Grouped nav: toggle + navigate through data attributes.
   await page.evaluate(() => GSM.navigate('/dashboard'));
   await page.waitForSelector('[data-gsm-action="navToggle"]');
@@ -136,6 +143,8 @@ const SCREENS = ['dashboard', 'bi', 'reports', 'audit', 'myequip', 'quality', 'e
   // 7. Equipment detail + back button.
   await page.evaluate((id) => GSM.navigate('/equipment/' + id), seeded.eq);
   await page.waitForSelector('.gs-main [data-gsm-nav="/equipment"]');
+  const qrImg = await page.$eval('#gsm-qr-canvas img', (i) => ({ src: i.src.slice(0, 22), alt: i.alt, w: i.naturalWidth })).catch(() => null);
+  check('equipment QR = one PNG <img> with alt text (qrcode-generator)', !!qrImg && qrImg.src === 'data:image/png;base64,' && /קוד QR/.test(qrImg.alt) && qrImg.w > 100, JSON.stringify(qrImg));
   await page.click('.gs-main [data-gsm-nav="/equipment"]');
   await page.waitForTimeout(500);
   check('detail back button', /#\/equipment$/.test(page.url()));

@@ -19,7 +19,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        php: ['8.1', '8.2', '8.3', '8.4']
+        php: ['8.2', '8.3', '8.4', '8.5']
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
@@ -77,6 +77,15 @@ jobs:
       - run: php tests/bi-token-test.php plugins/gas-safety-manager
       - run: php tests/csv-injection-test.php plugins/gas-safety-manager
       - run: php tests/csv-reader-test.php plugins/gas-safety-manager
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+          cache: npm
+      - name: QR codes decode back exactly (incl. UTF-8)
+        run: |
+          npm ci --no-audit --no-fund
+          npx playwright install --with-deps chromium
+          node tests/qr-test.js plugins/gas-safety-manager
 
   e2e:
     name: E2E (WordPress ${{ matrix.wp }})

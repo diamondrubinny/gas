@@ -2,8 +2,9 @@
 Contributors: diamondrubinny
 Tags: safety, equipment, inspections, hebrew, rtl
 Requires at least: 6.4
-Requires PHP: 8.1
-Stable tag: 2.14.1
+Requires PHP: 8.2
+Tested up to: 7.1
+Stable tag: 2.14.2
 License: Proprietary — Technion Safety Unit
 
 Gas systems maintenance management for the Technion Safety Unit. Manages equipment, inspections, faults, and QR codes with native WordPress storage.
@@ -31,6 +32,11 @@ Pairs with the companion "Gas Safety" theme for the portal look (navy/gold, RTL,
 4. To import from Monday: open "Gas Migration", generate a key, run the console script in the portal, then revoke the key.
 
 == Changelog ==
+
+= 2.14.2 =
+* Requirements: PHP 8.2 or newer (PHP 8.1 reached end of life on 31 Dec 2025 — php.net). WordPress 6.4+ unchanged; tested up to WordPress 7.1. On a PHP 8.1 server WordPress refuses to install this update with a message (nothing breaks). Note: PHP 8.2 itself gets security fixes only until 31 Dec 2026 — plan the server upgrade to 8.3+.
+* Libraries: Chart.js 4.4.1 → 4.6.1. The unmaintained qrcodejs is replaced by qrcode-generator 2.0.4 (MIT) with a small helper that encodes UTF-8 (the library's default keeps only 8 bits per character, which breaks non-Latin URLs) and outputs one PNG <img> with alt text. Every generated code is verified by decoding it (tests/qr-test.js).
+* No DB change — stays v8.
 
 = 2.14.1 =
 Fixes from a code review of the modules not reviewed before (each verified in the code and covered by a test on a real WordPress):

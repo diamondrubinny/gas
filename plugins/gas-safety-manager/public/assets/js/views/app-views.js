@@ -459,17 +459,16 @@
   function wireQr(it) {
     if (!it.qr_token) return;
     var box = document.getElementById('gsm-qr-canvas');
-    if (!box || !window.QRCode) return;
+    if (!box || !GSM.qrPng) return;
     var url = bridgeUrl(it.qr_token);
-    // Render QR into the box.
-    var qr = new QRCode(box, { text: url, width: 180, height: 180, correctLevel: QRCode.CorrectLevel.M });
-    // The library renders both a <canvas> and an <img>: name the image, hide
-    // the duplicate canvas from assistive tech (WCAG 1.1.1).
-    var qrAlt = 'קוד QR לציוד ' + (it.name || '') + ' — מוביל לעמוד הפרטים';
-    box.setAttribute('role', 'img');
-    box.setAttribute('aria-label', qrAlt);
-    Array.prototype.forEach.call(box.querySelectorAll('img'), function (im) { im.alt = qrAlt; });
-    Array.prototype.forEach.call(box.querySelectorAll('canvas'), function (cv) { cv.setAttribute('aria-hidden', 'true'); });
+    // One <img> with a text alternative (WCAG 1.1.1).
+    var im = document.createElement('img');
+    im.src = GSM.qrPng(url, 180);
+    im.width = 180;
+    im.height = 180;
+    im.alt = 'קוד QR לציוד ' + (it.name || '') + ' — מוביל לעמוד הפרטים';
+    box.innerHTML = '';
+    box.appendChild(im);
 
     var printBtn = document.getElementById('gsm-qr-print');
     if (printBtn) printBtn.addEventListener('click', function () { printQr(it, box); });
@@ -672,21 +671,8 @@
 
   // Render a QR for `url` and return a PNG data URL (synchronous).
   function qrDataUrl(url, size) {
-    if (!window.QRCode) return '';
-    var tmp = document.createElement('div');
-    tmp.style.position = 'absolute';
-    tmp.style.left = '-9999px';
-    tmp.style.top = '0';
-    document.body.appendChild(tmp);
-    var data = '';
-    try {
-      new QRCode(tmp, { text: url, width: size, height: size, correctLevel: QRCode.CorrectLevel.M });
-      var canvas = tmp.querySelector('canvas');
-      if (canvas) { try { data = canvas.toDataURL('image/png'); } catch (e) { data = ''; } }
-      if (!data) { var img = tmp.querySelector('img'); if (img) data = img.src; }
-    } catch (e) { data = ''; }
-    tmp.remove();
-    return data;
+    if (!GSM.qrPng) return '';
+    try { return GSM.qrPng(url, size); } catch (e) { return ''; }
   }
 
   // Open a print window with a sheet of peel-and-stick labels.

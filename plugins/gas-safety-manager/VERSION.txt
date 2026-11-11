@@ -1,3 +1,12 @@
+Gas Safety Manager v2.14.2 — Requirements + libraries.
+
+- Requires PHP 8.2 (8.1 EOL 2025-12-31); tested up to WordPress 7.1.
+- Chart.js 4.6.1; qrcode-generator 2.0.4 replaces unmaintained qrcodejs
+  (UTF-8 encoding, PNG <img> + alt). QR decoded back in tests (jsQR).
+- CI: PHP lint 8.2–8.5; PHPCompatibility 8.2+.
+- No DB change — stays v8.
+
+----
 Gas Safety Manager v2.14.1 — Code-review fixes.
 
 - HIGH: deactivated users kept API access -> enforced everywhere, sessions destroyed.

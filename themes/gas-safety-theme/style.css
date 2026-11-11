@@ -2,11 +2,11 @@
 Theme Name: Gas Safety
 Theme URI: https://safety-tech.dev
 Description: Companion theme for the Gas Safety Manager plugin — Technion Safety Unit. Recreates the original portal's navy/gold RTL identity and provides full-bleed templates for the gas systems management UI.
-Version: 1.2.4
+Version: 1.2.5
 Author: Diamond Rubinny
 Text Domain: gas-safety-theme
 Requires at least: 6.4
-Requires PHP: 8.1
+Requires PHP: 8.2
 */
 
 /* The WP theme manifest. Design tokens live in assets/css/tokens.css. */
