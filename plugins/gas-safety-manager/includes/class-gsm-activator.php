@@ -202,6 +202,8 @@ class GSM_Activator {
 			notes TEXT NULL,
 			last_quarterly DATE NULL,
 			next_quarterly DATE NULL,
+			purchase_date DATE NULL,
+			manual_url VARCHAR(500) NOT NULL DEFAULT '',
 			monday_id VARCHAR(50) NOT NULL DEFAULT '',
 			asset_code VARCHAR(50) NOT NULL DEFAULT '',
 			qr_token VARCHAR(64) NOT NULL DEFAULT '',

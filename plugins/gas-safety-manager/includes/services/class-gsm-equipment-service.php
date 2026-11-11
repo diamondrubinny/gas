@@ -58,10 +58,16 @@ class GSM_Equipment_Service {
 		}
 
 		// Dates: accept YYYY-MM-DD only, else store empty.
-		foreach ( array( 'last_quarterly', 'next_quarterly' ) as $d ) {
+		foreach ( array( 'last_quarterly', 'next_quarterly', 'purchase_date' ) as $d ) {
 			if ( isset( $input[ $d ] ) ) {
 				$clean[ $d ] = self::valid_date( $input[ $d ] ) ? $input[ $d ] : null;
 			}
+		}
+
+		// Manual link: a URL (http/https schemes only survive; https is
+		// required in validate()).
+		if ( isset( $input['manual_url'] ) ) {
+			$clean['manual_url'] = substr( esc_url_raw( trim( (string) wp_unslash( $input['manual_url'] ) ), array( 'http', 'https' ) ), 0, 500 );
 		}
 
 		// Image ID (int).
@@ -105,6 +111,13 @@ class GSM_Equipment_Service {
 			return new WP_Error(
 				'gsm_validation',
 				__( 'Invalid status value.', 'gas-safety-manager' ),
+				array( 'status' => 400 )
+			);
+		}
+		if ( ! empty( $data['manual_url'] ) && 0 !== stripos( $data['manual_url'], 'https://' ) ) {
+			return new WP_Error(
+				'gsm_validation',
+				__( 'הקישור לחוברת חייב להתחיל ב-https://', 'gas-safety-manager' ),
 				array( 'status' => 400 )
 			);
 		}

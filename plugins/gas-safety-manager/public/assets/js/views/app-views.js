@@ -421,6 +421,8 @@
         f('חוקר ראשי', it.pi_name) + f('מנהלי מעבדה', it.lab_managers) + f('אנשי תחזוקה', it.maint_staff) +
         f('טלפון', it.phone) + f('סטטוס', it.status) +
         f('ביקורת אחרונה', it.last_quarterly) + f('ביקורת הבאה', it.next_quarterly) +
+        f('תאריך רכישה', it.purchase_date) +
+        (it.manual_url && /^https:\/\//i.test(it.manual_url) ? '<div class="gs-detail__row"><span class="gs-detail__k">חוברת הפעלה</span><span class="gs-detail__v"><a href="' + esc(it.manual_url) + '" target="_blank" rel="noopener noreferrer">פתיחת החוברת<span class="gs-visually-hidden"> (נפתח בלשונית חדשה)</span></a></span></div>' : '') +
         f('הערות', it.notes) +
         '</div>' +
         qrCard(it);

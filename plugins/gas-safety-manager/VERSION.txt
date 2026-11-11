@@ -1,3 +1,6 @@
+Gas Safety Manager v2.17.1 — Equipment: purchase date + manual link (DB v9).
+
+----
 Gas Safety Manager v2.17.0 — Built-in two-factor authentication (TOTP + backup codes), optional mandatory policy for managers.
 
 ----

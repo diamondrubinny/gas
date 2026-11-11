@@ -444,6 +444,8 @@ class GSM_Legacy {
 					'maint_emails'    => array( 'אימייל תחזוקה', 'maint_emails' ),
 					'status'          => array( 'color_mm2p6nk5', 'status_mm3sj1ne', 'color_mm3stf3p', 'סטטוס', 'status' ),
 					'last_quarterly'  => array( 'date_mm2v49b4', 'ביקורת רבעונית', 'ביקורת אחרונה', 'last_quarterly' ),
+					'purchase_date'   => array( 'date_mm2pp8f6', 'תאריך רכישה', 'purchase_date' ),
+					'manual_url'      => array( 'link_mm2wtez6', 'קישור לחוברת', 'manual_url', 'manual' ),
 					'next_quarterly'  => array( 'date_mm3sjryd', 'תאריך ביקורת הבאה', 'ביקורת הבאה', 'next_quarterly' ),
 					'notes'           => array( 'text_mm3rzbd5', 'הערות', 'notes', 'text_mm2wsbkg', 'תיאור קצר' ),
 				);
@@ -491,7 +493,7 @@ class GSM_Legacy {
 	 * @return string[] Normalized keys.
 	 */
 	private static function ignored_keys() {
-		$k = array( 'text_mm2pk11n', 'תקלות פתוחות', 'date_mm2pp8f6', 'תאריך רכישה', 'link_mm2wtez6', 'קישור לחוברת',
+		$k = array( 'text_mm2pk11n', 'תקלות פתוחות',
 			'group', 'board', 'board_id', 'created_at', 'updated_at', 'state', 'subitems', 'creator', 'url', 'relative_link',
 			'column_values', 'assets', 'updates', 'parent_item' );
 		return array_map( array( __CLASS__, 'norm_key' ), $k );
@@ -640,7 +642,10 @@ class GSM_Legacy {
 					)
 				);
 			}
-			foreach ( array( 'last_quarterly', 'next_quarterly' ) as $d ) {
+			if ( isset( $r['manual_url'] ) && 0 !== stripos( $r['manual_url'], 'https://' ) ) {
+				unset( $r['manual_url'] ); // Not https: would fail the whole row.
+			}
+			foreach ( array( 'last_quarterly', 'next_quarterly', 'purchase_date' ) as $d ) {
 				if ( isset( $r[ $d ] ) ) {
 					$r[ $d ] = self::iso_date( $r[ $d ] );
 				}

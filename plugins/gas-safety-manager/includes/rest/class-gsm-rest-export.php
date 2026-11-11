@@ -150,7 +150,7 @@ class GSM_REST_Export {
 	 */
 	private function equipment_sheet() {
 		$rows = array(
-			array( 'מספר', 'שם הציוד', 'סוג גז', 'קטגוריה', 'פקולטה', 'בניין', 'קומה', 'חדר', 'מיקום', 'מיקום פונקציונלי', 'מספר פאנל', 'לחץ עבודה', 'מס\' צילינדרים', 'מלאי צילינדרים', 'GIS', 'חוקר ראשי', 'מנהלי מעבדה', 'אנשי תחזוקה', 'טלפון', 'אנשי קשר', 'סטטוס', 'ביקורת אחרונה', 'ביקורת הבאה', 'הערות', 'Monday ID' ),
+			array( 'מספר', 'שם הציוד', 'סוג גז', 'קטגוריה', 'פקולטה', 'בניין', 'קומה', 'חדר', 'מיקום', 'מיקום פונקציונלי', 'מספר פאנל', 'לחץ עבודה', 'מס\' צילינדרים', 'מלאי צילינדרים', 'GIS', 'חוקר ראשי', 'מנהלי מעבדה', 'אנשי תחזוקה', 'טלפון', 'אנשי קשר', 'סטטוס', 'ביקורת אחרונה', 'ביקורת הבאה', 'תאריך רכישה', 'קישור לחוברת', 'הערות', 'Monday ID' ),
 		);
 		$items = GSM_Equipment_Repo::list( array( 'limit' => 100000, 'offset' => 0, 'orderby' => 'name', 'order' => 'ASC' ) );
 		foreach ( (array) $items as $e ) {
@@ -161,7 +161,7 @@ class GSM_REST_Export {
 				self::v( $e, 'cylinders_count' ), self::v( $e, 'cylinders_stock' ), self::v( $e, 'gis' ),
 				self::v( $e, 'pi_name' ), self::v( $e, 'lab_managers' ), self::v( $e, 'maint_staff' ),
 				self::v( $e, 'phone' ), self::v( $e, 'contacts' ), self::v( $e, 'status' ),
-				self::v( $e, 'last_quarterly' ), self::v( $e, 'next_quarterly' ), self::v( $e, 'notes' ), self::v( $e, 'monday_id' ),
+				self::v( $e, 'last_quarterly' ), self::v( $e, 'next_quarterly' ), self::v( $e, 'purchase_date' ), self::v( $e, 'manual_url' ), self::v( $e, 'notes' ), self::v( $e, 'monday_id' ),
 			);
 		}
 		return array( 'name' => 'ציוד', 'rows' => $rows );

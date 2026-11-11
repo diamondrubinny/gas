@@ -66,6 +66,8 @@ switch ( $set ) {
 							$cv( 'date_mm3sjryd', 'תאריך ביקורת הבאה', '2027-01-15' ),
 							$cv( 'date_mm2v49b4', 'ביקורת רבעונית', '15/10/2026' ),
 							$cv( 'text_mm2pk11n', 'תקלות פתוחות', '1' ),
+							$cv( 'date_mm2pp8f6', 'תאריך רכישה', '2021-03-09' ),
+							$cv( 'link_mm2wtez6', 'קישור לחוברת', 'https://example.com/manual.pdf' ),
 							$cv( 'text_zz_odd', 'עמודה מוזרה', 'x' ),
 						),
 					),
@@ -75,6 +77,7 @@ switch ( $set ) {
 						'column_values' => array(
 							$cv( 'text_mm3r2tt6', 'סוג הגז', 'ארגון' ),
 							$cv( 'color_mm2p6nk5', 'סטטוס', 'בתחזוקה' ),
+							$cv( 'link_mm2wtez6', 'קישור לחוברת', 'http://insecure.example.com/m.pdf' ),
 							$cv( 'text_mm3rzbd5', 'הערות', '' ),
 						),
 					),

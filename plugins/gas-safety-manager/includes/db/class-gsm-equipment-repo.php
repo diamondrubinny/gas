@@ -67,6 +67,8 @@ class GSM_Equipment_Repo {
 			'notes'           => '%s',
 			'last_quarterly'  => '%s',
 			'next_quarterly'  => '%s',
+			'purchase_date'   => '%s',
+			'manual_url'      => '%s',
 			'monday_id'       => '%s',
 			'asset_code'      => '%s',
 			'qr_token'        => '%s',

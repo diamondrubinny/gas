@@ -145,6 +145,8 @@ try {
 	$t( 'equipment status + dates converted', $a && 'active' === $a['status'] && '2027-01-15' === $a['next_quarterly'] && '2026-10-15' === $a['last_quarterly'], $a ? $a['status'] . ' ' . $a['next_quarterly'] . ' ' . $a['last_quarterly'] : '' );
 	$b2 = GSM_Equipment_Repo::get_by_monday_id( '9100' . $tag . '2' );
 	$t( 'equipment B status "בתחזוקה" -> maintenance', $b2 && 'maintenance' === $b2['status'] );
+	$t( 'purchase date + manual link pulled', $a && '2021-03-09' === $a['purchase_date'] && 'https://example.com/manual.pdf' === $a['manual_url'], $a ? $a['purchase_date'] . ' ' . $a['manual_url'] : '' );
+	$t( 'non-https manual link dropped, row still imported', $b2 && '' === $b2['manual_url'] );
 	$t( 'new equipment has a QR token', $a && '' !== $a['qr_token'] );
 
 	$f = GSM_Faults_Repo::get_by_monday_id( '9200' . $tag . '1' );

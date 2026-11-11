@@ -12,23 +12,11 @@
   var CFG = window.GSM_CONFIG || {};
   if (!CFG.restRoot) return;
 
+  // Use the app's shared API call: it carries the CURRENT session nonce (the
+  // one baked into the page is stale after an in-app login) and refreshes it
+  // once on "Cookie check failed".
   function api(path, opts) {
-    opts = opts || {};
-    var headers = { 'Content-Type': 'application/json' };
-    if (CFG.nonce) headers['X-WP-Nonce'] = CFG.nonce;
-    // Permalink-safe (see auth.js): join query with "&" under ?rest_route=.
-    var url = CFG.restRoot.indexOf('?') > -1 ? (CFG.restRoot + path.replace('?', '&')) : (CFG.restRoot + path);
-    return fetch(url, {
-      method: opts.method || 'GET',
-      headers: headers,
-      body: opts.body ? JSON.stringify(opts.body) : undefined,
-      credentials: 'same-origin'
-    }).then(function (r) {
-      return r.json().then(function (j) {
-        if (!r.ok) throw new Error((j && j.message) || ('HTTP ' + r.status));
-        return j;
-      });
-    });
+    return window.GSM.api(path, opts);
   }
 
   function esc(s) {
@@ -67,6 +55,7 @@
       btn.disabled = true;
       Promise.resolve(onSave()).then(function (ok) {
         if (ok !== false) closeModal();
+        else btn.disabled = false; // validation failed: let the user fix and retry
       }).catch(function (e) {
         showModalErr(e.message);
         btn.disabled = false;
@@ -115,17 +104,26 @@
   // Files are validated + stored server-side (private dir, MIME/size/count
   // limits, optional AV scan). The client only lists, uploads, and deletes.
 
-  function attUpload(entity, entityId, file) {
+  // Current session nonce (the page's baked-in one is stale after login).
+  function nonce() {
+    return (window.GSM.restNonce && window.GSM.restNonce()) || CFG.nonce || '';
+  }
+
+  function attUpload(entity, entityId, file, retried) {
     var fd = new FormData();
     fd.append('file', file);
     fd.append('entity', entity);
     fd.append('entity_id', entityId);
     var headers = {};
-    if (CFG.nonce) headers['X-WP-Nonce'] = CFG.nonce;
-    return fetch(CFG.restRoot + '/attachments', {
+    if (nonce()) headers['X-WP-Nonce'] = nonce();
+    return fetch(window.GSM.restUrl('/attachments'), {
       method: 'POST', headers: headers, body: fd, credentials: 'same-origin'
     }).then(function (r) {
       return r.json().then(function (j) {
+        // Expired nonce: refresh once and retry (the rejected upload never ran).
+        if (r.status === 403 && j && j.code === 'rest_cookie_invalid_nonce' && !retried && window.GSM.refreshNonce) {
+          return window.GSM.refreshNonce().then(function () { return attUpload(entity, entityId, file, true); });
+        }
         if (!r.ok) throw new Error((j && j.message) || ('HTTP ' + r.status));
         return j;
       });
@@ -133,8 +131,8 @@
   }
 
   function attFileUrl(id) {
-    var base = CFG.restRoot + '/attachments/' + id;
-    return base + (base.indexOf('?') > -1 ? '&' : '?') + '_wpnonce=' + encodeURIComponent(CFG.nonce || '');
+    var base = window.GSM.restUrl('/attachments/' + id);
+    return base + (base.indexOf('?') > -1 ? '&' : '?') + '_wpnonce=' + encodeURIComponent(nonce());
   }
 
   function attRenderList(entity, entityId, host) {
@@ -248,6 +246,9 @@
       section('ביקורת') +
       field('ביקורת רבעונית אחרונה', 'eq-last_quarterly', existing.last_quarterly, 'date') +
       field('ביקורת רבעונית הבאה', 'eq-next_quarterly', existing.next_quarterly, 'date') +
+      section('רכישה ותיעוד') +
+      field('תאריך רכישה', 'eq-purchase_date', existing.purchase_date, 'date') +
+      field('קישור לחוברת הפעלה (https)', 'eq-manual_url', existing.manual_url, 'url') +
       textarea('הערות', 'eq-notes', existing.notes);
 
     openModal(isEdit ? 'עריכת ציוד' : 'הוספת ציוד', body, function () {
@@ -262,9 +263,11 @@
         pi_name: val('eq-pi_name'), lab_managers: val('eq-lab_managers'), maint_staff: val('eq-maint_staff'),
         phone: val('eq-phone'), contacts: val('eq-contacts'),
         last_quarterly: val('eq-last_quarterly'), next_quarterly: val('eq-next_quarterly'),
+        purchase_date: val('eq-purchase_date'), manual_url: val('eq-manual_url').trim(),
         notes: val('eq-notes')
       };
       if (!data.name) { showModalErr('שם הציוד חובה'); return false; }
+      if (data.manual_url && !/^https:\/\//i.test(data.manual_url)) { showModalErr('הקישור לחוברת חייב להתחיל ב-https://'); return false; }
       var p = isEdit
         ? api('/equipment/' + existing.id, { method: 'PUT', body: data })
         : api('/equipment', { method: 'POST', body: data });

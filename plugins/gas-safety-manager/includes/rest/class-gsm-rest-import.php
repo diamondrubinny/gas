@@ -82,6 +82,8 @@ class GSM_REST_Import {
 			'status'          => 'סטטוס',
 			'last_quarterly'  => 'ביקורת אחרונה',
 			'next_quarterly'  => 'ביקורת הבאה',
+			'purchase_date'   => 'תאריך רכישה',
+			'manual_url'      => 'קישור לחוברת',
 			'notes'           => 'הערות',
 		);
 	}
@@ -311,7 +313,11 @@ class GSM_REST_Import {
 				unset( $input['status'] );
 			}
 		}
-		foreach ( array( 'last_quarterly', 'next_quarterly' ) as $d ) {
+		// A manual link that is not https would fail the whole row: drop it.
+		if ( isset( $input['manual_url'] ) && 0 !== stripos( trim( (string) $input['manual_url'] ), 'https://' ) ) {
+			unset( $input['manual_url'] );
+		}
+		foreach ( array( 'last_quarterly', 'next_quarterly', 'purchase_date' ) as $d ) {
 			if ( isset( $input[ $d ] ) ) {
 				$input[ $d ] = self::to_iso_date( $input[ $d ] );
 				if ( '' === $input[ $d ] ) {

@@ -4,7 +4,7 @@ Tags: safety, equipment, inspections, hebrew, rtl
 Requires at least: 6.4
 Requires PHP: 8.2
 Tested up to: 7.1
-Stable tag: 2.17.0
+Stable tag: 2.17.1
 License: Proprietary — Technion Safety Unit
 
 Gas systems maintenance management for the Technion Safety Unit. Manages equipment, inspections, faults, and QR codes with native WordPress storage.
@@ -32,6 +32,13 @@ Pairs with the companion "Gas Safety" theme for the portal look (navy/gold, RTL,
 4. To import from Monday: open "Gas Migration", generate a key, run the console script in the portal, then revoke the key.
 
 == Changelog ==
+
+= 2.17.1 =
+* Equipment: two new fields — purchase date ("תאריך רכישה") and manual link ("קישור לחוברת", https only). In the equipment form, the equipment page (link opens in a new tab), Excel import and export, restore points, and the pull from the old system (these two old columns were skipped until now; a non-https link is dropped without failing the row).
+* DB v9 (two columns added to the equipment table automatically on update).
+* Fix (important): every form (equipment, fault, inspection, user) and attachment upload/download used the security nonce baked into the page. After logging in inside the app without reloading the page, the first save failed with "Cookie check failed". Forms now use the session's current nonce and refresh it once when it expired.
+* Fix: after a validation error in a form the "שמור" button stayed disabled, so the form had to be cancelled and filled again.
+* Tests: tests/integration/equipment-fields-test.php, tests/e2e/forms-e2e.js (real form saves and an attachment upload right after login).
 
 = 2.17.0 =
 * Built-in two-factor authentication (TOTP, RFC 6238) — works with Google Authenticator, Microsoft Authenticator, Authy etc. No external service.
