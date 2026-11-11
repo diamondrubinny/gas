@@ -156,6 +156,9 @@ class GSM_REST_Import {
 		}
 
 		$rows    = isset( $body['rows'] ) && is_array( $body['rows'] ) ? $body['rows'] : array();
+		if ( count( $rows ) > GSM_Spreadsheet::MAX_ROWS ) {
+			return new WP_Error( 'gsm_import_too_many', sprintf( /* translators: %d: max rows */ __( 'יותר מדי שורות (מקסימום %d). פצלו את הקובץ.', 'gas-safety-manager' ), GSM_Spreadsheet::MAX_ROWS ), array( 'status' => 413 ) );
+		}
 		$mapping = isset( $body['mapping'] ) && is_array( $body['mapping'] ) ? $body['mapping'] : array();
 		$key     = isset( $body['keyField'] ) ? sanitize_key( (string) $body['keyField'] ) : 'asset_code';
 		$create_missing = ! isset( $body['createMissing'] ) || (bool) $body['createMissing'];
@@ -210,7 +213,19 @@ class GSM_REST_Import {
 				$kv = isset( $map[ $key ] ) ? trim( (string) ( isset( $input[ $key ] ) ? $input[ $key ] : '' ) ) : '';
 
 				if ( '' !== $kv && isset( $existing[ $kv ] ) ) {
-					$res = GSM_Equipment_Service::update( $existing[ $kv ], $input );
+					// Update only what the sheet actually fills in: an empty cell
+					// must not wipe an existing value (sparse sheets are common).
+					$changes = array_filter(
+						$input,
+						static function ( $v ) {
+							return '' !== trim( (string) $v );
+						}
+					);
+					if ( empty( $changes ) ) {
+						$skipped++;
+						continue;
+					}
+					$res = GSM_Equipment_Service::update( $existing[ $kv ], $changes );
 					if ( is_wp_error( $res ) ) {
 						$skipped++;
 						self::add_error( $errors, $rownum, $res->get_error_message() );

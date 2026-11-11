@@ -1478,7 +1478,8 @@
         '<div class="gs-toolbar"><h2 class="gs-h2">ייבוא ציוד — מיפוי</h2>' +
         '<div class="gs-toolbar__actions"><button class="gs-btn gs-btn--ghost" id="imp-back">→ קובץ אחר</button></div></div>' +
         '<p style="color:var(--gs-muted);font-size:13px">נמצאו <b>' + rows.length + '</b> שורות ו‑<b>' + headers.length + '</b> עמודות' +
-        (data.truncated ? ' (הוצג חלק — הקובץ גדול)' : '') + '. מפה כל שדה לעמודה המתאימה (אפשר להשאיר "לא לייבא").</p>' +
+        (data.truncated ? ' (הוצג חלק — הקובץ גדול)' : '') + '. מפה כל שדה לעמודה המתאימה (אפשר להשאיר "לא לייבא"). ' +
+        'בעדכון של ציוד קיים, <b>תא ריק לא מוחק</b> ערך קיים. רק תאים מלאים מעדכנים.</p>' +
 
         '<div class="gs-card"><div class="gs-card__title">2. מיפוי עמודות → שדות</div>' +
         '<div class="gs-grid gs-grid--2">' + mapRows + '</div></div>' +
@@ -1667,7 +1668,8 @@
         '<div class="gs-toolbar"><h2 class="gs-h2">אינטגרציות</h2></div>' +
 
         '<div class="gs-card"><div class="gs-card__title">🔗 Webhook יוצא</div>' +
-        '<p style="color:var(--gs-muted);font-size:13px">שליחת הודעה אוטומטית (HTTP POST) למערכת חיצונית (Make / Zapier / n8n / מאזין פנימי) כשמתרחש אירוע. ' +
+        '<p style="color:var(--gs-muted);font-size:13px">שליחת הודעה אוטומטית (HTTP POST) למערכת חיצונית (Make / Zapier / n8n) כשמתרחש אירוע. ' +
+        'כתובות ברשת פנימית (localhost, 10.x, 192.168.x וכו׳) חסומות כהגנה. מאזין פנימי מחייב הגדרה ב-wp-config.php (GSM_ALLOW_INTERNAL_WEBHOOKS). ' +
         'אם מוגדר "סוד", כל בקשה נחתמת ב‑HMAC‑SHA256 בכותרת <code>X-Gas-Signature</code>.</p>' +
         '<div class="gs-field"><label class="gs-label">כתובת Webhook (https)</label>' +
         '<input class="gs-input" id="int-url" type="url" placeholder="https://…" value="' + esc(cfg.webhookUrl || '') + '" style="direction:ltr"></div>' +

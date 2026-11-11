@@ -150,7 +150,9 @@ class GSM_REST_Tools {
 		if ( '' !== $name ) {
 			wp_update_user( array( 'ID' => $u->ID, 'display_name' => $name ) );
 		}
-		update_user_meta( $u->ID, 'gsm_phone', $phone );
+		if ( isset( $body['phone'] ) ) {
+			update_user_meta( $u->ID, 'gsm_phone', $phone );
+		}
 
 		// Avatar: a single emoji (store a short string only).
 		if ( isset( $body['avatar'] ) ) {

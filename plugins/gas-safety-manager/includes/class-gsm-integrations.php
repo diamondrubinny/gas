@@ -109,6 +109,12 @@ class GSM_Integrations {
 		if ( ! empty( $data['clearSecret'] ) ) {
 			$secret = '';
 		}
+		// The signing secret does not follow the URL to a different host unless
+		// it is re-entered (otherwise a new endpoint could collect signatures).
+		$new_secret = isset( $data['webhookSecret'] ) && '' !== trim( (string) $data['webhookSecret'] );
+		if ( ! $new_secret && '' !== $secret && GSM_Security::url_host( $url ) !== GSM_Security::url_host( $cur['webhookUrl'] ) ) {
+			$secret = '';
+		}
 
 		update_option(
 			self::OPTION,
@@ -153,7 +159,7 @@ class GSM_Integrations {
 		}
 
 		// Non-blocking: don't delay the user's request on the remote endpoint.
-		wp_remote_post(
+		GSM_Security::outbound_post(
 			$c['webhookUrl'],
 			array(
 				'timeout'     => 5,

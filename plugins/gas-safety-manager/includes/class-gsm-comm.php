@@ -72,6 +72,10 @@ class GSM_Comm {
 	public static function save( $in ) {
 		$cur = self::config();
 		$in  = is_array( $in ) ? $in : array();
+		// WhatsApp gateway: https only (the bearer token travels with each call).
+		if ( isset( $in['whatsapp_url'] ) && '' !== trim( (string) $in['whatsapp_url'] ) && ! preg_match( '#^https://#i', trim( (string) $in['whatsapp_url'] ) ) ) {
+			$in['whatsapp_url'] = '';
+		}
 		$out = array(
 			'from_name'         => isset( $in['from_name'] ) ? sanitize_text_field( (string) $in['from_name'] ) : $cur['from_name'],
 			'reminder_enabled'  => ! empty( $in['reminder_enabled'] ),
@@ -84,6 +88,13 @@ class GSM_Comm {
 		);
 		// Explicit request to wipe the stored token.
 		if ( ! empty( $in['whatsapp_clear'] ) ) {
+			$out['whatsapp_token'] = '';
+		}
+		// The stored token must never follow the URL to a different host: when
+		// the host changes, keep the token only if a new one was entered now.
+		$new_token = isset( $in['whatsapp_token'] ) && '' !== trim( (string) $in['whatsapp_token'] );
+		if ( ! $new_token && '' !== $cur['whatsapp_token']
+			&& GSM_Security::url_host( $out['whatsapp_url'] ) !== GSM_Security::url_host( $cur['whatsapp_url'] ) ) {
 			$out['whatsapp_token'] = '';
 		}
 		update_option( self::OPT, $out );
@@ -150,7 +161,7 @@ class GSM_Comm {
 		);
 		// Integrators can adapt to their WhatsApp API shape.
 		$args = apply_filters( 'gsm_whatsapp_request', $args, $phone, $msg, $c );
-		$res  = wp_remote_post( $c['whatsapp_url'], $args );
+		$res  = GSM_Security::outbound_post( $c['whatsapp_url'], $args );
 		$ok   = ! is_wp_error( $res ) && (int) wp_remote_retrieve_response_code( $res ) < 300;
 		return $ok;
 	}
@@ -184,8 +195,8 @@ class GSM_Comm {
 	 */
 	public static function manager_emails() {
 		$emails = array();
-		foreach ( get_users( array( 'role__in' => array( 'gsm_manager', 'administrator' ), 'fields' => array( 'user_email' ) ) ) as $u ) {
-			if ( ! empty( $u->user_email ) ) {
+		foreach ( get_users( array( 'role__in' => array( 'gsm_manager', 'administrator' ), 'fields' => array( 'ID', 'user_email' ) ) ) as $u ) {
+			if ( ! empty( $u->user_email ) && GSM_Auth::is_active( (int) $u->ID ) ) {
 				$emails[] = $u->user_email;
 			}
 		}
@@ -249,6 +260,9 @@ class GSM_Comm {
 		$em    = 0;
 		$wa    = 0;
 		foreach ( $users as $u ) {
+			if ( ! GSM_Auth::is_active( $u ) ) {
+				continue; // Deactivated accounts receive nothing.
+			}
 			if ( ! empty( $u->user_email ) && self::send_email( $u->user_email, $subject, $message ) ) {
 				$em++;
 			}

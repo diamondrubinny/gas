@@ -106,7 +106,7 @@ class GSM_Restore_Service {
 		$user   = function_exists( 'wp_get_current_user' ) ? wp_get_current_user() : null;
 		$actor  = ( $user && $user->ID ) ? ( $user->display_name ? $user->display_name : $user->user_login ) : 'system';
 
-		$wpdb->insert(
+		$ok = $wpdb->insert(
 			self::table(),
 			array(
 				'created_at'  => current_time( 'mysql' ),
@@ -118,8 +118,11 @@ class GSM_Restore_Service {
 			),
 			array( '%s', '%s', '%s', '%s', '%s', '%s' )
 		);
-		$id = (int) $wpdb->insert_id;
-		self::prune();
+		// insert_id can still hold an earlier row's id after a failed insert.
+		$id = ( false === $ok ) ? 0 : (int) $wpdb->insert_id;
+		if ( $id ) {
+			self::prune();
+		}
 		return array( 'id' => $id, 'counts' => $counts );
 	}
 
@@ -208,10 +211,31 @@ class GSM_Restore_Service {
 		}
 
 		// Safety snapshot of the CURRENT state before overwriting anything.
-		self::snapshot( 'גיבוי אוטומטי לפני שחזור #' . (int) $id, 'auto' );
+		// No safety copy (e.g. the payload is too large for the DB) = no restore.
+		$safety = self::snapshot( 'גיבוי אוטומטי לפני שחזור #' . (int) $id, 'auto' );
+		if ( ! is_array( $safety ) || empty( $safety['id'] ) ) {
+			return new WP_Error( 'gsm_rp_safety', __( 'לא ניתן היה לשמור גיבוי של המצב הנוכחי, ולכן השחזור בוטל. לא שונה דבר.', 'gas-safety-manager' ), array( 'status' => 500 ) );
+		}
 
 		$map     = self::tables();
 		$applied = array();
+
+		// Checklist items are rewritten with NEW ids whenever an inspection is
+		// edited, so an id-based upsert would add the snapshot's items next to
+		// the current ones. For every inspection in the snapshot, drop its
+		// current items first; the snapshot's items are then inserted below.
+		if ( ! empty( $snap['data']['inspections'] ) && is_array( $snap['data']['inspections'] ) ) {
+			$insp_ids = array();
+			foreach ( $snap['data']['inspections'] as $ir ) {
+				if ( is_array( $ir ) && ! empty( $ir['id'] ) ) {
+					$insp_ids[] = (int) $ir['id'];
+				}
+			}
+			foreach ( array_chunk( array_unique( $insp_ids ), 500 ) as $chunk ) {
+				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- table from tables(), ids are ints.
+				$wpdb->query( "DELETE FROM {$map['inspection_items']} WHERE inspection_id IN (" . implode( ',', $chunk ) . ')' );
+			}
+		}
 		foreach ( $snap['data'] as $key => $rows ) {
 			if ( ! isset( $map[ $key ] ) || ! is_array( $rows ) ) {
 				continue;

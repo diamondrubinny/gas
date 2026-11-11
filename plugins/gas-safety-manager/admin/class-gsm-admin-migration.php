@@ -48,9 +48,11 @@ class GSM_Admin_Migration {
 		// Equipment + id->name map.
 		$equipment = GSM_Equipment_Repo::list( array( 'limit' => 100000, 'offset' => 0, 'orderby' => 'id', 'order' => 'ASC' ) );
 		$names     = array();
+		$codes     = array();
 		$eq_out    = array();
 		foreach ( (array) $equipment as $e ) {
 			$names[ (int) $e['id'] ] = isset( $e['name'] ) ? $e['name'] : '';
+			$codes[ (int) $e['id'] ] = isset( $e['asset_code'] ) ? $e['asset_code'] : '';
 			unset( $e['id'], $e['created_at'], $e['updated_at'], $e['image_id'] );
 			$eq_out[] = $e;
 		}
@@ -72,6 +74,7 @@ class GSM_Admin_Migration {
 			$insp_out[] = array(
 				'monday_id'       => isset( $i['monday_id'] ) ? $i['monday_id'] : '',
 				'equipment_name'  => isset( $names[ $eid ] ) ? $names[ $eid ] : '',
+				'equipment_asset_code' => isset( $codes[ $eid ] ) ? $codes[ $eid ] : '',
 				'type'            => isset( $i['type'] ) ? $i['type'] : '',
 				'inspection_date' => isset( $i['inspection_date'] ) ? $i['inspection_date'] : '',
 				'inspector'       => isset( $i['inspector'] ) ? $i['inspector'] : '',
@@ -91,6 +94,7 @@ class GSM_Admin_Migration {
 			$fault_out[] = array(
 				'monday_id'      => isset( $f['monday_id'] ) ? $f['monday_id'] : '',
 				'equipment_name' => isset( $names[ $eid ] ) ? $names[ $eid ] : '',
+				'equipment_asset_code' => isset( $codes[ $eid ] ) ? $codes[ $eid ] : '',
 				'reporter'       => isset( $f['reporter'] ) ? $f['reporter'] : '',
 				'description'    => isset( $f['description'] ) ? $f['description'] : '',
 				'status'         => isset( $f['status'] ) ? $f['status'] : '',

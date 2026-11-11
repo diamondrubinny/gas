@@ -197,6 +197,82 @@ class GSM_Security {
 	}
 
 	/**
+	 * Lower-cased host of a URL ('' when none).
+	 *
+	 * @param string $url URL.
+	 * @return string
+	 */
+	public static function url_host( $url ) {
+		$h = wp_parse_url( (string) $url, PHP_URL_HOST );
+		return is_string( $h ) ? strtolower( $h ) : '';
+	}
+
+	/**
+	 * Outbound POST to an admin-configured URL (webhook / WhatsApp gateway).
+	 * Uses wp_safe_remote_post, which refuses loopback, private and link-local
+	 * addresses (SSRF: 127.0.0.1, 10.x, 169.254.169.254 metadata, …) and odd
+	 * ports. A site that really posts to an internal listener can opt in with
+	 * define( 'GSM_ALLOW_INTERNAL_WEBHOOKS', true ) in wp-config.php.
+	 *
+	 * @param string $url  URL.
+	 * @param array  $args wp_remote_post args.
+	 * @return array|WP_Error
+	 */
+	public static function outbound_post( $url, $args ) {
+		$args['redirection'] = 0; // A redirect could bounce to an internal host.
+		if ( defined( 'GSM_ALLOW_INTERNAL_WEBHOOKS' ) && GSM_ALLOW_INTERNAL_WEBHOOKS ) {
+			return wp_remote_post( $url, $args );
+		}
+		// Own check first: older WordPress (6.4) does not treat 169.254.0.0/16
+		// (cloud metadata) as unsafe, and wp_safe_remote_post allows the
+		// site's own host even when it is a loopback address.
+		if ( ! self::is_public_destination( $url ) ) {
+			return new WP_Error( 'gsm_unsafe_url', __( 'כתובת היעד אינה מותרת (רשת פנימית או כתובת שמורה).', 'gas-safety-manager' ) );
+		}
+		return wp_safe_remote_post( $url, $args );
+	}
+
+	/**
+	 * Does the URL's host resolve only to public IP addresses?
+	 *
+	 * @param string $url URL.
+	 * @return bool
+	 */
+	public static function is_public_destination( $url ) {
+		$host = self::url_host( $url );
+		if ( '' === $host ) {
+			return false;
+		}
+		$host = trim( $host, '[]' );
+		$ips  = array();
+		if ( filter_var( $host, FILTER_VALIDATE_IP ) ) {
+			$ips[] = $host;
+		} else {
+			$v4 = gethostbynamel( $host );
+			if ( is_array( $v4 ) ) {
+				$ips = array_merge( $ips, $v4 );
+			}
+			if ( function_exists( 'dns_get_record' ) ) {
+				$v6 = @dns_get_record( $host, DNS_AAAA ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
+				foreach ( (array) $v6 as $rec ) {
+					if ( ! empty( $rec['ipv6'] ) ) {
+						$ips[] = $rec['ipv6'];
+					}
+				}
+			}
+		}
+		if ( empty( $ips ) ) {
+			return false; // Unresolvable: refuse rather than guess.
+		}
+		foreach ( $ips as $ip ) {
+			if ( false === filter_var( $ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE ) ) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	/**
 	 * Neutralize a CSV cell against formula / DDE injection (CWE-1236).
 	 *
 	 * Spreadsheet apps (Excel, LibreOffice, Google Sheets) evaluate a cell that

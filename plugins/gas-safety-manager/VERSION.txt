@@ -1,3 +1,15 @@
+Gas Safety Manager v2.14.1 — Code-review fixes.
+
+- HIGH: deactivated users kept API access -> enforced everywhere, sessions destroyed.
+- Token/secret no longer follow a URL host change; SSRF guard incl. 169.254/16.
+- Gas manager limited to gas-app users (role swap keeps other roles).
+- Undo restores inspection items; QR-issuance undo works; restore no dup items.
+- Import: empty cells keep values; multi-line CSV; Windows-1255 crash; XLSX r-less cells.
+- Backup re-import by asset code; XLSX control chars; misc.
+- Tests: tests/integration/security-fixes-test.php (24), tests/csv-reader-test.php (7).
+- No DB change — stays v8.
+
+----
 Gas Safety Manager v2.14.0 — Botwa chat widget.
 
 - Chat button on QR page / app / site pages (per-placement toggles), off by default.

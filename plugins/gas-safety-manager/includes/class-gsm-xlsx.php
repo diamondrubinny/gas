@@ -75,6 +75,10 @@ class GSM_Xlsx {
 	 */
 	private static function esc( $s ) {
 		$s = (string) ( null === $s ? '' : $s );
+		// XML 1.0 forbids most control characters; a single \x0B pasted into a
+		// cell would make Excel refuse the whole file.
+		$clean = preg_replace( '/[^\x{9}\x{A}\x{D}\x{20}-\x{D7FF}\x{E000}-\x{FFFD}\x{10000}-\x{10FFFF}]/u', '', $s );
+		$s     = null === $clean ? preg_replace( '/[\x00-\x08\x0B\x0C\x0E-\x1F]/', '', $s ) : $clean; // Invalid UTF-8: strip C0 controls bytewise.
 		return str_replace(
 			array( '&', '<', '>', '"', "'" ),
 			array( '&amp;', '&lt;', '&gt;', '&quot;', '&apos;' ),

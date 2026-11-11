@@ -21,7 +21,8 @@
         "phpcs:style": "phpcs --standard=WordPress-Extra --report=summary --extensions=php plugins/gas-safety-manager themes/gas-safety-theme || true",
         "test:unit": [
             "php tests/bi-token-test.php plugins/gas-safety-manager",
-            "php tests/csv-injection-test.php plugins/gas-safety-manager"
+            "php tests/csv-injection-test.php plugins/gas-safety-manager",
+            "php tests/csv-reader-test.php plugins/gas-safety-manager"
         ]
     }
 }

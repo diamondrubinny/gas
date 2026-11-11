@@ -88,6 +88,32 @@ class GSM_Spreadsheet {
 	 * @param string $path Path.
 	 * @return array
 	 */
+	/**
+	 * Windows-1255 (Hebrew Excel "CSV") -> UTF-8. mbstring usually has no
+	 * Windows-1255 and, on PHP 8, throws a ValueError for an unknown encoding
+	 * (an "@" does not stop that), so iconv is tried first.
+	 *
+	 * @param string $raw Bytes.
+	 * @return string UTF-8, or '' when no converter is available.
+	 */
+	private static function from_windows_1255( $raw ) {
+		if ( function_exists( 'iconv' ) ) {
+			$out = @iconv( 'CP1255', 'UTF-8//IGNORE', $raw ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
+			if ( is_string( $out ) && '' !== $out ) {
+				return $out;
+			}
+		}
+		if ( function_exists( 'mb_list_encodings' ) && in_array( 'Windows-1255', mb_list_encodings(), true ) ) {
+			try {
+				$out = mb_convert_encoding( $raw, 'UTF-8', 'Windows-1255' );
+				return is_string( $out ) ? $out : '';
+			} catch ( \ValueError $e ) {
+				return '';
+			}
+		}
+		return '';
+	}
+
 	private static function read_csv( $path ) {
 		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
 		$raw = file_get_contents( $path );
@@ -100,8 +126,8 @@ class GSM_Spreadsheet {
 		}
 		// If it's not valid UTF-8, assume Windows-1255 (Hebrew Excel CSV).
 		if ( ! mb_check_encoding( $raw, 'UTF-8' ) ) {
-			$conv = @mb_convert_encoding( $raw, 'UTF-8', 'Windows-1255' ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
-			if ( false !== $conv && '' !== $conv ) {
+			$conv = self::from_windows_1255( $raw );
+			if ( '' !== $conv ) {
 				$raw = $conv;
 			}
 		}
@@ -122,17 +148,31 @@ class GSM_Spreadsheet {
 			break;
 		}
 
+		// Parse as a stream so quoted cells may contain line breaks (Excel
+		// writes multi-line cells that way); splitting on "\n" first would cut
+		// such a cell into two rows. escape '' = RFC 4180 (also no PHP 8.4
+		// deprecation notice).
 		$grid      = array();
 		$truncated = false;
-		foreach ( $lines as $l ) {
-			if ( '' === $l ) { continue; }
-			if ( count( $grid ) > self::MAX_ROWS ) { $truncated = true; break; }
-			$cells = str_getcsv( $l, $delim );
+		// phpcs:disable WordPress.WP.AlternativeFunctions.file_system_operations_fopen, WordPress.WP.AlternativeFunctions.file_system_operations_fwrite, WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- in-memory stream.
+		$fh = fopen( 'php://temp', 'r+' );
+		fwrite( $fh, $raw );
+		rewind( $fh );
+		while ( false !== ( $cells = fgetcsv( $fh, 0, $delim, '"', '' ) ) ) {
+			if ( array( null ) === $cells ) {
+				continue; // Blank line.
+			}
+			if ( count( $grid ) > self::MAX_ROWS ) {
+				$truncated = true;
+				break;
+			}
 			if ( count( $cells ) > self::MAX_COLS ) {
 				$cells = array_slice( $cells, 0, self::MAX_COLS );
 			}
-			$grid[] = $cells;
+			$grid[] = array_map( 'strval', $cells );
 		}
+		fclose( $fh );
+		// phpcs:enable
 		return self::package( $grid, $truncated );
 	}
 
@@ -244,10 +284,12 @@ class GSM_Spreadsheet {
 		foreach ( $sx->sheetData->row as $row ) {
 			if ( count( $grid ) > self::MAX_ROWS ) { $truncated = true; break; }
 			$cells = array();
+			$next  = 0; // "r" is optional in OOXML: a cell without it follows the previous one.
 			foreach ( $row->c as $c ) {
 				$ref  = (string) $c['r'];
-				$col  = self::col_index( $ref );
+				$col  = '' === $ref ? $next : self::col_index( $ref );
 				if ( $col < 0 ) { continue; }
+				$next = $col + 1;
 				if ( $col >= self::MAX_COLS ) { continue; }
 				$type = (string) $c['t'];
 				$val  = '';

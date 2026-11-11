@@ -93,7 +93,11 @@ class GSM_REST_Restore {
 		if ( '' === trim( $label ) ) {
 			$label = 'נקודת שחזור ' . current_time( 'Y-m-d H:i' );
 		}
-		return rest_ensure_response( GSM_Restore_Service::snapshot( $label, 'manual' ) );
+		$res = GSM_Restore_Service::snapshot( $label, 'manual' );
+		if ( empty( $res['id'] ) ) {
+			return new WP_Error( 'gsm_rp_save', __( 'שמירת נקודת השחזור נכשלה (ייתכן שהנתונים גדולים מדי עבור מסד הנתונים).', 'gas-safety-manager' ), array( 'status' => 500 ) );
+		}
+		return rest_ensure_response( $res );
 	}
 
 	/**

@@ -3,7 +3,7 @@ Contributors: diamondrubinny
 Tags: safety, equipment, inspections, hebrew, rtl
 Requires at least: 6.4
 Requires PHP: 8.1
-Stable tag: 2.14.0
+Stable tag: 2.14.1
 License: Proprietary — Technion Safety Unit
 
 Gas systems maintenance management for the Technion Safety Unit. Manages equipment, inspections, faults, and QR codes with native WordPress storage.
@@ -31,6 +31,19 @@ Pairs with the companion "Gas Safety" theme for the portal look (navy/gold, RTL,
 4. To import from Monday: open "Gas Migration", generate a key, run the console script in the portal, then revoke the key.
 
 == Changelog ==
+
+= 2.14.1 =
+Fixes from a code review of the modules not reviewed before (each verified in the code and covered by a test on a real WordPress):
+* Security (high): a deactivated user kept full API access — the active flag was only checked at the app login. It is now enforced in every capability check; a deactivated account cannot sign in by any path (checked after the password, so it is not a user-enumeration oracle); deactivating logs the user out of all sessions.
+* Security: the WhatsApp gateway token / webhook signing secret no longer follow the URL to a different host (a manager could redirect the token to their own server). Outbound calls are blocked from internal and reserved addresses (SSRF: localhost, private networks, 169.254.169.254 metadata — WordPress 6.4 itself does not block the last one). WhatsApp URL must be https. Internal webhook listeners: define( 'GSM_ALLOW_INTERNAL_WEBHOOKS', true ).
+* Security: a gas manager could change the role of any non-admin site user (editor, shop manager…) or send them a password reset. Now limited to gas-app users, and only the gas role is swapped.
+* Security: login lockout counter is cleared only after a fully successful app login; a non-app account is signed out again.
+* Fix: undoing a deleted inspection restored it without its checklist items; undo of a deleted QR issuance was offered but always failed.
+* Fix: restoring a restore point duplicated checklist items of edited inspections; a restore now aborts if the safety backup could not be saved (it used to continue without one).
+* Fix: Excel/CSV import update wiped existing values for empty cells; CSV cells with line breaks were split into extra rows; Hebrew CSV in Windows-1255 (Excel default) crashed the import on PHP 8; XLSX cells without the optional "r" attribute were skipped.
+* Fix: JSON backup re-import created duplicate equipment (now matched by asset code) and linked inspections/faults by non-unique name (now by asset code).
+* Fix: a control character in a cell produced an Excel file that would not open; saving the profile without a phone field wiped the phone; broadcasts and manager alerts went to deactivated users; no cap on rows per import / bulk QR request.
+* No DB change — stays v8.
 
 = 2.14.0 =
 * Chat widget (Botwa): optional chat button on the public QR page, inside the app and on the other site pages (each placement can be switched on or off). Set up in "הגדרות אתר" by pasting the provider's embed snippet; only an https host name and a key in the provider's format (wc_…) are accepted. Off by default.

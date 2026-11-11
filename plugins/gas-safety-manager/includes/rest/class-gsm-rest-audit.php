@@ -16,6 +16,21 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 class GSM_REST_Audit {
 
+	/**
+	 * Entities whose deletion can be undone => table suffix. Single source for
+	 * both undo() and the "undoable" flag shown in the audit screen.
+	 *
+	 * @return array
+	 */
+	public static function undo_tables() {
+		return array(
+			'equipment'   => 'gas_equipment',
+			'fault'       => 'gas_faults',
+			'inspection'  => 'gas_inspections',
+			'qr_issuance' => 'gas_qr_issuance',
+		);
+	}
+
 	const NS = 'gas/v1';
 
 	/**
@@ -64,7 +79,7 @@ class GSM_REST_Audit {
 			return new WP_Error( 'gsm_undo_nodata', __( 'אין נתונים לשחזור ברשומה זו.', 'gas-safety-manager' ), array( 'status' => 400 ) );
 		}
 		$entity = isset( $entry['entity'] ) ? $entry['entity'] : '';
-		$map    = array( 'equipment' => 'gas_equipment', 'fault' => 'gas_faults', 'inspection' => 'gas_inspections' );
+		$map    = self::undo_tables();
 		if ( ! isset( $map[ $entity ] ) ) {
 			return new WP_Error( 'gsm_undo_entity', __( 'לא ניתן לשחזר סוג זה.', 'gas-safety-manager' ), array( 'status' => 400 ) );
 		}
@@ -91,6 +106,11 @@ class GSM_REST_Audit {
 			return new WP_Error( 'gsm_undo_fail', __( 'שחזור נכשל.', 'gas-safety-manager' ), array( 'status' => 500 ) );
 		}
 		$new_id = (int) $wpdb->insert_id;
+		// An inspection's checklist items live in their own table: restore them
+		// too, or the inspection comes back empty (and its defects disappear).
+		if ( 'inspection' === $entity && ! empty( $before['items'] ) && is_array( $before['items'] ) ) {
+			GSM_Inspections_Repo::replace_items( $new_id, $before['items'] );
+		}
 		GSM_Audit::mark_undone( (int) $entry['id'] );
 		GSM_Audit::log( 'undo', $entity, $new_id, isset( $entry['item_name'] ) ? $entry['item_name'] : '', 'שוחזר ממחיקה (יומן #' . (int) $entry['id'] . ')' );
 		return rest_ensure_response( array( 'restored' => true, 'entity' => $entity, 'id' => $new_id ) );
@@ -124,7 +144,8 @@ class GSM_REST_Audit {
 			'inspection' => 'ביקורת',
 			'user'       => 'משתמש',
 		);
-		$out = array();
+		$out      = array();
+		$undo_map = self::undo_tables();
 		foreach ( $rows as $r ) {
 			$a       = isset( $r['action'] ) ? $r['action'] : '';
 			$e       = isset( $r['entity'] ) ? $r['entity'] : '';
@@ -139,7 +160,7 @@ class GSM_REST_Audit {
 				'item_name'    => $r['item_name'],
 				'summary'      => $r['summary'],
 				'undone'       => ! empty( $r['undone'] ),
-				'undoable'     => ( 'delete' === $a && empty( $r['undone'] ) && ! empty( $r['before_json'] ) ),
+				'undoable'     => ( 'delete' === $a && empty( $r['undone'] ) && ! empty( $r['before_json'] ) && isset( $undo_map[ $e ] ) ),
 			);
 		}
 		return rest_ensure_response( $out );

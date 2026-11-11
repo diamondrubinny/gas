@@ -83,6 +83,12 @@ class GSM_Importer {
 			}
 			$mid      = isset( $raw['monday_id'] ) ? (string) $raw['monday_id'] : '';
 			$existing = ( '' !== $mid ) ? GSM_Equipment_Repo::get_by_monday_id( $mid ) : null;
+			// No Monday id (equipment created in WordPress): match on asset_code,
+			// so re-importing a backup updates instead of creating duplicates.
+			if ( ! $existing && ! empty( $raw['asset_code'] ) ) {
+				$cid      = GSM_Equipment_Repo::id_by_asset_code( (string) $raw['asset_code'] );
+				$existing = $cid ? array( 'id' => $cid ) : null;
+			}
 
 			if ( $existing ) {
 				$res = GSM_Equipment_Service::update( (int) $existing['id'], $raw );
@@ -104,6 +110,7 @@ class GSM_Importer {
 		// --- Build equipment lookup maps -----------------------------------
 		$by_name = array();
 		$by_mid  = array();
+		$by_code = array();
 		$all     = GSM_Equipment_Repo::list( array( 'limit' => 100000, 'offset' => 0, 'orderby' => 'id', 'order' => 'ASC' ) );
 		foreach ( (array) $all as $e ) {
 			if ( ! empty( $e['name'] ) && ! isset( $by_name[ $e['name'] ] ) ) {
@@ -111,6 +118,9 @@ class GSM_Importer {
 			}
 			if ( ! empty( $e['monday_id'] ) ) {
 				$by_mid[ (string) $e['monday_id'] ] = (int) $e['id'];
+			}
+			if ( ! empty( $e['asset_code'] ) && ! isset( $by_code[ (string) $e['asset_code'] ] ) ) {
+				$by_code[ (string) $e['asset_code'] ] = (int) $e['id'];
 			}
 		}
 
@@ -120,7 +130,7 @@ class GSM_Importer {
 				$result['inspections']['skipped']++;
 				continue;
 			}
-			$eid = self::resolve_equipment( $raw, $by_mid, $by_name );
+			$eid = self::resolve_equipment( $raw, $by_mid, $by_name, $by_code );
 			if ( ! $eid ) {
 				$result['inspections']['skipped']++;
 				self::add_note( $result['inspections'], $i, __( 'לא נמצא ציוד תואם', 'gas-safety-manager' ) . ': ' . self::eq_label( $raw ) );
@@ -153,7 +163,7 @@ class GSM_Importer {
 				$result['faults']['skipped']++;
 				continue;
 			}
-			$eid = self::resolve_equipment( $raw, $by_mid, $by_name );
+			$eid = self::resolve_equipment( $raw, $by_mid, $by_name, $by_code );
 			if ( ! $eid ) {
 				$result['faults']['skipped']++;
 				self::add_note( $result['faults'], $i, __( 'לא נמצא ציוד תואם', 'gas-safety-manager' ) . ': ' . self::eq_label( $raw ) );
@@ -191,7 +201,13 @@ class GSM_Importer {
 	 * @param array $by_name name => id map.
 	 * @return int Equipment id, or 0 if unresolved.
 	 */
-	private static function resolve_equipment( $row, $by_mid, $by_name ) {
+	private static function resolve_equipment( $row, $by_mid, $by_name, $by_code = array() ) {
+		// Most specific key first: asset code (unique per item), then Monday id,
+		// then name (names are not unique — last resort for old backups).
+		$ecode = isset( $row['equipment_asset_code'] ) ? (string) $row['equipment_asset_code'] : '';
+		if ( '' !== $ecode && isset( $by_code[ $ecode ] ) ) {
+			return (int) $by_code[ $ecode ];
+		}
 		$emid = isset( $row['equipment_monday_id'] ) ? (string) $row['equipment_monday_id'] : '';
 		if ( '' !== $emid && isset( $by_mid[ $emid ] ) ) {
 			return (int) $by_mid[ $emid ];

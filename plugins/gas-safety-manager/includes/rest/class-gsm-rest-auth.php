@@ -196,27 +196,37 @@ class GSM_REST_Auth {
 			is_ssl()
 		);
 
+		if ( is_wp_error( $user ) && 'gsm_inactive' === $user->get_error_code() ) {
+			// Correct password, deactivated account (the check runs after the
+			// password check, so this is not an enumeration oracle).
+			return new WP_Error( 'gsm_login_blocked', __( 'החשבון שלך הושבת. פנה למנהל.', 'gas-safety-manager' ), array( 'status' => 403 ) );
+		}
 		if ( is_wp_error( $user ) ) {
 			set_transient( $ip_key, $fails + 1, 10 * MINUTE_IN_SECONDS );
 			// Generic message — don't reveal whether the username exists.
 			return new WP_Error( 'gsm_login_failed', __( 'שם משתמש או סיסמה שגויים.', 'gas-safety-manager' ), array( 'status' => 401 ) );
 		}
 
-		// Success — clear the counter and set the current user for this request.
-		delete_transient( $ip_key );
 		wp_set_current_user( $user->ID );
-		update_user_meta( $user->ID, 'gsm_last_login', current_time( 'mysql' ) );
 
-		// Must have at least the report capability to use the app.
+		// Must have at least the report capability to use the app. Not an app
+		// user: sign out again (no lingering cookie) and keep counting, so an
+		// ordinary site account cannot be used to reset the lockout counter.
 		if ( ! ( user_can( $user, 'gsm_report' ) || user_can( $user, 'gsm_edit_equipment' ) || user_can( $user, 'gsm_manage_all' ) ) ) {
+			wp_logout();
+			set_transient( $ip_key, $fails + 1, 10 * MINUTE_IN_SECONDS );
 			return new WP_Error( 'gsm_login_norole', __( 'אין לך הרשאה לגשת למערכת. פנה למנהל.', 'gas-safety-manager' ), array( 'status' => 403 ) );
 		}
 
-		// Blocked by a manager?
+		// Blocked by a manager? (Also enforced in the authenticate filter.)
 		if ( ! GSM_Auth::is_active( $user ) ) {
 			wp_logout();
 			return new WP_Error( 'gsm_login_blocked', __( 'החשבון שלך הושבת. פנה למנהל.', 'gas-safety-manager' ), array( 'status' => 403 ) );
 		}
+
+		// Fully successful app login — only now clear the failure counter.
+		delete_transient( $ip_key );
+		update_user_meta( $user->ID, 'gsm_last_login', current_time( 'mysql' ) );
 
 		return rest_ensure_response( $this->me_payload( $user ) );
 	}

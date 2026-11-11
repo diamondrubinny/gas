@@ -29,7 +29,7 @@ class GSM_Auth {
 	 * @return bool
 	 */
 	public static function can_manage() {
-		return current_user_can( 'gsm_manage_all' );
+		return self::active_now() && current_user_can( 'gsm_manage_all' );
 	}
 
 	/**
@@ -39,7 +39,7 @@ class GSM_Auth {
 	 * @return bool
 	 */
 	public static function can_edit() {
-		return current_user_can( 'gsm_edit_equipment' ) || current_user_can( 'gsm_manage_all' );
+		return self::active_now() && ( current_user_can( 'gsm_edit_equipment' ) || current_user_can( 'gsm_manage_all' ) );
 	}
 
 	/**
@@ -48,9 +48,11 @@ class GSM_Auth {
 	 * @return bool
 	 */
 	public static function can_report() {
-		return current_user_can( 'gsm_report' )
+		return self::active_now() && (
+			current_user_can( 'gsm_report' )
 			|| current_user_can( 'gsm_edit_equipment' )
-			|| current_user_can( 'gsm_manage_all' );
+			|| current_user_can( 'gsm_manage_all' )
+		);
 	}
 
 	/**
@@ -122,6 +124,33 @@ class GSM_Auth {
 	}
 
 	/**
+	 * The current user is logged in and not deactivated. Every capability
+	 * check goes through this, so a deactivated user loses API access at once
+	 * (an existing session or a fresh wp-login.php login no longer helps).
+	 *
+	 * @return bool
+	 */
+	private static function active_now() {
+		$id = get_current_user_id();
+		return $id > 0 && self::is_active( $id );
+	}
+
+	/**
+	 * authenticate filter (priority 30, after the password check): refuse
+	 * sign-in for a deactivated user on every login path (wp-login.php, the
+	 * app login, XML-RPC, application passwords).
+	 *
+	 * @param WP_User|WP_Error|null $user User being authenticated.
+	 * @return WP_User|WP_Error|null
+	 */
+	public static function block_inactive_login( $user ) {
+		if ( $user instanceof WP_User && ! self::is_active( $user ) ) {
+			return new WP_Error( 'gsm_inactive', __( 'החשבון הושבת. פנו למנהל המערכת.', 'gas-safety-manager' ) );
+		}
+		return $user;
+	}
+
+	/**
 	 * Whether a user is active (not deactivated by a manager).
 	 * Active by default; only an explicit '0' meta deactivates.
 	 *
@@ -179,7 +208,7 @@ class GSM_Auth {
 	 * @return bool
 	 */
 	public static function can_issuance() {
-		return self::can_manage() || 'ahmat' === self::role_key();
+		return self::can_manage() || ( self::active_now() && 'ahmat' === self::role_key() );
 	}
 
 	/**

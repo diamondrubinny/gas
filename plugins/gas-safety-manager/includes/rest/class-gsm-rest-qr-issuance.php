@@ -180,6 +180,9 @@ class GSM_REST_QR_Issuance {
 	public function bulk( $req ) {
 		$body = $this->body( $req );
 		$ids  = isset( $body['equipment_ids'] ) && is_array( $body['equipment_ids'] ) ? $body['equipment_ids'] : array();
+		if ( count( $ids ) > 5000 ) {
+			return new WP_Error( 'gsm_qri_too_many', __( 'יותר מדי פריטים בבקשה אחת (מקסימום 5000).', 'gas-safety-manager' ), array( 'status' => 413 ) );
+		}
 		return rest_ensure_response( GSM_QR_Issuance_Service::bulk_from_equipment( $ids ) );
 	}
 }

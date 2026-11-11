@@ -76,6 +76,7 @@ jobs:
           tools: none
       - run: php tests/bi-token-test.php plugins/gas-safety-manager
       - run: php tests/csv-injection-test.php plugins/gas-safety-manager
+      - run: php tests/csv-reader-test.php plugins/gas-safety-manager
 
   e2e:
     name: E2E (WordPress ${{ matrix.wp }})
@@ -113,6 +114,8 @@ jobs:
         run: scripts/setup-test-wp.sh "$RUNNER_TEMP/wp" 8899
       - name: Integration — data retention (real WordPress + DB)
         run: php "$RUNNER_TEMP/wp/cache/wp-cli.phar" --allow-root --path="$RUNNER_TEMP/wp/site" eval-file tests/integration/retention-test.php
+      - name: Integration — code-review security / data fixes (real WordPress + DB)
+        run: php "$RUNNER_TEMP/wp/cache/wp-cli.phar" --allow-root --path="$RUNNER_TEMP/wp/site" eval-file tests/integration/security-fixes-test.php
       - name: Public dashboard test
         run: node tests/public-dashboard-test.js plugins/gas-safety-manager/public/gas-public-dashboard.html
       - name: End-to-end (CSP, all screens, actions, attachments, bridge)

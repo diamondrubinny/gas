@@ -40,6 +40,21 @@ class GSM_REST_Users {
 	}
 
 	/**
+	 * Is this a user the gas app manages? Only accounts holding a gas role
+	 * (and not a WordPress administrator) may be edited or reset from the app;
+	 * other site users (editors, shop managers, subscribers…) are off-limits.
+	 *
+	 * @param WP_User $user User.
+	 * @return bool
+	 */
+	public static function is_app_user( $user ) {
+		if ( ! $user instanceof WP_User || user_can( $user, 'administrator' ) ) {
+			return false;
+		}
+		return (bool) array_intersect( (array) $user->roles, array_values( self::role_map() ) );
+	}
+
+	/**
 	 * role_key => Hebrew label.
 	 *
 	 * @return array<string,string>
@@ -207,6 +222,10 @@ class GSM_REST_Users {
 		if ( user_can( $user, 'administrator' ) ) {
 			return new WP_Error( 'gsm_user_admin', __( 'לא ניתן לשנות מנהל אתר (WordPress) מכאן.', 'gas-safety-manager' ), array( 'status' => 403 ) );
 		}
+		// Only gas-app users: other site accounts are not the app's to change.
+		if ( ! self::is_app_user( $user ) ) {
+			return new WP_Error( 'gsm_user_foreign', __( 'משתמש זה אינו משתמש של מערכת הגזים.', 'gas-safety-manager' ), array( 'status' => 403 ) );
+		}
 		// Don't let a manager change their own role/active (anti-lockout).
 		if ( $id === get_current_user_id() ) {
 			return new WP_Error( 'gsm_user_self', __( 'לא ניתן לשנות את החשבון שלך מכאן.', 'gas-safety-manager' ), array( 'status' => 403 ) );
@@ -221,11 +240,24 @@ class GSM_REST_Users {
 			$map = self::role_map();
 			$rk  = (string) $body['role'];
 			if ( isset( $map[ $rk ] ) ) {
-				$user->set_role( $map[ $rk ] );
+				// Swap only the gas role; any other role the account has stays.
+				foreach ( array_values( $map ) as $gas_role ) {
+					if ( $gas_role !== $map[ $rk ] && in_array( $gas_role, (array) $user->roles, true ) ) {
+						$user->remove_role( $gas_role );
+					}
+				}
+				if ( ! in_array( $map[ $rk ], (array) $user->roles, true ) ) {
+					$user->add_role( $map[ $rk ] );
+				}
 			}
 		}
 		if ( isset( $body['active'] ) ) {
-			update_user_meta( $id, 'gsm_active', ! empty( $body['active'] ) ? '1' : '0' );
+			$active = ! empty( $body['active'] );
+			update_user_meta( $id, 'gsm_active', $active ? '1' : '0' );
+			if ( ! $active && class_exists( 'WP_Session_Tokens' ) ) {
+				// Log the user out everywhere, immediately.
+				WP_Session_Tokens::get_instance( $id )->destroy_all();
+			}
 		}
 
 		return rest_ensure_response( $this->shape( get_user_by( 'id', $id ) ) );
@@ -242,6 +274,9 @@ class GSM_REST_Users {
 		$user = get_user_by( 'id', $id );
 		if ( ! $user ) {
 			return new WP_Error( 'gsm_user_404', __( 'משתמש לא נמצא.', 'gas-safety-manager' ), array( 'status' => 404 ) );
+		}
+		if ( ! self::is_app_user( $user ) ) {
+			return new WP_Error( 'gsm_user_foreign', __( 'משתמש זה אינו משתמש של מערכת הגזים.', 'gas-safety-manager' ), array( 'status' => 403 ) );
 		}
 		$ok = $this->send_reset_email( $user );
 		if ( is_wp_error( $ok ) ) {

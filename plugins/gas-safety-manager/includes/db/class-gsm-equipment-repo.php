@@ -334,6 +334,22 @@ class GSM_Equipment_Repo {
 	 * Check whether an asset_code already exists (for uniqueness on allocation).
 	 *
 	 * @param string $code Asset code.
+	 * @return int Equipment id, or 0.
+	 */
+	public static function id_by_asset_code( $code ) {
+		global $wpdb;
+		$code = trim( (string) $code );
+		if ( '' === $code ) {
+			return 0;
+		}
+		$table = self::table();
+		return (int) $wpdb->get_var( $wpdb->prepare( "SELECT id FROM {$table} WHERE asset_code = %s ORDER BY id ASC LIMIT 1", $code ) );
+	}
+
+	/**
+	 * Whether an asset code is already used.
+	 *
+	 * @param string $code Asset code.
 	 * @return bool
 	 */
 	public static function asset_code_exists( $code ) {
