@@ -14,7 +14,7 @@ const REPORT = reportIdx > -1 ? process.argv[reportIdx + 1] : null;
 const TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'];
 const SCREENS = ['dashboard', 'bi', 'reports', 'audit', 'myequip', 'quality', 'equipment', 'contacts', 'panels', 'import',
   'faults', 'inspections', 'inspcfg', 'qr', 'qrissue', 'profile', 'security', 'users', 'brsetup', 'database',
-  'restorepts', 'comm', 'integrations', 'admin', 'help'];
+  'restorepts', 'privacy', 'comm', 'integrations', 'admin', 'help'];
 
 (async () => {
   const browser = await chromium.launch();

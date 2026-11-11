@@ -4,7 +4,7 @@
 
 | רכיב | נתיב | גרסה | דרישות |
 |---|---|---|---|
-| תוסף **Gas Safety Manager** | [`plugins/gas-safety-manager/`](plugins/gas-safety-manager/) | 2.14.2 (DB v8) | WordPress 6.4+, PHP **8.2+** |
+| תוסף **Gas Safety Manager** | [`plugins/gas-safety-manager/`](plugins/gas-safety-manager/) | 2.15.0 (DB v8) | WordPress 6.4+, PHP **8.2+** |
 | ערכת עיצוב **Gas Safety** | [`themes/gas-safety-theme/`](themes/gas-safety-theme/) | 1.2.5 | WordPress 6.4+, PHP **8.2+** |
 
 היסטוריית שינויים: [`plugins/gas-safety-manager/readme.txt`](plugins/gas-safety-manager/readme.txt) (Changelog) ו-[`VERSION.txt`](plugins/gas-safety-manager/VERSION.txt). מצב הפרויקט וממצאים פתוחים: [`STATUS.md`](STATUS.md).
@@ -139,7 +139,7 @@ BASE=http://127.0.0.1:8899 USER_NAME=admin PASS='local-test-password' WP_PATH=.w
 | PHPCS | אבטחה ותאימות PHP 8.2+ | כן |
 | PHPCS style | סגנון WordPress מלא | לא (לידיעה) |
 | Unit | טוקנים, rate limit, הגנת CSV, קריאת CSV ו-XLSX, ופענוח קודי QR | כן |
-| Integration | מדיניות שמירה (19 בדיקות), תיקוני סקירת הקוד (24) והסרה מלאה של התוסף (7) על WordPress אמיתי | כן |
+| Integration | מדיניות שמירה (19), תיקוני סקירת הקוד (24), בקשות פרטיות (18) והסרה מלאה של התוסף (7) על WordPress אמיתי | כן |
 | E2E | WordPress 6.4.5 (המינימום) ו-latest | כן |
 | נגישות | axe-core (WCAG 2.1 A/AA) על 35 תצוגות, ובדיקות מקלדת ופוקוס | כן |
 | Build ZIPs | קובצי התקנה כ-artifact | — |

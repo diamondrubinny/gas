@@ -8,7 +8,7 @@ const USER = process.env.USER_NAME || 'admin';
 const PASS = process.env.PASS;
 const SCREENS = ['dashboard', 'bi', 'reports', 'audit', 'myequip', 'quality', 'equipment', 'contacts', 'panels', 'import',
   'faults', 'inspections', 'inspcfg', 'qr', 'qrissue', 'profile', 'security', 'users', 'brsetup', 'database',
-  'restorepts', 'comm', 'integrations', 'admin', 'help'];
+  'restorepts', 'privacy', 'comm', 'integrations', 'admin', 'help'];
 
 (async () => {
   const browser = await chromium.launch();

@@ -48,6 +48,7 @@
         ['brsetup', 'עיצוב עמוד סריקה', manage],
         ['database', 'מסד נתונים', manage],
         ['restorepts', 'נקודות שחזור', manage],
+        ['privacy', 'בקשות פרטיות', manage],
         ['comm', 'תקשורת והתראות', manage],
         ['integrations', 'אינטגרציות', manage],
         ['admin', 'הגדרות אתר', manage],
@@ -805,6 +806,7 @@
     { id: 'brsetup', label: 'עיצוב עמוד סריקה' },
     { id: 'database', label: 'מסד נתונים' },
     { id: 'restorepts', label: 'נקודות שחזור' },
+    { id: 'privacy', label: 'בקשות פרטיות' },
     { id: 'comm', label: 'תקשורת והתראות' },
     { id: 'integrations', label: 'אינטגרציות' },
     { id: 'admin', label: 'הגדרות אתר', locked: true },
@@ -2186,6 +2188,91 @@
       }).catch(function (e) { main.innerHTML = '<div class="gs-error" role="alert">' + esc(e.message) + '</div>'; });
     }
     GSM._rpReload = load;
+    load();
+  });
+
+  // ---- PRIVACY REQUESTS (Amendment 13 / GDPR erasure) ---------------------
+  GSM.registerView('privacy', function (mount) {
+    if (!GSM.can('manage')) { GSM.navigate('/dashboard'); return; }
+    mount.innerHTML = chrome('privacy', loading());
+    var main = mount.querySelector('.gs-main');
+    var STATUS = { open: ['פתוחה', 'warn'], done: ['טופלה', 'ok'], rejected: ['נדחתה', 'danger'] };
+
+    function load() {
+      api('/privacy-requests').then(function (rows) {
+        rows = rows || [];
+        var body = rows.map(function (r) {
+          var st = STATUS[r.status] || [r.status, 'warn'];
+          return '<tr><td style="white-space:nowrap"><bdi dir="ltr">' + esc(r.created_at) + '</bdi></td><td><bdi dir="ltr">' + esc(r.email) + '</bdi></td>' +
+            '<td>' + (r.user_gone ? '<span style="color:var(--gs-muted)">(החשבון נמחק)</span>' : esc(r.user_name)) + '</td>' +
+            '<td>' + esc(r.reason || '—') + '</td>' +
+            '<td><span class="gs-pill gs-pill--' + st[1] + '">' + esc(st[0]) + '</span></td>' +
+            '<td>' + (r.status === 'open' ? '<button type="button" class="gs-btn gs-btn--sm" data-pr="' + esc(r.id) + '">טפל</button>' : '') + '</td></tr>';
+        }).join('');
+        main.innerHTML =
+          '<div class="gs-toolbar"><h2 class="gs-h2">בקשות פרטיות</h2></div>' +
+          '<p style="color:var(--gs-muted);font-size:13px;margin-top:-6px">בקשות למחיקת מידע אישי (חוק הגנת הפרטיות, תיקון 13). ' +
+          'בטיפול בבקשה מאתרים כל הופעה של השם והאימייל במערכת ומחליפים אותה בכינוי "משתמש נמחק #N". הרשומות המקצועיות (ביקורות, תקלות) נשמרות, בלי הפרטים המזהים.</p>' +
+          (rows.length
+            ? '<table class="gs-table"><thead><tr><th>תאריך</th><th>אימייל</th><th>משתמש</th><th>סיבה</th><th>סטטוס</th><th></th></tr></thead><tbody>' + body + '</tbody></table>'
+            : '<div class="gs-empty">אין בקשות.</div>') +
+          '<div id="pr-panel"></div>';
+        main.querySelectorAll('[data-pr]').forEach(function (b) {
+          b.addEventListener('click', function () {
+            var id = parseInt(b.getAttribute('data-pr'), 10);
+            var r = rows.filter(function (x) { return x.id === id; })[0];
+            if (r) panel(r);
+          });
+        });
+      }).catch(function (e) { main.innerHTML = '<div class="gs-error" role="alert">' + esc(e.message) + '</div>'; });
+    }
+
+    function panel(r) {
+      var host = document.getElementById('pr-panel');
+      host.innerHTML =
+        '<div class="gs-card" style="margin-top:16px"><h3 class="gs-card__title" id="pr-title" tabindex="-1">טיפול בבקשה #' + esc(r.id) + '</h3>' +
+        '<div class="gs-field"><label class="gs-label" for="pr-ids">מזהים לחיפוש (שורה לכל אחד: שם מלא, אימייל, טלפון, איות נוסף)</label>' +
+        '<textarea class="gs-textarea" id="pr-ids" rows="4" aria-describedby="pr-ids-help">' + esc((r.identifiers || []).join('\n')) + '</textarea>' +
+        '<div id="pr-ids-help" style="color:var(--gs-muted);font-size:12px;margin-top:4px">ההתאמה היא למילים שלמות בלבד ("דנה לוי" לא יתפוס את "דנה לויה"). מזהה צריך להכיל 3 תווים לפחות.</div></div>' +
+        '<button type="button" class="gs-btn" id="pr-scan">סרוק</button> <span id="pr-status" role="status" aria-live="polite" style="margin-inline-start:8px;color:var(--gs-muted)"></span>' +
+        '<div id="pr-result" style="margin-top:12px"></div></div>';
+      document.getElementById('pr-title').focus();
+      function ids() { return document.getElementById('pr-ids').value.split('\n').map(function (s) { return s.trim(); }).filter(Boolean); }
+      document.getElementById('pr-scan').addEventListener('click', function () {
+        var btn = this, st = document.getElementById('pr-status'); btn.disabled = true; st.textContent = 'סורק…';
+        api('/privacy-requests/' + r.id + '/scan', { method: 'POST', body: { identifiers: ids() } }).then(function (res) {
+          btn.disabled = false; st.textContent = '✓ נמצאו ' + res.total_matches + ' הופעות ב-' + res.total_rows + ' רשומות';
+          var rows = (res.locations || []).map(function (l) {
+            return '<tr><td>' + esc(l.label) + '</td><td style="text-align:center">' + esc(l.rows) + '</td><td style="text-align:center">' + esc(l.matches) + '</td></tr>';
+          }).join('');
+          document.getElementById('pr-result').innerHTML =
+            (rows ? '<table class="gs-table"><thead><tr><th>מיקום</th><th>רשומות</th><th>הופעות</th></tr></thead><tbody>' + rows + '</tbody></table>'
+                  : '<div class="gs-empty">לא נמצאו הופעות של המזהים.</div>') +
+            (r.user_gone ? '' : '<label style="display:flex;gap:8px;align-items:center;margin:12px 0"><input type="checkbox" id="pr-del-account"><span>מחק גם את חשבון המשתמש ב-WordPress (משתמשי מערכת הגזים בלבד)</span></label>') +
+            '<div style="margin-top:10px"><button type="button" class="gs-btn gs-btn--danger" id="pr-apply">החלף בכינוי וסגור את הבקשה</button> ' +
+            '<button type="button" class="gs-btn gs-btn--ghost" id="pr-reject">דחה את הבקשה</button></div>' +
+            '<p style="color:var(--gs-muted);font-size:12px">הפעולה בלתי הפיכה. היא כוללת גם את נקודות השחזור ואת העותקים ביומן הבקרה. מומלץ לבדוק מול ממונה הפרטיות אילו רשומות חובה לשמור.</p>';
+          document.getElementById('pr-apply').addEventListener('click', function () {
+            if (!confirm('להחליף ' + res.total_matches + ' הופעות בכינוי "משתמש נמחק #' + r.id + '"? הפעולה בלתי הפיכה.')) return;
+            var b2 = this; b2.disabled = true; st.textContent = 'מחליף…';
+            var del = document.getElementById('pr-del-account');
+            api('/privacy-requests/' + r.id + '/anonymize', { method: 'POST', body: { identifiers: ids(), delete_account: !!(del && del.checked) } })
+              .then(function (out) {
+                load();
+                setTimeout(function () {
+                  var s2 = document.querySelector('.gs-main p');
+                  if (s2) s2.insertAdjacentHTML('afterend', '<div class="gs-card" role="status" style="margin-bottom:12px">✓ בקשה #' + esc(r.id) + ' טופלה: הוחלפו ' + esc(out.total_matches) + ' הופעות ב-' + esc(out.total_rows) + ' רשומות' + (out.account_deleted ? ', וחשבון המשתמש נמחק' : '') + '.</div>');
+                }, 400);
+              })
+              .catch(function (e) { st.textContent = '✗ ' + (e.message || e); b2.disabled = false; });
+          });
+          document.getElementById('pr-reject').addEventListener('click', function () {
+            if (!confirm('לדחות את בקשה #' + r.id + '? לא יימחק דבר.')) return;
+            api('/privacy-requests/' + r.id + '/reject', { method: 'POST' }).then(load).catch(function (e) { st.textContent = '✗ ' + (e.message || e); });
+          });
+        }).catch(function (e) { btn.disabled = false; st.textContent = '✗ ' + (e.message || e); });
+      });
+    }
     load();
   });
 

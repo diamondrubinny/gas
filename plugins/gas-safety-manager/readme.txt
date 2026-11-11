@@ -4,7 +4,7 @@ Tags: safety, equipment, inspections, hebrew, rtl
 Requires at least: 6.4
 Requires PHP: 8.2
 Tested up to: 7.1
-Stable tag: 2.14.2
+Stable tag: 2.15.0
 License: Proprietary — Technion Safety Unit
 
 Gas systems maintenance management for the Technion Safety Unit. Manages equipment, inspections, faults, and QR codes with native WordPress storage.
@@ -32,6 +32,13 @@ Pairs with the companion "Gas Safety" theme for the portal look (navy/gold, RTL,
 4. To import from Monday: open "Gas Migration", generate a key, run the console script in the portal, then revoke the key.
 
 == Changelog ==
+
+= 2.15.0 =
+* Privacy requests ("בקשות פרטיות", manager): handle personal-data deletion requests end to end (Israeli Privacy Protection Law Amendment 13 / GDPR erasure). Until now a request only cleared the phone and avatar; the person's name and email stayed in equipment contacts, inspections, faults, QR issuance, attachments, the delivery log, the audit log (incl. its JSON copies of deleted records) and the restore points.
+* Scan first: finds every whole-word occurrence of the person's name / email / extra identifiers in all 23 locations, including inside JSON snapshots (where non-Latin text is \u-escaped) — a dry run that changes nothing.
+* Then anonymize: each occurrence is replaced with "משתמש נמחק #N"; professional records (inspections, faults) are kept without the identifying text; other people in the same list field are left as they are; look-alike names ("…Levitz" for "…Levi") are not touched. Optionally deletes the WordPress account (gas-app users only). The request is closed and the audit log records the handling without the name or email. Requests can also be rejected.
+* New routes: GET /gas/v1/privacy-requests, POST /gas/v1/privacy-requests/{id}/scan | anonymize | reject (manager).
+* No DB change — stays v8.
 
 = 2.14.2 =
 * Requirements: PHP 8.2 or newer (PHP 8.1 reached end of life on 31 Dec 2025 — php.net). WordPress 6.4+ unchanged; tested up to WordPress 7.1. On a PHP 8.1 server WordPress refuses to install this update with a message (nothing breaks). Note: PHP 8.2 itself gets security fixes only until 31 Dec 2026 — plan the server upgrade to 8.3+.

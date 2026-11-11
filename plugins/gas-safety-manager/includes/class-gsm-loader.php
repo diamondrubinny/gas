@@ -123,6 +123,9 @@ class GSM_Loader {
 
 		$chat = new GSM_REST_Chat();
 		$chat->register_routes();
+
+		$privacy = new GSM_REST_Privacy();
+		$privacy->register_routes();
 	}
 
 	/**

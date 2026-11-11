@@ -1,3 +1,12 @@
+Gas Safety Manager v2.15.0 — Privacy requests (erasure).
+
+- New "בקשות פרטיות" screen: scan (dry run) -> anonymize to "משתמש נמחק #N" across
+  23 locations incl. JSON snapshots; optional account deletion; reject.
+- Whole-word matching (Hebrew + Latin), list fields keep other people.
+- Tests: tests/integration/privacy-requests-test.php (18), tests/e2e/privacy-e2e.js (10).
+- No DB change — stays v8.
+
+----
 Gas Safety Manager v2.14.2 — Requirements + libraries.
 
 - Requires PHP 8.2 (8.1 EOL 2025-12-31); tested up to WordPress 7.1.
