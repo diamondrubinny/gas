@@ -84,7 +84,11 @@ jobs:
       - name: QR codes decode back exactly (incl. UTF-8)
         run: |
           npm ci --no-audit --no-fund
-          npx playwright install --with-deps chromium
+          npx playwright install chromium
+          # System packages (mostly extra fonts) come from the Ubuntu mirror,
+          # which is sometimes unreachable from the runner. The runner image
+          # already has what headless Chromium needs, so this is best-effort.
+          timeout 180 npx playwright install-deps chromium || echo "::warning::Could not install optional browser system packages (apt mirror unreachable); continuing."
           node tests/qr-test.js plugins/gas-safety-manager
 
   e2e:
@@ -111,7 +115,11 @@ jobs:
       - name: Install Playwright
         run: |
           npm ci --no-audit --no-fund
-          npx playwright install --with-deps chromium
+          npx playwright install chromium
+          # System packages (mostly extra fonts) come from the Ubuntu mirror,
+          # which is sometimes unreachable from the runner. The runner image
+          # already has what headless Chromium needs, so this is best-effort.
+          timeout 180 npx playwright install-deps chromium || echo "::warning::Could not install optional browser system packages (apt mirror unreachable); continuing."
       - name: Throwaway admin password
         run: |
           pass="$(openssl rand -hex 16)"
