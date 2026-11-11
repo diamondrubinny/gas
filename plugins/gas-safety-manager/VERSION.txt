@@ -1,3 +1,12 @@
+Gas Safety Manager v2.16.0 — Pull data from the old system.
+
+- New "משיכה מהאתר הישן" screen: BI token (or pasted BI link), check (dry run) -> pull.
+- Equipment, faults, inspections (with checklist), audit log (archive). Upsert by Monday id.
+- Restore point before every pull; optional daily sync; never deletes.
+- Bulk-import mode: no webhooks / urgent alerts / per-row audit during imports.
+- Tests: tests/integration/legacy-pull-test.php, tests/e2e/legacy-e2e.js.
+
+----
 Gas Safety Manager v2.15.1 — Header title contrast + dashboard chart height.
 
 - Header title white (was navy on navy when the theme colours h1).

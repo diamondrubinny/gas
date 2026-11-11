@@ -48,6 +48,7 @@
         ['brsetup', 'עיצוב עמוד סריקה', manage],
         ['database', 'מסד נתונים', manage],
         ['restorepts', 'נקודות שחזור', manage],
+        ['legacy', 'משיכה מהאתר הישן', manage],
         ['privacy', 'בקשות פרטיות', manage],
         ['comm', 'תקשורת והתראות', manage],
         ['integrations', 'אינטגרציות', manage],
@@ -810,6 +811,7 @@
     { id: 'brsetup', label: 'עיצוב עמוד סריקה' },
     { id: 'database', label: 'מסד נתונים' },
     { id: 'restorepts', label: 'נקודות שחזור' },
+    { id: 'legacy', label: 'משיכה מהאתר הישן' },
     { id: 'privacy', label: 'בקשות פרטיות' },
     { id: 'comm', label: 'תקשורת והתראות' },
     { id: 'integrations', label: 'אינטגרציות' },
@@ -2196,6 +2198,174 @@
   });
 
   // ---- PRIVACY REQUESTS (Amendment 13 / GDPR erasure) ---------------------
+  // ---- PULL FROM THE OLD SYSTEM ---------------------------------------------
+  GSM.registerView('legacy', function (mount) {
+    if (!GSM.can('manage')) { GSM.navigate('/dashboard'); return; }
+    mount.innerHTML = chrome('legacy', loading());
+    var main = mount.querySelector('.gs-main');
+    var SETS = [['equipment', 'ציוד'], ['faults', 'תקלות'], ['inspections', 'ביקורות'], ['audit', 'יומן בקרה (ארכיון)']];
+    var checkedOk = false;
+
+    function lastLine(l) {
+      if (!l) return 'עדיין לא בוצעה משיכה.';
+      var mode = l.mode === 'auto' ? 'אוטומטית' : 'ידנית';
+      if (!l.ok) return 'משיכה ' + mode + ' אחרונה (' + l.at + ') <b>נכשלה</b>: ' + esc(l.error);
+      var c = l.counts || {}, parts = [];
+      ['equipment', 'faults', 'inspections'].forEach(function (k) {
+        if (c[k]) parts.push(SETS.filter(function (s) { return s[0] === k; })[0][1] + ': ' + c[k].created + ' חדשים, ' + c[k].updated + ' עודכנו');
+      });
+      if (c.audit) parts.push('יומן: ' + c.audit['new'] + ' רשומות');
+      return 'משיכה ' + mode + ' אחרונה: <bdi dir="ltr">' + esc(l.at) + '</bdi> · ' + esc(parts.join(' · ') || 'אין שינויים');
+    }
+
+    function selected() {
+      return Array.prototype.slice.call(main.querySelectorAll('.lg-set')).filter(function (c) { return c.checked; }).map(function (c) { return c.value; });
+    }
+
+    function report(d) {
+      var html = '';
+      SETS.forEach(function (s) {
+        var r = d.sets && d.sets[s[0]];
+        if (!r) return;
+        html += '<div class="gs-card" style="margin-top:12px"><h3 class="gs-card__title">' + esc(r.label) + ' — התקבלו ' + esc(r.fetched) + ' רשומות</h3>';
+        if (r.audit) {
+          var a = r.audit;
+          html += '<ul style="margin:0 0 8px;padding-inline-start:18px;font-size:13.5px"><li>' + esc(a['new']) + ' רשומות חדשות ייכנסו לארכיון</li>' +
+            (a.duplicates ? '<li>' + esc(a.duplicates) + ' כבר קיימות (ידולגו)</li>' : '') +
+            (a.too_old ? '<li>' + esc(a.too_old) + ' ישנות מתקופת השמירה של יומן הבקרה (לא ייובאו)</li>' : '') +
+            (a.invalid ? '<li>' + esc(a.invalid) + ' בלי תאריך תקין (לא ייובאו)</li>' : '') + '</ul>';
+        } else {
+          html += '<ul style="margin:0 0 8px;padding-inline-start:18px;font-size:13.5px">' +
+            '<li><b>' + esc(r.would_create) + '</b> חדשות ייווצרו, <b>' + esc(r.would_update) + '</b> קיימות יעודכנו</li>' +
+            (r.no_id ? '<li>' + esc(r.no_id) + ' בלי מזהה Monday (ידולגו, כדי שמשיכה חוזרת לא תיצור כפילויות)</li>' : '') +
+            (r.unlinked ? '<li style="color:var(--gs-warn-text)">' + esc(r.unlinked) + ' לא מקושרות לציוד מוכר (ידולגו)</li>' : '') + '</ul>';
+        }
+        if (r.unknown && r.unknown.length) {
+          html += '<p style="font-size:13px;margin:6px 0"><span class="gs-pill gs-pill--warn">לא זוהו</span> עמודות שלא ייובאו: ' +
+            r.unknown.map(function (u) { return '<bdi>' + esc(u) + '</bdi>'; }).join(', ') + '</p>';
+        }
+        if (r.columns && r.columns.length) {
+          html += '<details style="font-size:13px"><summary>מיפוי העמודות (' + r.columns.length + ')</summary><table class="gs-table" style="margin-top:6px"><thead><tr><th>עמודה באתר הישן</th><th>שדה במערכת</th></tr></thead><tbody>' +
+            r.columns.map(function (c) { return '<tr><td><bdi>' + esc(c.column) + '</bdi></td><td>' + esc(c.field) + '</td></tr>'; }).join('') + '</tbody></table></details>';
+        }
+        if (r.sample && r.sample.length) {
+          var keys = [];
+          r.sample.forEach(function (row) { Object.keys(row).forEach(function (k) { if (keys.indexOf(k) < 0) keys.push(k); }); });
+          keys = keys.slice(0, 8);
+          html += '<details style="font-size:13px;margin-top:6px"><summary>דוגמה (שורות: ' + r.sample.length + ')</summary><div style="overflow-x:auto"><table class="gs-table" style="margin-top:6px"><thead><tr>' +
+            keys.map(function (k) { return '<th scope="col">' + esc(k) + '</th>'; }).join('') + '</tr></thead><tbody>' +
+            r.sample.map(function (row) { return '<tr>' + keys.map(function (k) { return '<td>' + esc(row[k] == null ? '' : row[k]) + '</td>'; }).join('') + '</tr>'; }).join('') +
+            '</tbody></table></div></details>';
+        }
+        html += '</div>';
+      });
+      return html;
+    }
+
+    function pulled(d) {
+      var c = d.counts || {}, rows = '';
+      ['equipment', 'faults', 'inspections'].forEach(function (k) {
+        if (!c[k]) return;
+        rows += '<tr><td>' + esc(SETS.filter(function (s) { return s[0] === k; })[0][1]) + '</td><td>' + esc(c[k].created) + '</td><td>' + esc(c[k].updated) + '</td><td>' + esc(c[k].skipped) + '</td><td>' + esc(c[k].failed) + '</td></tr>';
+      });
+      var notes = [];
+      ['equipment', 'faults', 'inspections'].forEach(function (k) { if (c[k] && c[k].notes) notes = notes.concat(c[k].notes); });
+      return '<div class="gs-card" style="margin-top:12px" role="status"><h3 class="gs-card__title" id="lg-done" tabindex="-1">✓ המשיכה הסתיימה</h3>' +
+        (rows ? '<table class="gs-table"><thead><tr><th>סוג</th><th>נוצרו</th><th>עודכנו</th><th>דולגו</th><th>שגיאות</th></tr></thead><tbody>' + rows + '</tbody></table>' : '') +
+        (c.audit ? '<p style="font-size:13.5px">יומן בקרה: נוספו ' + esc(c.audit['new']) + ' רשומות ארכיון.</p>' : '') +
+        (notes.length ? '<details style="font-size:13px"><summary>פירוט דילוגים ושגיאות (' + notes.length + ')</summary><ul>' + notes.map(function (n) { return '<li>' + esc(n) + '</li>'; }).join('') + '</ul></details>' : '') +
+        '<p style="font-size:13px;color:var(--gs-muted)">לפני המשיכה נוצרה נקודת שחזור #' + esc(d.restore_point) + '. אפשר לחזור אליה במסך <a href="#/restorepts">נקודות שחזור</a>.</p></div>';
+    }
+
+    function draw(cfg) {
+      main.innerHTML =
+        '<div class="gs-toolbar"><h2 class="gs-h2">משיכה מהאתר הישן</h2></div>' +
+        '<p style="color:var(--gs-muted);font-size:13px;margin-top:-6px">משיכת ציוד, תקלות, ביקורות ויומן בקרה מהמערכת הקודמת (<bdi dir="ltr">safety-qr-app</bdi>) דרך ממשק ה-BI שלה, לקריאה בלבד. ' +
+        'הנתונים מתעדכנים לפי מזהה Monday, כך שמשיכה חוזרת מעדכנת ולא יוצרת כפילויות, והיא לעולם לא מוחקת. מדבקות QR ישנות ממשיכות לעבוד.</p>' +
+        '<div class="gs-card"><h3 class="gs-card__title">חיבור לאתר הישן</h3>' +
+        '<p style="font-size:13px;margin-top:0" role="status">' + (cfg.configured
+          ? 'מחובר: <bdi dir="ltr">' + esc(cfg.base) + '</bdi> · טוקן <bdi dir="ltr">' + esc(cfg.token_masked) + '</bdi>'
+          : 'לא מחובר עדיין.') + '</p>' +
+        '<div class="gs-field"><label class="gs-label" for="lg-base">כתובת השרת הישן</label>' +
+        '<input class="gs-input" id="lg-base" dir="ltr" inputmode="url" autocomplete="off" value="' + esc(cfg.base) + '" style="max-width:420px"></div>' +
+        '<div class="gs-field"><label class="gs-label" for="lg-token">טוקן BI של האתר הישן, או קישור BI שלם</label>' +
+        '<input class="gs-input" id="lg-token" type="password" dir="ltr" autocomplete="off" spellcheck="false" aria-describedby="lg-token-help" placeholder="' + (cfg.configured ? 'השאירו ריק כדי לא לשנות' : '') + '" style="max-width:420px">' +
+        '<div id="lg-token-help" style="color:var(--gs-muted);font-size:12px;margin-top:4px">באתר הישן: לשונית "BI וניתוח", ולחיצה על "העתק קישור" באחד הכרטיסים. אפשר להדביק כאן את הקישור כולו. ' +
+        'הטוקן נשמר בשרת בלבד, לא מוצג שוב, ונשלח רק לכתובת שלמעלה. שינוי הכתובת מוחק אותו.</div></div>' +
+        '<label style="display:flex;gap:8px;align-items:flex-start;margin:8px 0"><input type="checkbox" id="lg-auto"' + (cfg.auto ? ' checked' : '') + ' aria-describedby="lg-auto-help"><span><b>סנכרון אוטומטי יומי</b>' +
+        '<span id="lg-auto-help" style="display:block;color:var(--gs-muted);font-size:12px">כל לילה המערכת מושכת את כל הנתונים מחדש, עם נקודת שחזור לפני כל משיכה. מתאים לתקופה שבה שתי המערכות פועלות במקביל. ' +
+        'שימו לב: בשדות שמגיעים מהאתר הישן, הערך הישן גובר על עריכה שנעשתה כאן. כבו את הסנכרון אחרי המעבר הסופי.' + (cfg.next_run ? ' הריצה הבאה: <bdi dir="ltr">' + esc(cfg.next_run) + '</bdi>.' : '') + '</span></span></label>' +
+        '<button type="button" class="gs-btn" id="lg-save">שמור</button> ' +
+        (cfg.configured ? '<button type="button" class="gs-btn gs-btn--ghost" id="lg-clear">נתק (מחק טוקן)</button> ' : '') +
+        '<span id="lg-save-st" role="status" aria-live="polite" style="margin-inline-start:8px;color:var(--gs-muted)"></span></div>' +
+
+        '<div class="gs-card" style="margin-top:16px"><h3 class="gs-card__title">בדיקה ומשיכה</h3>' +
+        '<p style="font-size:13px;margin-top:0">' + lastLine(cfg.last) + '</p>' +
+        '<fieldset style="border:0;padding:0;margin:0 0 10px"><legend class="gs-label">מה למשוך</legend>' +
+        SETS.map(function (s) { return '<label style="display:inline-flex;gap:6px;align-items:center;margin-inline-end:16px"><input type="checkbox" class="lg-set" value="' + s[0] + '" checked><span>' + esc(s[1]) + '</span></label>'; }).join('') +
+        '</fieldset>' +
+        '<button type="button" class="gs-btn" id="lg-check"' + (cfg.configured ? '' : ' disabled') + '>בדוק (בלי לשנות דבר)</button> ' +
+        '<button type="button" class="gs-btn gs-btn--danger" id="lg-pull" disabled aria-describedby="lg-pull-help">משוך עכשיו</button> ' +
+        '<span id="lg-st" role="status" aria-live="polite" style="margin-inline-start:8px;color:var(--gs-muted)"></span>' +
+        '<div id="lg-pull-help" style="color:var(--gs-muted);font-size:12px;margin-top:6px">"משוך עכשיו" נפתח אחרי בדיקה שהצליחה. המשיכה יוצרת קודם נקודת שחזור.</div>' +
+        '<div id="lg-result"></div></div>';
+
+      function save(body, btn) {
+        var st = document.getElementById('lg-save-st'); btn.disabled = true; st.textContent = 'שומר…';
+        api('/legacy', { method: 'POST', body: body })
+          .then(function (nc) { draw(nc); document.getElementById('lg-save-st').textContent = '✓ נשמר.'; })
+          .catch(function (e) { st.textContent = '✗ ' + (e.message || e); btn.disabled = false; });
+      }
+      document.getElementById('lg-save').addEventListener('click', function () {
+        var body = { base: document.getElementById('lg-base').value.trim(), auto: document.getElementById('lg-auto').checked };
+        var tk = document.getElementById('lg-token').value.trim();
+        if (tk) body.token = tk;
+        save(body, this);
+      });
+      var clr = document.getElementById('lg-clear');
+      if (clr) clr.addEventListener('click', function () {
+        if (!confirm('לנתק את החיבור לאתר הישן? הטוקן יימחק והסנכרון האוטומטי ייעצר.')) return;
+        save({ clear_token: true, auto: false }, this);
+      });
+      function setsChanged() { checkedOk = false; document.getElementById('lg-pull').disabled = true; }
+      main.querySelectorAll('.lg-set').forEach(function (c) { c.addEventListener('change', setsChanged); });
+
+      document.getElementById('lg-check').addEventListener('click', function () {
+        var btn = this, st = document.getElementById('lg-st'), sets = selected();
+        if (!sets.length) { st.textContent = 'בחרו לפחות סוג נתונים אחד.'; return; }
+        btn.disabled = true; st.textContent = 'בודק מול האתר הישן… (עד דקה)';
+        api('/legacy/check', { method: 'POST', body: { sets: sets } }).then(function (d) {
+          btn.disabled = false; checkedOk = true;
+          document.getElementById('lg-pull').disabled = false;
+          st.textContent = '✓ הבדיקה הסתיימה. שום דבר לא השתנה.';
+          document.getElementById('lg-result').innerHTML = report(d);
+        }).catch(function (e) {
+          btn.disabled = false; st.textContent = '';
+          document.getElementById('lg-result').innerHTML = '<div class="gs-error" role="alert" style="margin-top:12px">' + esc(e.message || e) + '</div>';
+        });
+      });
+      document.getElementById('lg-pull').addEventListener('click', function () {
+        if (!checkedOk) return;
+        if (!confirm('למשוך עכשיו את הנתונים מהאתר הישן? רשומות קיימות יעודכנו לפי האתר הישן. לפני כן תיווצר נקודת שחזור.')) return;
+        var btn = this, st = document.getElementById('lg-st'); btn.disabled = true; st.textContent = 'מושך… (עשוי לקחת כמה דקות)';
+        document.getElementById('lg-check').disabled = true;
+        api('/legacy/pull', { method: 'POST', body: { sets: selected() } }).then(function (d) {
+          st.textContent = '';
+          return api('/legacy').then(function (nc) {
+            draw(nc);
+            document.getElementById('lg-result').innerHTML = pulled(d);
+            document.getElementById('lg-done').focus();
+          });
+        }).catch(function (e) {
+          st.textContent = ''; document.getElementById('lg-check').disabled = false;
+          document.getElementById('lg-result').innerHTML = '<div class="gs-error" role="alert" style="margin-top:12px">' + esc(e.message || e) + '</div>';
+        });
+      });
+    }
+
+    api('/legacy').then(draw).catch(function (e) { main.innerHTML = '<div class="gs-error" role="alert">' + esc(e.message || e) + '</div>'; });
+  });
+
   GSM.registerView('privacy', function (mount) {
     if (!GSM.can('manage')) { GSM.navigate('/dashboard'); return; }
     mount.innerHTML = chrome('privacy', loading());

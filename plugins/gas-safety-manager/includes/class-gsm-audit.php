@@ -46,6 +46,10 @@ class GSM_Audit {
 	 */
 	public static function log( $action, $entity, $id, $name = '', $summary = '', $before = null ) {
 		global $wpdb;
+		// Bulk import: the importer writes one summary entry instead of one per row.
+		if ( class_exists( 'GSM_Bulk' ) && GSM_Bulk::active() ) {
+			return;
+		}
 		$user  = function_exists( 'wp_get_current_user' ) ? wp_get_current_user() : null;
 		$actor = ( $user && $user->ID ) ? ( $user->display_name ? $user->display_name : $user->user_login ) : 'system';
 

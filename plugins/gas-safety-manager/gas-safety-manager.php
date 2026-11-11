@@ -3,7 +3,7 @@
  * Plugin Name:       Gas Safety Manager
  * Plugin URI:        https://safety-tech.dev
  * Description:       Gas systems maintenance management for the Technion Safety Unit. Manages equipment, inspections, faults, and QR codes. Full replacement for the Monday.com backend with native WordPress storage, including a batch QR sticker generator.
- * Version:           2.15.1
+ * Version:           2.16.0
  * Requires at least: 6.4
  * Requires PHP:      8.2
  * Author:            Diamond Rubinny
@@ -21,7 +21,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
-define( 'GSM_VERSION', '2.15.1' );
+define( 'GSM_VERSION', '2.16.0' );
 define( 'GSM_DB_VERSION', '8' );
 define( 'GSM_PLUGIN_FILE', __FILE__ );
 define( 'GSM_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
@@ -58,6 +58,7 @@ require_once GSM_PLUGIN_DIR . 'includes/services/class-gsm-faults-service.php';
 require_once GSM_PLUGIN_DIR . 'includes/services/class-gsm-inspections-service.php';
 require_once GSM_PLUGIN_DIR . 'includes/services/class-gsm-qr-issuance-service.php';
 require_once GSM_PLUGIN_DIR . 'includes/services/class-gsm-restore-service.php';
+require_once GSM_PLUGIN_DIR . 'includes/class-gsm-bulk.php';
 require_once GSM_PLUGIN_DIR . 'includes/class-gsm-rate-limit.php';
 require_once GSM_PLUGIN_DIR . 'includes/class-gsm-security.php';
 require_once GSM_PLUGIN_DIR . 'includes/class-gsm-comm.php';
@@ -71,6 +72,8 @@ require_once GSM_PLUGIN_DIR . 'includes/class-gsm-chat.php';
 require_once GSM_PLUGIN_DIR . 'includes/rest/class-gsm-rest-chat.php';
 require_once GSM_PLUGIN_DIR . 'includes/class-gsm-privacy-requests.php';
 require_once GSM_PLUGIN_DIR . 'includes/rest/class-gsm-rest-privacy.php';
+require_once GSM_PLUGIN_DIR . 'includes/class-gsm-legacy.php';
+require_once GSM_PLUGIN_DIR . 'includes/rest/class-gsm-rest-legacy.php';
 
 // Auth helpers.
 require_once GSM_PLUGIN_DIR . 'includes/auth/class-gsm-auth.php';
@@ -155,6 +158,9 @@ add_action( 'init', array( 'GSM_Comm', 'sync_cron' ) );
 // Data retention: daily cleanup of old log records (starts after a grace period).
 add_action( GSM_Retention::CRON, array( 'GSM_Retention', 'run_scheduled' ) );
 add_action( 'init', array( 'GSM_Retention', 'sync_cron' ) );
+// Pull from the old system: optional daily sync (off unless enabled).
+add_action( GSM_Legacy::CRON, array( 'GSM_Legacy', 'run_scheduled' ) );
+add_action( 'init', array( 'GSM_Legacy', 'sync_cron' ) );
 // Chat widget (Botwa): click-to-load launcher + CSP allowance, only where enabled.
 add_action( 'wp_enqueue_scripts', array( 'GSM_Chat', 'enqueue' ), 20 );
 // A deactivated user cannot sign in by any path. Priority 30 runs AFTER the
@@ -169,6 +175,7 @@ register_deactivation_hook( __FILE__, 'gsm_deactivate_cron' );
 function gsm_deactivate_cron() {
 	wp_clear_scheduled_hook( 'gsm_daily_reminders' );
 	wp_clear_scheduled_hook( 'gsm_daily_retention' );
+	wp_clear_scheduled_hook( 'gsm_legacy_sync' );
 }
 
 /**

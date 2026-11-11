@@ -94,6 +94,7 @@ wp_cache_flush();
 // 5. Scheduled events.
 wp_clear_scheduled_hook( 'gsm_daily_reminders' );
 wp_clear_scheduled_hook( 'gsm_daily_retention' );
+wp_clear_scheduled_hook( 'gsm_legacy_sync' );
 
 // 6. Roles and capabilities.
 foreach ( array( 'gsm_manager', 'gsm_ahmat', 'gsm_lab_manager', 'gsm_pi' ) as $gsm_role ) {

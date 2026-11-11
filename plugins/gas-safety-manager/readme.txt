@@ -4,7 +4,7 @@ Tags: safety, equipment, inspections, hebrew, rtl
 Requires at least: 6.4
 Requires PHP: 8.2
 Tested up to: 7.1
-Stable tag: 2.15.1
+Stable tag: 2.16.0
 License: Proprietary — Technion Safety Unit
 
 Gas systems maintenance management for the Technion Safety Unit. Manages equipment, inspections, faults, and QR codes with native WordPress storage.
@@ -32,6 +32,17 @@ Pairs with the companion "Gas Safety" theme for the portal look (navy/gold, RTL,
 4. To import from Monday: open "Gas Migration", generate a key, run the console script in the portal, then revoke the key.
 
 == Changelog ==
+
+= 2.16.0 =
+* New screen "משיכה מהאתר הישן" (manager): pull equipment, faults, inspections and the audit log from the old system (safety-qr-app / api.safety-tech.dev) through its read-only BI export, using the old system's BI token (no user PIN). A whole BI link can be pasted; host + token are extracted.
+* Check first (dry run): fetches and recognizes everything, shows counts (new / updated / skipped), the column mapping, unrecognized columns and sample rows — writes nothing. "Pull now" is enabled only after a successful check.
+* Pull: restore point first (aborts if it fails), then upsert by Monday id through the service layer — repeatable, never creates duplicates, never deletes. Empty old values never blank a field. Rows without a Monday id are skipped. Old QR stickers keep working (Monday-id lookup).
+* Format recognition: raw Monday items (column_values), flat objects keyed by Monday column id or by Hebrew column title, and header/row tables. The column ids/titles come from the old portal's own code. Status/priority/type/result texts and dates are converted; the old checklist text (✓ ✗ —) becomes checklist items; faults/inspections are linked to equipment by name.
+* Audit log: imported as an archive (not undoable), duplicates skipped, entries older than the audit retention period are not imported.
+* Optional daily automatic sync (WP-Cron) while both systems run side by side; off by default, cleared on deactivation/uninstall. Last run (ok / error) is shown.
+* Security: https host names only (no IPs / internal hosts; SSRF guard on the request), no redirects, 30 s timeout, 15 MB cap, 20,000 rows; token stored server-side, masked, never logged or returned, wiped when the host changes; error messages never include the URL/token; one run at a time.
+* Bulk-import mode (also for the JSON file import): no webhook per row, no urgent-fault alerts for old records, one summary audit entry instead of one per row.
+* Tests: tests/integration/legacy-pull-test.php (mock old server, 52 checks), tests/e2e/legacy-e2e.js (incl. the real old server rejecting a fake token).
 
 = 2.15.1 =
 * Fix: the system title in the navy header was navy-on-navy (contrast 1:1) whenever the active theme colours headings (the bundled theme does). The title is now white on both gradient stops.

@@ -135,6 +135,9 @@ class GSM_Integrations {
 	 * @return void
 	 */
 	public static function fire_webhook( $event, $payload ) {
+		if ( class_exists( 'GSM_Bulk' ) && GSM_Bulk::active() ) {
+			return; // Bulk import: one HTTP call per imported row is not wanted.
+		}
 		$c = self::config();
 		if ( '' === $c['webhookUrl'] ) {
 			return;

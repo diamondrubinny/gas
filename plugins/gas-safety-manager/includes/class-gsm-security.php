@@ -233,6 +233,25 @@ class GSM_Security {
 	}
 
 	/**
+	 * GET to an outside URL with the same internal-network guard as
+	 * outbound_post(): no redirects, public destinations only.
+	 *
+	 * @param string $url  URL.
+	 * @param array  $args wp_remote_get args.
+	 * @return array|WP_Error
+	 */
+	public static function outbound_get( $url, $args ) {
+		$args['redirection'] = 0;
+		if ( defined( 'GSM_ALLOW_INTERNAL_WEBHOOKS' ) && GSM_ALLOW_INTERNAL_WEBHOOKS ) {
+			return wp_remote_get( $url, $args );
+		}
+		if ( ! self::is_public_destination( $url ) ) {
+			return new WP_Error( 'gsm_unsafe_url', __( 'כתובת היעד אינה מותרת (רשת פנימית או כתובת שמורה).', 'gas-safety-manager' ) );
+		}
+		return wp_safe_remote_get( $url, $args );
+	}
+
+	/**
 	 * Does the URL's host resolve only to public IP addresses?
 	 *
 	 * @param string $url URL.

@@ -137,7 +137,8 @@ class GSM_Faults_Service {
 				)
 			);
 		}
-		if ( ! is_wp_error( $id ) && class_exists( 'GSM_Comm' ) && isset( $data['priority'] ) && 'urgent' === $data['priority'] ) {
+		// No alert for urgent faults that arrive through a bulk import (old records).
+		if ( ! is_wp_error( $id ) && class_exists( 'GSM_Comm' ) && ! ( class_exists( 'GSM_Bulk' ) && GSM_Bulk::active() ) && isset( $data['priority'] ) && 'urgent' === $data['priority'] ) {
 			GSM_Comm::on_urgent_fault( isset( $data['equipment_id'] ) ? (int) $data['equipment_id'] : 0, isset( $data['description'] ) ? $data['description'] : '' );
 		}
 		return $id;

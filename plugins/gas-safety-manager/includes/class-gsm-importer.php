@@ -37,10 +37,42 @@ class GSM_Importer {
 	/**
 	 * Import a decoded JSON structure.
 	 *
-	 * @param mixed $data Decoded JSON (array or associative array).
+	 * Runs in bulk mode (no webhooks / urgent alerts / per-row audit entries)
+	 * and writes one summary audit entry.
+	 *
+	 * @param mixed  $data   Decoded JSON (array or associative array).
+	 * @param string $source Label for the audit entry.
 	 * @return array|WP_Error Per-section counts, or WP_Error on a fatal issue.
 	 */
-	public static function import_array( $data ) {
+	public static function import_array( $data, $source = '' ) {
+		GSM_Bulk::start();
+		try {
+			$res = self::import_rows( $data );
+		} finally {
+			GSM_Bulk::end();
+		}
+		if ( ! is_wp_error( $res ) && class_exists( 'GSM_Audit' ) ) {
+			$parts = array();
+			$names = array( 'equipment' => 'ציוד', 'inspections' => 'ביקורות', 'faults' => 'תקלות' );
+			foreach ( $names as $k => $label ) {
+				$c = $res[ $k ];
+				$ne = (int) $c['failed'];
+				if ( $c['created'] || $c['updated'] || $c['skipped'] || $ne ) {
+					$parts[] = $label . ': ' . (int) $c['created'] . ' נוצרו, ' . (int) $c['updated'] . ' עודכנו' . ( $c['skipped'] ? ', ' . (int) $c['skipped'] . ' דולגו' : '' ) . ( $ne ? ', ' . $ne . ' שגיאות' : '' );
+				}
+			}
+			GSM_Audit::log( 'import', 'import', 0, '' !== $source ? $source : 'ייבוא נתונים', $parts ? implode( ' · ', $parts ) : 'אין שינויים' );
+		}
+		return $res;
+	}
+
+	/**
+	 * Import body (runs in bulk mode).
+	 *
+	 * @param mixed $data Decoded JSON.
+	 * @return array|WP_Error
+	 */
+	private static function import_rows( $data ) {
 		if ( ! is_array( $data ) ) {
 			return new WP_Error( 'gsm_import_bad', __( 'הקובץ אינו JSON תקין (צפוי מערך או אובייקט).', 'gas-safety-manager' ) );
 		}
@@ -216,6 +248,12 @@ class GSM_Importer {
 		if ( '' !== $ename && isset( $by_name[ $ename ] ) ) {
 			return (int) $by_name[ $ename ];
 		}
+		// A Monday relation column can list several linked items ("A, B");
+		// fall back to the first one.
+		$alt = isset( $row['equipment_name_alt'] ) ? (string) $row['equipment_name_alt'] : '';
+		if ( '' !== $alt && isset( $by_name[ $alt ] ) ) {
+			return (int) $by_name[ $alt ];
+		}
 		return 0;
 	}
 
@@ -241,7 +279,7 @@ class GSM_Importer {
 	 * @return array
 	 */
 	private static function blank() {
-		return array( 'created' => 0, 'updated' => 0, 'skipped' => 0, 'errors' => array() );
+		return array( 'created' => 0, 'updated' => 0, 'skipped' => 0, 'failed' => 0, 'errors' => array() );
 	}
 
 	/**
@@ -254,6 +292,7 @@ class GSM_Importer {
 	 * @return void
 	 */
 	private static function add_err( &$section, $i, $mid, $err ) {
+		$section['failed']++;
 		if ( count( $section['errors'] ) < 50 ) {
 			$section['errors'][] = array(
 				'index'     => (int) $i,

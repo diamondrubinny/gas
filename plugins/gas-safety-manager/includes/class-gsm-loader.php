@@ -126,6 +126,8 @@ class GSM_Loader {
 
 		$privacy = new GSM_REST_Privacy();
 		$privacy->register_routes();
+		$legacy = new GSM_REST_Legacy();
+		$legacy->register_routes();
 	}
 
 	/**

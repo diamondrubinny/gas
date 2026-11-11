@@ -127,6 +127,8 @@ jobs:
         run: php "$RUNNER_TEMP/wp/cache/wp-cli.phar" --allow-root --path="$RUNNER_TEMP/wp/site" eval-file tests/integration/security-fixes-test.php
       - name: "Integration — privacy requests: scan + anonymize everywhere (real WordPress + DB)"
         run: php "$RUNNER_TEMP/wp/cache/wp-cli.phar" --allow-root --path="$RUNNER_TEMP/wp/site" eval-file tests/integration/privacy-requests-test.php
+      - name: "Integration — pull from the old system (mock server): check, pull, re-pull, errors"
+        run: php "$RUNNER_TEMP/wp/cache/wp-cli.phar" --allow-root --path="$RUNNER_TEMP/wp/site" eval-file tests/integration/legacy-pull-test.php
       - name: Public dashboard test
         run: node tests/public-dashboard-test.js plugins/gas-safety-manager/public/gas-public-dashboard.html
       - name: End-to-end (CSP, all screens, actions, attachments, bridge)
@@ -145,6 +147,11 @@ jobs:
           BASE: http://127.0.0.1:8899
           USER_NAME: admin
         run: PASS="$WP_TEST_PASS" node tests/e2e/privacy-e2e.js
+      - name: Pull-from-old-site screen (settings, real 401, report rendering) + axe
+        env:
+          BASE: http://127.0.0.1:8899
+          USER_NAME: admin
+        run: PASS="$WP_TEST_PASS" node tests/e2e/legacy-e2e.js
       - name: Layout — header contrast on gradient + chart height (desktop + mobile)
         env:
           BASE: http://127.0.0.1:8899
