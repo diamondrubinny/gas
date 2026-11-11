@@ -3,7 +3,7 @@
  * Plugin Name:       Gas Safety Manager
  * Plugin URI:        https://safety-tech.dev
  * Description:       Gas systems maintenance management for the Technion Safety Unit. Manages equipment, inspections, faults, and QR codes. Full replacement for the Monday.com backend with native WordPress storage, including a batch QR sticker generator.
- * Version:           2.18.0
+ * Version:           2.19.0
  * Requires at least: 6.4
  * Requires PHP:      8.2
  * Author:            Diamond Rubinny
@@ -21,7 +21,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
-define( 'GSM_VERSION', '2.18.0' );
+define( 'GSM_VERSION', '2.19.0' );
 define( 'GSM_DB_VERSION', '10' );
 define( 'GSM_PLUGIN_FILE', __FILE__ );
 define( 'GSM_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
@@ -176,6 +176,19 @@ add_filter( 'authenticate', array( 'GSM_2FA', 'check_login' ), 40, 3 );
 add_action( 'login_form', array( 'GSM_2FA', 'login_field' ) );
 add_filter( 'wp_is_application_passwords_available_for_user', array( 'GSM_2FA', 'app_passwords' ), 10, 2 );
 add_filter( 'gsm_csp_directives', array( 'GSM_Chat', 'csp' ) );
+// Accessibility adjustments menu on every front-end page (app, QR page, site).
+add_action( 'wp_enqueue_scripts', 'gsm_enqueue_a11y_widget', 30 );
+/**
+ * Enqueue the accessibility adjustments menu. Local files only; choices stay
+ * in the visitor's browser. Switch off with: add_filter( 'gsm_a11y_widget', '__return_false' ).
+ */
+function gsm_enqueue_a11y_widget() {
+	if ( is_admin() || ! apply_filters( 'gsm_a11y_widget', true ) ) {
+		return;
+	}
+	wp_enqueue_style( 'gsm-a11y-widget', GSM_PLUGIN_URL . 'public/assets/css/a11y-widget.css', array(), GSM_VERSION );
+	wp_enqueue_script( 'gsm-a11y-widget', GSM_PLUGIN_URL . 'public/assets/js/a11y-widget.js', array(), GSM_VERSION, true );
+}
 register_deactivation_hook( __FILE__, 'gsm_deactivate_cron' );
 /**
  * Clear scheduled reminders on deactivation.

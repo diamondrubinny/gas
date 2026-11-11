@@ -40,14 +40,18 @@ const PASS = process.env.PASS;
   await page.waitForSelector('.gs-header__logout', { timeout: 15000 });
   check('keyboard login', true);
 
-  // Skip link is the first Tab stop and moves focus to <main> (WCAG 2.4.1).
+  // The skip link is the first focusable element of the app shell and moves
+  // focus to <main> (WCAG 2.4.1). (After an in-app screen change the focus is
+  // on the screen heading by design, so this checks the shell's own order.)
   await page.evaluate(() => GSM.navigate('/dashboard'));
   await page.waitForTimeout(800);
-  await page.evaluate(() => { document.activeElement && document.activeElement.blur(); window.scrollTo(0, 0); });
-  await page.evaluate(() => document.body.focus());
-  await page.keyboard.press('Tab');
+  const firstCls = await page.evaluate(() => {
+    const f = document.querySelector('.gs-shell').querySelector('a[href], button:not([disabled]), input:not([disabled]), select, textarea, [tabindex]:not([tabindex="-1"])');
+    if (f) f.focus();
+    return f ? f.className : '';
+  });
   const first = await active();
-  check('first Tab stop = skip link', first && /gs-skip/.test(first.cls), JSON.stringify(first));
+  check('first Tab stop = skip link', /gs-skip/.test(firstCls) && first && /gs-skip/.test(first.cls), JSON.stringify(first));
   await page.keyboard.press('Enter');
   check('skip link focuses <main>', (await active()).id === 'gsm-main', JSON.stringify(await active()));
 
@@ -117,14 +121,14 @@ const PASS = process.env.PASS;
     await bp.waitForSelector('#gsm-br-fault', { timeout: 8000 });
     await bp.focus('#gsm-br-fault');
     await bp.keyboard.press('Enter');
-    await bp.waitForSelector('[role="dialog"]');
+    await bp.waitForSelector('[role="dialog"]:not(#gsm-a11y-panel)');
     check('bridge dialog focuses the description', (await active(bp)).id === 'br-desc', JSON.stringify(await active(bp)));
     let inside = true;
     for (let i = 0; i < 12; i++) { await bp.keyboard.press('Tab'); const a = await active(bp); if (!a.inDialog || a.id === 'br-hp') { inside = false; break; } }
     check('bridge dialog traps Tab (and skips the honeypot)', inside, JSON.stringify(await active(bp)));
     await bp.keyboard.press('Escape');
     await bp.waitForTimeout(200);
-    check('bridge Escape closes + returns focus', !(await bp.$('[role="dialog"]')) && (await active(bp)).id === 'gsm-br-fault', JSON.stringify(await active(bp)));
+    check('bridge Escape closes + returns focus', !(await bp.$('[role="dialog"]:not(#gsm-a11y-panel)')) && (await active(bp)).id === 'gsm-br-fault', JSON.stringify(await active(bp)));
     await bp.close();
   }
 

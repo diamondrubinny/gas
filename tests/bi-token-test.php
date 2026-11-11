@@ -16,7 +16,7 @@ function current_time($t){ return '2026-11-10 10:00:00'; }
 function rest_ensure_response($d){ return $d; }
 function register_rest_route($ns,$r,$a){ $GLOBALS['routes'][$r]=$a; }
 class WP_Error { public $code; function __construct($c,$m='',$d=[]){ $this->code=$c; $this->data=$d; } }
-class WP_REST_Server { const READABLE='GET'; const CREATABLE='POST'; }
+class WP_REST_Server { const READABLE='GET'; const CREATABLE='POST'; const DELETABLE='DELETE'; }
 class WP_REST_Request implements ArrayAccess {
   // Mirrors WP: header names are case-insensitive and '-' == '_'.
   private $p; private $h;

@@ -1,0 +1,89 @@
+/* Gas Safety — accessibility adjustments menu.
+   A convenience on top of the accessible markup; not a substitute for it.
+   Sits bottom inline-start (right in RTL), opposite the chat launcher. */
+.gsm-a11y-btn {
+  position: fixed;
+  bottom: 16px;
+  inset-inline-start: 16px;
+  z-index: 950;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  background: #002147;
+  color: #fff;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 16px rgba(0, 33, 71, 0.3);
+}
+.gsm-a11y-btn:focus-visible, .gsm-a11y-panel button:focus-visible { outline: 3px solid #e0a526; outline-offset: 2px; }
+.gsm-a11y-panel {
+  position: fixed;
+  bottom: 72px;
+  inset-inline-start: 16px;
+  z-index: 951;
+  width: min(300px, calc(100vw - 32px));
+  max-height: calc(100vh - 96px);
+  overflow: auto;
+  background: #fff;
+  color: #002147;
+  border: 1px solid #5b6b80;
+  border-radius: 14px;
+  box-shadow: 0 10px 40px rgba(0, 33, 71, 0.25);
+  padding: 14px;
+  font: 400 15px/1.5 'Rubik', 'Segoe UI', Arial, sans-serif;
+  direction: rtl;
+  text-align: right;
+}
+.gsm-a11y-panel[hidden] { display: none; }
+.gsm-a11y-panel h2 { font-size: 16px; margin: 0 0 10px; color: #002147; }
+.gsm-a11y-opt {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 44px;
+  margin: 0 0 6px;
+  padding: 8px 12px;
+  border: 1px solid #5b6b80;
+  border-radius: 10px;
+  background: #fff;
+  color: #002147;
+  font: inherit;
+  cursor: pointer;
+  text-align: inherit;
+}
+.gsm-a11y-opt[aria-pressed="true"] { background: #002147; color: #fff; border-color: #002147; }
+.gsm-a11y-opt .gsm-a11y-state { font-size: 13px; font-weight: 600; }
+.gsm-a11y-reset { background: #f4f6f9; }
+@media print { .gsm-a11y-btn, .gsm-a11y-panel { display: none !important; } }
+
+/* ----- the adjustments themselves (classes on <html>) ----- */
+html.gsm-a11y-text-1 body { zoom: 1.15; }
+html.gsm-a11y-text-2 body { zoom: 1.3; }
+html.gsm-a11y-contrast {
+  --gs-muted: #1f2a37;
+  --gs-border: #3d4a5c;
+  --gs-text: #000;
+  --gs-bg: #fff;
+  --gs-warn-text: #5c3d00;
+}
+html.gsm-a11y-contrast body { color: #000; background: #fff; }
+html.gsm-a11y-contrast a { text-decoration: underline; }
+html.gsm-a11y-contrast .gs-card, html.gsm-a11y-contrast .gs-input, html.gsm-a11y-contrast .gs-textarea, html.gsm-a11y-contrast .gs-table th, html.gsm-a11y-contrast .gs-table td { border-color: #3d4a5c; }
+html.gsm-a11y-links a { text-decoration: underline !important; text-underline-offset: 3px; outline: 2px solid currentColor; outline-offset: 2px; border-radius: 3px; }
+html.gsm-a11y-font body, html.gsm-a11y-font button, html.gsm-a11y-font input, html.gsm-a11y-font select, html.gsm-a11y-font textarea, html.gsm-a11y-font h1, html.gsm-a11y-font h2, html.gsm-a11y-font h3 {
+  font-family: Arial, 'Segoe UI', Tahoma, sans-serif !important;
+  letter-spacing: 0.02em;
+  word-spacing: 0.08em;
+}
+html.gsm-a11y-font body { line-height: 1.7; }
+html.gsm-a11y-motion *, html.gsm-a11y-motion *::before, html.gsm-a11y-motion *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+  scroll-behavior: auto !important;
+}

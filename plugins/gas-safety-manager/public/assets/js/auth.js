@@ -116,7 +116,10 @@
         return rawApi(path, opts).catch(function (err2) {
           // Fresh nonce still failed: if the session is really gone, fall back
           // to the login screen (but never bounce an /auth/ call itself).
-          if (info && info.logged_in === false && path.indexOf('/auth/') !== 0) {
+          // Only when the app still believed it was logged in: after a
+          // deliberate logout, late answers to requests that were still in
+          // flight must not pull the user from the home page to the login screen.
+          if (info && info.logged_in === false && path.indexOf('/auth/') !== 0 && session.loggedIn) {
             session.loggedIn = false;
             session.user = null;
             if (GSM.navigate) { GSM.navigate('/login'); }

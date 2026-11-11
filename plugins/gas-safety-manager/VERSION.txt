@@ -1,3 +1,6 @@
+Gas Safety Manager v2.19.0 — Named public links, personal dashboard layout, SAP export, scan reset, accessibility menu, menu icons.
+
+----
 Gas Safety Manager v2.18.0 — Field messages + feedback on the dashboard (DB v10).
 
 ----

@@ -4,7 +4,7 @@ Tags: safety, equipment, inspections, hebrew, rtl
 Requires at least: 6.4
 Requires PHP: 8.2
 Tested up to: 7.1
-Stable tag: 2.18.0
+Stable tag: 2.19.0
 License: Proprietary — Technion Safety Unit
 
 Gas systems maintenance management for the Technion Safety Unit. Manages equipment, inspections, faults, and QR codes with native WordPress storage.
@@ -32,6 +32,16 @@ Pairs with the companion "Gas Safety" theme for the portal look (navy/gold, RTL,
 4. To import from Monday: open "Gas Migration", generate a key, run the console script in the portal, then revoke the key.
 
 == Changelog ==
+
+= 2.19.0 =
+* Public dashboard: additional named links (one per recipient, up to 20). Each has its own token, can be revoked on its own, and shows how many times it was loaded and when last. Only a counter and a time are kept — no visitor data. A named link opens the aggregate dashboard only, never the row-level export or the calendar feed.
+* Dashboard: personal layout — each user chooses which sections to show and in what order ("התאמת הדשבורד"), saved in their account.
+* SAP / ERP export: `format=sap` on the BI export (semicolon-separated CSV, UTF-8 BOM, CRLF), with links on the integrations screen.
+* "איפוס סטטיסטיקת סריקות" (site settings, manager): deletes all scan records after a double confirmation; written to the audit log.
+* Accessibility menu: a floating button on every front-end page (app, QR page, site) — text size, high contrast, highlighted links, readable font, stop animations, reset. Keyboard operable; choices are kept in the visitor's browser only. A convenience on top of the accessible markup, not a replacement. Disable with `add_filter( 'gsm_a11y_widget', '__return_false' );`.
+* Menu: an icon for each group (decorative, hidden from assistive technology).
+* New routes: /bi/public-links (+ /{id}), /dashboard/layout, /retention/reset-scans.
+* Tests: tests/integration/public-links-test.php, tests/e2e/gaps-e2e.js (37 checks incl. axe with all accessibility adjustments on).
 
 = 2.18.0 =
 * Dashboard: "הודעות מהשטח" — any signed-in user sends a short message to the managers; managers see all messages with a "new" badge, mark them read, delete, or clear. Other users see only their own messages and whether they were read.

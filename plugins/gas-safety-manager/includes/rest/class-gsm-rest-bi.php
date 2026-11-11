@@ -86,6 +86,31 @@ class GSM_REST_BI {
 		);
 		register_rest_route(
 			self::NS,
+			'/bi/public-links',
+			array(
+				array(
+					'methods'             => WP_REST_Server::READABLE,
+					'callback'            => array( $this, 'list_public_links' ),
+					'permission_callback' => array( 'GSM_Auth', 'require_manage' ),
+				),
+				array(
+					'methods'             => WP_REST_Server::CREATABLE,
+					'callback'            => array( $this, 'create_public_link' ),
+					'permission_callback' => array( 'GSM_Auth', 'require_manage' ),
+				),
+			)
+		);
+		register_rest_route(
+			self::NS,
+			'/bi/public-links/(?P<id>[a-f0-9]{12})',
+			array(
+				'methods'             => WP_REST_Server::DELETABLE,
+				'callback'            => array( $this, 'delete_public_link' ),
+				'permission_callback' => array( 'GSM_Auth', 'require_manage' ),
+			)
+		);
+		register_rest_route(
+			self::NS,
 			'/bi/data/(?P<set>equipment|faults|inspections)',
 			array(
 				'methods'             => WP_REST_Server::READABLE,
@@ -123,8 +148,9 @@ class GSM_REST_BI {
 		if ( GSM_Rate_Limit::too_many( 'bi-public', 120, 300 ) ) {
 			return GSM_Rate_Limit::error();
 		}
-		// Aggregate-only endpoint: accepts ONLY the public token, never the BI export token.
-		if ( ! self::token_matches( $req, self::public_token() ) ) {
+		// Aggregate-only endpoint: accepts ONLY the public token or one of the
+		// named public links, never the BI export token.
+		if ( ! self::token_matches( $req, self::public_token() ) && ! self::public_link_hit( self::provided_token( $req ) ) ) {
 			return new WP_Error( 'gsm_bi_token', 'Invalid token', array( 'status' => 403 ) );
 		}
 		global $wpdb;
@@ -180,6 +206,120 @@ class GSM_REST_BI {
 			update_option( 'gsm_public_token', $t, false );
 		}
 		return $t;
+	}
+
+	// ---- Named public links (several shareable dashboard links) -------------
+
+	const LINKS_OPTION = 'gsm_public_links';
+	const MAX_LINKS    = 20;
+
+	/**
+	 * Stored links: [ { id, label, token, created_at, created_by, views, last_view } ].
+	 *
+	 * @return array
+	 */
+	public static function public_links() {
+		$l = get_option( self::LINKS_OPTION, array() );
+		return is_array( $l ) ? array_values( $l ) : array();
+	}
+
+	/**
+	 * Does the token belong to a named link? Counts the view (a counter and
+	 * the last time only — no IP address or other visitor data is kept).
+	 *
+	 * @param string $token Provided token.
+	 * @return bool
+	 */
+	private static function public_link_hit( $token ) {
+		if ( ! is_string( $token ) || ! preg_match( '/^[a-f0-9]{32}$/', $token ) ) {
+			return false;
+		}
+		$links = self::public_links();
+		$found = false;
+		foreach ( $links as $i => $l ) {
+			// Compare every link in constant time; no early exit.
+			if ( isset( $l['token'] ) && hash_equals( (string) $l['token'], $token ) ) {
+				$links[ $i ]['views']     = ( isset( $l['views'] ) ? (int) $l['views'] : 0 ) + 1;
+				$links[ $i ]['last_view'] = current_time( 'mysql' );
+				$found                    = true;
+			}
+		}
+		if ( $found ) {
+			update_option( self::LINKS_OPTION, $links, false );
+		}
+		return $found;
+	}
+
+	/**
+	 * GET /bi/public-links
+	 *
+	 * @return WP_REST_Response
+	 */
+	public function list_public_links() {
+		return rest_ensure_response( array( 'links' => self::public_links(), 'max' => self::MAX_LINKS ) );
+	}
+
+	/**
+	 * POST /bi/public-links { label }
+	 *
+	 * @param WP_REST_Request $req Request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public function create_public_link( $req ) {
+		$b     = (array) $req->get_json_params();
+		$label = isset( $b['label'] ) && is_string( $b['label'] ) ? trim( sanitize_text_field( $b['label'] ) ) : '';
+		$label = function_exists( 'mb_substr' ) ? mb_substr( $label, 0, 80 ) : substr( $label, 0, 80 );
+		if ( '' === $label ) {
+			return new WP_Error( 'gsm_validation', __( 'יש לתת שם לקישור (למשל: למי הוא נשלח).', 'gas-safety-manager' ), array( 'status' => 400 ) );
+		}
+		$links = self::public_links();
+		if ( count( $links ) >= self::MAX_LINKS ) {
+			return new WP_Error( 'gsm_validation', __( 'הגעתם למספר הקישורים המרבי. בטלו קישור שאינו בשימוש.', 'gas-safety-manager' ), array( 'status' => 400 ) );
+		}
+		$u    = wp_get_current_user();
+		$link = array(
+			'id'         => bin2hex( random_bytes( 6 ) ),
+			'label'      => $label,
+			'token'      => bin2hex( random_bytes( 16 ) ),
+			'created_at' => current_time( 'mysql' ),
+			'created_by' => $u && $u->ID ? $u->display_name : '',
+			'views'      => 0,
+			'last_view'  => '',
+		);
+		$links[] = $link;
+		update_option( self::LINKS_OPTION, $links, false );
+		if ( class_exists( 'GSM_Audit' ) ) {
+			GSM_Audit::log( 'create', 'system', 0, $label, 'נוצר קישור ללוח המצב הציבורי' );
+		}
+		return rest_ensure_response( $link );
+	}
+
+	/**
+	 * DELETE /bi/public-links/{id}
+	 *
+	 * @param WP_REST_Request $req Request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public function delete_public_link( $req ) {
+		$id    = (string) $req['id'];
+		$links = self::public_links();
+		$keep  = array();
+		$gone  = null;
+		foreach ( $links as $l ) {
+			if ( isset( $l['id'] ) && hash_equals( (string) $l['id'], $id ) ) {
+				$gone = $l;
+			} else {
+				$keep[] = $l;
+			}
+		}
+		if ( ! $gone ) {
+			return new WP_Error( 'gsm_not_found', __( 'הקישור לא נמצא.', 'gas-safety-manager' ), array( 'status' => 404 ) );
+		}
+		update_option( self::LINKS_OPTION, $keep, false );
+		if ( class_exists( 'GSM_Audit' ) ) {
+			GSM_Audit::log( 'delete', 'system', 0, isset( $gone['label'] ) ? $gone['label'] : '', 'בוטל קישור ללוח המצב הציבורי' );
+		}
+		return rest_ensure_response( array( 'ok' => true ) );
 	}
 
 	/**
@@ -365,7 +505,11 @@ class GSM_REST_BI {
 			return new WP_Error( 'gsm_bi_token', 'Invalid token', array( 'status' => 403 ) );
 		}
 		$set    = (string) $req['set'];
-		$format = 'json' === strtolower( (string) $req->get_param( 'format' ) ) ? 'json' : 'csv';
+		$format = strtolower( (string) $req->get_param( 'format' ) );
+		$format = in_array( $format, array( 'json', 'sap' ), true ) ? $format : 'csv';
+		// SAP-friendly CSV (as in the old system): semicolon separator,
+		// UTF-8 BOM, CRLF — loads in SAP GUI / LSMW / CPI.
+		$sep = 'sap' === $format ? ';' : ',';
 
 		$names = $this->equipment_names();
 		$rows  = array();
@@ -392,15 +536,15 @@ class GSM_REST_BI {
 
 		// CSV (UTF-8 BOM).
 		header( 'Content-Type: text/csv; charset=utf-8' );
-		header( 'Content-Disposition: inline; filename="gas-' . $set . '.csv"' );
+		header( 'Content-Disposition: inline; filename="gas-' . $set . ( 'sap' === $format ? '-sap' : '' ) . '.csv"' );
 		echo "\xEF\xBB\xBF";
 		if ( ! empty( $rows ) ) {
 			$cols = array_keys( $rows[0] );
-			echo self::csv_line( $cols ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- raw text/csv body (nosniff), cells neutralized by GSM_Security::csv_cell().
+			echo self::csv_line( $cols, $sep ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- raw text/csv body (nosniff), cells neutralized by GSM_Security::csv_cell().
 			foreach ( $rows as $row ) {
 				$line = array();
 				foreach ( $cols as $c ) { $line[] = isset( $row[ $c ] ) ? $row[ $c ] : ''; }
-				echo self::csv_line( $line ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- raw text/csv body (nosniff), cells neutralized by GSM_Security::csv_cell().
+				echo self::csv_line( $line, $sep ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- raw text/csv body (nosniff), cells neutralized by GSM_Security::csv_cell().
 			}
 		}
 		exit;
@@ -464,14 +608,14 @@ class GSM_REST_BI {
 	 * @param array $cells Cells.
 	 * @return string
 	 */
-	private static function csv_line( $cells ) {
+	private static function csv_line( $cells, $sep = ',' ) {
 		$out = array();
 		foreach ( $cells as $c ) {
 			$v = GSM_Security::csv_cell( $c );
 			$v = str_replace( '"', '""', $v );
 			$out[] = '"' . $v . '"';
 		}
-		return implode( ',', $out ) . "\r\n";
+		return implode( $sep, $out ) . "\r\n";
 	}
 
 	/**

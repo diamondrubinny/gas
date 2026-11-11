@@ -184,6 +184,22 @@ class GSM_REST_Dashboard {
 				'permission_callback' => array( 'GSM_Auth', 'require_report' ),
 			)
 		);
+		register_rest_route(
+			self::NS,
+			'/dashboard/layout',
+			array(
+				array(
+					'methods'             => WP_REST_Server::READABLE,
+					'callback'            => array( $this, 'get_layout' ),
+					'permission_callback' => array( 'GSM_Auth', 'require_report' ),
+				),
+				array(
+					'methods'             => WP_REST_Server::CREATABLE,
+					'callback'            => array( $this, 'save_layout' ),
+					'permission_callback' => array( 'GSM_Auth', 'require_report' ),
+				),
+			)
+		);
 	}
 
 	/**
@@ -193,5 +209,79 @@ class GSM_REST_Dashboard {
 	 */
 	public function get_dashboard() {
 		return rest_ensure_response( GSM_Dashboard_Service::build() );
+	}
+
+	// ---- Personal dashboard layout (per user) -------------------------------
+
+	const LAYOUT_META = 'gsm_dash_layout';
+
+	/**
+	 * Dashboard sections that can be reordered / hidden.
+	 *
+	 * @return array id => label
+	 */
+	public static function sections() {
+		return array(
+			'stats'     => 'מספרים ראשיים',
+			'coverage'  => 'כיסוי סריקות וגרף',
+			'messages'  => 'הודעות מהשטח',
+			'feedback'  => 'משוב ובקשות שיפור',
+			'reports'   => 'הנפקת דוחות',
+			'deadlines' => 'דד-ליין ביקורות רבעוניות',
+		);
+	}
+
+	/**
+	 * Clean a layout: known ids only, every section present once.
+	 *
+	 * @param mixed $in Raw layout.
+	 * @return array { order: string[], hidden: string[] }
+	 */
+	public static function clean_layout( $in ) {
+		$ids    = array_keys( self::sections() );
+		$order  = array();
+		$hidden = array();
+		if ( is_array( $in ) ) {
+			foreach ( isset( $in['order'] ) && is_array( $in['order'] ) ? $in['order'] : array() as $id ) {
+				if ( is_string( $id ) && in_array( $id, $ids, true ) && ! in_array( $id, $order, true ) ) {
+					$order[] = $id;
+				}
+			}
+			foreach ( isset( $in['hidden'] ) && is_array( $in['hidden'] ) ? $in['hidden'] : array() as $id ) {
+				if ( is_string( $id ) && in_array( $id, $ids, true ) && ! in_array( $id, $hidden, true ) ) {
+					$hidden[] = $id;
+				}
+			}
+		}
+		foreach ( $ids as $id ) {
+			if ( ! in_array( $id, $order, true ) ) {
+				$order[] = $id; // New sections appear at the end.
+			}
+		}
+		return array( 'order' => $order, 'hidden' => $hidden );
+	}
+
+	/**
+	 * GET /dashboard/layout
+	 *
+	 * @return WP_REST_Response
+	 */
+	public function get_layout() {
+		$l             = self::clean_layout( get_user_meta( get_current_user_id(), self::LAYOUT_META, true ) );
+		$l['sections'] = self::sections();
+		return rest_ensure_response( $l );
+	}
+
+	/**
+	 * POST /dashboard/layout { order[], hidden[] } — the current user's own layout.
+	 *
+	 * @param WP_REST_Request $req Request.
+	 * @return WP_REST_Response
+	 */
+	public function save_layout( $req ) {
+		$l = self::clean_layout( (array) $req->get_json_params() );
+		update_user_meta( get_current_user_id(), self::LAYOUT_META, $l );
+		$l['sections'] = self::sections();
+		return rest_ensure_response( $l );
 	}
 }

@@ -573,6 +573,9 @@
 .gs-qri-tdot { width:9px; height:9px; border-radius:50%; display:inline-block; }
 .gs-qri-h3 { font-size:14px; margin:14px 0 8px; display:flex; align-items:center; gap:7px; }
 .gs-qri-list { display:flex; flex-direction:column; gap:8px; }
+/* ---------- Nav group icons ---------- */
+.gs-navgrp__ico { vertical-align:-3px; margin-inline-end:6px; opacity:.75; flex:0 0 auto; }
+
 /* ---------- Field messages + feedback ---------- */
 .gs-msglist { list-style:none; margin:12px 0 0; padding:0; }
 .gs-msg { padding:10px 0; border-top:1px solid var(--gs-border); }

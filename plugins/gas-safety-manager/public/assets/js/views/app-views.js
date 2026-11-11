@@ -71,6 +71,17 @@
       return true;
     }
 
+    // Decorative group icons (inline SVG, hidden from assistive tech).
+    var NAV_ICONS = {
+      'סקירה וניתוח': '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
+      'ציוד ומערכות': '<path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-9V3M7.5 15h9"/>',
+      'תקלות וביקורות': '<path d="M12 3 2 20h20L12 3zM12 10v5M12 17.5v.5"/>',
+      'QR והנפקות': '<path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h3v3h-3zM20 17v3h-3"/>',
+      'מערכת והגדרות': '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/>'
+    };
+    function navIcon(name) {
+      return NAV_ICONS[name] ? '<svg class="gs-navgrp__ico" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">' + NAV_ICONS[name] + '</svg>' : '';
+    }
     var brand = (window.GSM_CONFIG && window.GSM_CONFIG.branding) || {};
     var navOrder = (window.GSM_CONFIG && window.GSM_CONFIG.navOrder) || [];
     var navHtml = GROUPS.map(function (g) {
@@ -88,7 +99,7 @@
           '" type="button" data-gsm-nav="/' + esc(it[0]) + '">' + esc(it[1]) + '</button>';
       }).join('');
       return '<div class="gs-navgrp' + (hasActive ? ' is-current' : '') + '">' +
-        '<button class="gs-navgrp__btn" type="button" data-gsm-action="navToggle">' + esc(g[0]) + ' <span class="gs-navgrp__caret">▾</span></button>' +
+        '<button class="gs-navgrp__btn" type="button" data-gsm-action="navToggle">' + navIcon(g[0]) + esc(g[0]) + ' <span class="gs-navgrp__caret">▾</span></button>' +
         '<div class="gs-navgrp__menu">' + itemsHtml + '</div></div>';
     }).join('');
 
@@ -305,7 +316,8 @@
     mount.innerHTML = chrome('dashboard', loading());
     var main = mount.querySelector('.gs-main');
 
-    api('/dashboard').then(function (d) {
+    Promise.all([api('/dashboard'), api('/dashboard/layout').catch(function () { return null; })]).then(function (both) {
+      var d = both[0], layout = both[1];
       var s = d.stats || {};
       function stat(num, label, mod) {
         return '<div class="gs-stat' + (mod ? ' gs-stat--' + mod : '') + '">' +
@@ -344,20 +356,68 @@
         '<div class="gs-chartbox gs-chartbox--trend"><canvas id="gsm-cov-trend" role="img" aria-labelledby="gsm-cov-trend-t" aria-describedby="gsm-cov-trend-d"></canvas></div>' +
         '<p id="gsm-cov-trend-d" class="gs-visually-hidden">' + esc((cov.trend_14d || []).map(function (x) { return (x.date || '') + ': ' + (x.count || 0); }).join(', ')) + '</p>' +
         '</div></div>';
+      // Sections by id, so each user can reorder / hide them.
+      var SEC = {
+        stats: '<div class="gs-grid gs-grid--stats" style="margin-top:20px">' + stats + '</div>',
+        coverage: covCard,
+        messages: '<div id="gsm-fm"></div>',
+        feedback: '<div id="gsm-fb"></div>',
+        reports: '<div class="gs-card" style="margin-top:20px"><div class="gs-card__title">⬇️ הנפקת דוחות (Excel)</div>' +
+          '<div style="display:flex;flex-wrap:wrap;gap:8px">' +
+          '<button class="gs-btn gs-btn--sm gs-btn--export" type="button" data-gsm-action="export" data-type="equipment">⬇️ ציוד</button>' +
+          '<button class="gs-btn gs-btn--sm gs-btn--export" type="button" data-gsm-action="export" data-type="inspections">⬇️ ביקורות</button>' +
+          '<button class="gs-btn gs-btn--sm gs-btn--export" type="button" data-gsm-action="export" data-type="faults">⬇️ תקלות</button>' +
+          '<button class="gs-btn gs-btn--sm gs-btn--export" type="button" data-gsm-action="export" data-type="scans">⬇️ סריקות</button>' +
+          '</div></div>',
+        deadlines: '<div class="gs-card" style="margin-top:20px"><div class="gs-card__title">⏳ דד-ליין ביקורות רבעוניות</div>' +
+          (dl ? '<table class="gs-table"><thead><tr><th>ציוד</th><th>סטטוס</th><th>ליקויים</th><th>ביקורת אחרונה</th></tr></thead><tbody>' + dl + '</tbody></table>'
+              : '<div class="gs-empty">אין נתונים להצגה</div>') +
+          '</div>'
+      };
+      var lay = layout || {};
+      var order = (lay.order && lay.order.length) ? lay.order : Object.keys(SEC);
+      var hiddenSec = lay.hidden || [];
+      var visible = order.filter(function (id) { return SEC[id] && hiddenSec.indexOf(id) < 0; });
       main.innerHTML =
-        '<div class="gs-grid gs-grid--stats">' + stats + '</div>' + covCard +
-        '<div id="gsm-fm"></div><div id="gsm-fb"></div>' +
-        '<div class="gs-card" style="margin-top:20px"><div class="gs-card__title">⬇️ הנפקת דוחות (Excel)</div>' +
-        '<div style="display:flex;flex-wrap:wrap;gap:8px">' +
-        '<button class="gs-btn gs-btn--sm gs-btn--export" type="button" data-gsm-action="export" data-type="equipment">⬇️ ציוד</button>' +
-        '<button class="gs-btn gs-btn--sm gs-btn--export" type="button" data-gsm-action="export" data-type="inspections">⬇️ ביקורות</button>' +
-        '<button class="gs-btn gs-btn--sm gs-btn--export" type="button" data-gsm-action="export" data-type="faults">⬇️ תקלות</button>' +
-        '<button class="gs-btn gs-btn--sm gs-btn--export" type="button" data-gsm-action="export" data-type="scans">⬇️ סריקות</button>' +
-        '</div></div>' +
-        '<div class="gs-card" style="margin-top:20px"><div class="gs-card__title">⏳ דד-ליין ביקורות רבעוניות</div>' +
-        (dl ? '<table class="gs-table"><thead><tr><th>ציוד</th><th>סטטוס</th><th>ליקויים</th><th>ביקורת אחרונה</th></tr></thead><tbody>' + dl + '</tbody></table>'
-            : '<div class="gs-empty">אין נתונים להצגה</div>') +
-        '</div>';
+        '<div class="gs-toolbar" style="margin-bottom:0"><h2 class="gs-h2">דשבורד</h2><div class="gs-toolbar__actions">' +
+        '<button type="button" class="gs-btn gs-btn--sm gs-btn--ghost" id="dash-custom" aria-expanded="false" aria-controls="dash-custom-panel">התאמת הדשבורד</button></div></div>' +
+        '<div id="dash-custom-panel" hidden></div>' +
+        (visible.length ? visible.map(function (id) { return '<section data-dash="' + id + '">' + SEC[id] + '</section>'; }).join('')
+          : '<div class="gs-empty" style="margin-top:20px">כל חלקי הדשבורד מוסתרים. לחצו על "התאמת הדשבורד" כדי להציג אותם.</div>');
+
+      // Personal layout editor.
+      document.getElementById('dash-custom').addEventListener('click', function () {
+        var btnC = this, panel = document.getElementById('dash-custom-panel');
+        if (!panel.hidden) { panel.hidden = true; btnC.setAttribute('aria-expanded', 'false'); return; }
+        var labels = lay.sections || {};
+        panel.innerHTML = '<div class="gs-card" style="margin-top:12px"><h3 class="gs-card__title" id="dash-custom-title" tabindex="-1">התאמת הדשבורד</h3>' +
+          '<p style="color:var(--gs-muted);font-size:13px;margin-top:0">בחרו אילו חלקים להציג ובאיזה סדר. ההגדרה אישית ונשמרת בחשבון שלכם.</p>' +
+          '<ul id="dash-custom-list" style="list-style:none;margin:0;padding:0">' + order.filter(function (id) { return SEC[id]; }).map(function (id) {
+            var name = labels[id] || id;
+            return '<li class="gs-ord-row" data-id="' + esc(id) + '" style="display:flex;align-items:center;gap:8px;padding:6px 10px;border:1px solid var(--gs-border);border-radius:8px;margin-bottom:6px">' +
+              '<label style="flex:1;display:flex;gap:8px;align-items:center"><input type="checkbox" class="dash-vis"' + (hiddenSec.indexOf(id) < 0 ? ' checked' : '') + '><span>' + esc(name) + '</span></label>' +
+              '<button type="button" class="gs-btn gs-btn--sm gs-btn--ghost dash-up" aria-label="הזז למעלה: ' + esc(name) + '"><span aria-hidden="true">↑</span></button>' +
+              '<button type="button" class="gs-btn gs-btn--sm gs-btn--ghost dash-down" aria-label="הזז למטה: ' + esc(name) + '"><span aria-hidden="true">↓</span></button></li>';
+          }).join('') + '</ul>' +
+          '<button type="button" class="gs-btn gs-btn--sm" id="dash-custom-save">שמור</button> ' +
+          '<button type="button" class="gs-btn gs-btn--sm gs-btn--ghost" id="dash-custom-reset">חזרה לברירת המחדל</button> ' +
+          '<span id="dash-custom-st" role="status" aria-live="polite" style="margin-inline-start:8px;color:var(--gs-muted)"></span></div>';
+        panel.hidden = false; btnC.setAttribute('aria-expanded', 'true');
+        document.getElementById('dash-custom-title').focus();
+        panel.querySelectorAll('.dash-up').forEach(function (b) { b.addEventListener('click', function () { var r = b.closest('li'), pv = r.previousElementSibling; if (pv) { r.parentNode.insertBefore(r, pv); b.focus(); } }); });
+        panel.querySelectorAll('.dash-down').forEach(function (b) { b.addEventListener('click', function () { var r = b.closest('li'), nx = r.nextElementSibling; if (nx) { r.parentNode.insertBefore(nx, r); b.focus(); } }); });
+        function saveLayout(body) {
+          var st = document.getElementById('dash-custom-st'); st.textContent = 'שומר…';
+          api('/dashboard/layout', { method: 'POST', body: body }).then(function () { GSM.render(); })
+            .catch(function (e) { st.textContent = '✗ ' + (e.message || e); });
+        }
+        document.getElementById('dash-custom-save').addEventListener('click', function () {
+          var o = [], h = [];
+          panel.querySelectorAll('#dash-custom-list li').forEach(function (li) { o.push(li.getAttribute('data-id')); if (!li.querySelector('.dash-vis').checked) h.push(li.getAttribute('data-id')); });
+          saveLayout({ order: o, hidden: h });
+        });
+        document.getElementById('dash-custom-reset').addEventListener('click', function () { saveLayout({ order: [], hidden: [] }); });
+      });
 
       renderFieldMessages(document.getElementById('gsm-fm'));
       renderFeedback(document.getElementById('gsm-fb'));
@@ -1037,7 +1097,19 @@
         '<span id="ret-status" role="status" aria-live="polite" style="margin-inline-start:8px;color:var(--gs-muted)"></span></div>' +
         '<p style="color:var(--gs-muted);font-size:12px;margin-top:10px">' + last + '</p>' +
         '<p style="color:var(--gs-muted);font-size:12px">ברירות המחדל (24 / 24 / 84 / 24 חודשים) הן נקודת פתיחה שמרנית, ויש לאשר אותן מול ממונה הפרטיות או היועץ המשפטי.</p>' +
+        '<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--gs-border)"><b style="font-size:14px">איפוס סטטיסטיקת סריקות</b>' +
+        '<p id="scan-reset-help" style="color:var(--gs-muted);font-size:12.5px;margin:4px 0 8px">מוחק את כל רשומות הסריקה: הכיסוי, הגרף ודוח הסריקות בדשבורד מתחילים מאפס. לא משפיע על הציוד, על הביקורות או על הנפקות ה-QR. הפעולה בלתי הפיכה.</p>' +
+        '<button type="button" class="gs-btn gs-btn--sm gs-btn--danger" id="scan-reset" aria-describedby="scan-reset-help">אפס סטטיסטיקת סריקות</button> ' +
+        '<span id="scan-reset-st" role="status" aria-live="polite" style="margin-inline-start:8px;color:var(--gs-muted)"></span></div>' +
         '</div>';
+      document.getElementById('scan-reset').addEventListener('click', function () {
+        if (!confirm('לאפס את כל סטטיסטיקת הסריקות? הפעולה בלתי הפיכה.')) return;
+        if (!confirm('אישור אחרון: כל רשומות הסריקה יימחקו.')) return;
+        var b = this, st = document.getElementById('scan-reset-st'); b.disabled = true; st.textContent = 'מאפס…';
+        api('/retention/reset-scans', { method: 'POST', body: { confirm: 'RESET' } })
+          .then(function (r) { st.textContent = '✓ נמחקו ' + (r.deleted || 0) + ' רשומות סריקה.'; b.disabled = false; })
+          .catch(function (e) { st.textContent = '✗ ' + (e.message || e); b.disabled = false; });
+      });
       function collect() {
         var out = {};
         keys.forEach(function (k) { var v = parseInt(document.getElementById('ret-' + k).value, 10); out[k] = isNaN(v) || v < 0 ? 0 : v; });
@@ -1805,6 +1877,8 @@
           row('ציוד — JSON', u('equipment', 'json')) +
           row('תקלות — CSV', u('faults', 'csv')) +
           row('ביקורות — CSV', u('inspections', 'csv')) +
+          '<details style="margin:0 0 10px"><summary style="cursor:pointer;font-size:13px">SAP / ERP — CSV מופרד בנקודה-פסיק (UTF-8 BOM, CRLF), לטעינה ב-SAP GUI / LSMW / CPI</summary>' +
+          row('ציוד — SAP', u('equipment', 'sap')) + row('תקלות — SAP', u('faults', 'sap')) + row('ביקורות — SAP', u('inspections', 'sap')) + '</details>' +
           '<div class="gs-field"><label class="gs-label" for="pq-sample">דוגמת Power Query (Excel / Power BI) — ציוד</label>' +
             '<textarea class="gs-textarea" id="pq-sample" readonly rows="7" data-gsm-action="select" style="direction:ltr;font-family:monospace;font-size:12px">' + esc(pq('equipment')) + '</textarea></div>' +
           row('יומן ביקורות רבעוניות — iCal (Outlook / Google Calendar)', GSM.restUrl('/bi/ical?token=' + encodeURIComponent(tok))) +
@@ -1969,10 +2043,63 @@
           '<div class="gs-field"><label class="gs-label" for="pub-url">קישור לשיתוף</label><input class="gs-input" id="pub-url" readonly value="' + esc(shareUrl) + '" data-gsm-action="select" style="direction:ltr;font-size:12px"></div>' +
           '<a class="gs-btn gs-btn--ghost gs-btn--sm" id="pub-open" href="' + esc(shareUrl) + '" target="_blank" rel="noopener noreferrer">פתח לוח מצב ↗</a> ' +
           '<button type="button" class="gs-btn gs-btn--danger gs-btn--sm" id="pub-rotate">החלף טוקן ציבורי</button> ' +
-          '<span id="pub-status" role="status" aria-live="polite" style="margin-inline-start:8px;color:var(--gs-muted)"></span></div>') : '') +
+          '<span id="pub-status" role="status" aria-live="polite" style="margin-inline-start:8px;color:var(--gs-muted)"></span>' +
+          '<div id="pub-links" style="margin-top:16px;padding-top:12px;border-top:1px solid var(--gs-border)"></div></div>') : '') +
 
         '<div class="gs-card" style="margin-top:20px"><div class="gs-card__title">📜 יומן שליחות אחרונות</div>' +
         '<div id="cm-log">' + renderLog(log) + '</div></div>';
+
+      // Named links: one per recipient, each can be revoked on its own.
+      function renderPubLinks(focusId) {
+        var host = document.getElementById('pub-links');
+        if (!host) return;
+        api('/bi/public-links').then(function (d) {
+          var links = d.links || [];
+          var rows = links.map(function (l) {
+            var url = shareUrlFor(l.token);
+            return '<tr><td><b>' + esc(l.label) + '</b><div style="color:var(--gs-muted);font-size:12px">נוצר <bdi dir="ltr">' + esc((l.created_at || '').slice(0, 10)) + '</bdi>' + (l.created_by ? ' על ידי ' + esc(l.created_by) : '') + '</div></td>' +
+              '<td style="text-align:center">' + esc(l.views || 0) + '</td>' +
+              '<td><bdi dir="ltr">' + esc(l.last_view ? l.last_view.slice(0, 16) : '—') + '</bdi></td>' +
+              '<td style="white-space:nowrap"><button type="button" class="gs-btn gs-btn--sm gs-btn--ghost" data-pl-copy="' + esc(url) + '">העתק קישור<span class="gs-visually-hidden">: ' + esc(l.label) + '</span></button> ' +
+              '<button type="button" class="gs-btn gs-btn--sm gs-btn--danger" data-pl-del="' + esc(l.id) + '" data-label="' + esc(l.label) + '">בטל<span class="gs-visually-hidden">: ' + esc(l.label) + '</span></button></td></tr>';
+          }).join('');
+          host.innerHTML =
+            '<h3 class="gs-card__title" id="pl-title" tabindex="-1" style="font-size:15px">קישורים נוספים עם שם</h3>' +
+            '<p style="color:var(--gs-muted);font-size:13px;margin-top:0">קישור נפרד לכל גורם שמקבל את לוח המצב. אפשר לבטל קישור אחד בלי לפגוע באחרים, ולראות כמה פעמים נטען. לא נשמר מידע על הצופים.</p>' +
+            (rows ? '<div style="overflow-x:auto"><table class="gs-table"><thead><tr><th>שם</th><th>טעינות</th><th>טעינה אחרונה</th><th>פעולות</th></tr></thead><tbody>' + rows + '</tbody></table></div>' : '') +
+            (links.length < (d.max || 20) ? '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-top:10px"><div class="gs-field" style="flex:1;min-width:200px;margin:0"><label class="gs-label" for="pl-label">שם לקישור חדש (למשל: הנהלת הפקולטה)</label><input class="gs-input" id="pl-label" maxlength="80"></div>' +
+              '<button type="button" class="gs-btn gs-btn--sm" id="pl-add">צור קישור</button></div>' : '<p style="font-size:13px">הגעתם למספר הקישורים המרבי.</p>') +
+            '<div id="pl-st" role="status" aria-live="polite" style="margin-top:6px;color:var(--gs-muted)"></div>';
+          if (focusId) { var f = document.getElementById(focusId); if (f) f.focus(); }
+          var st = document.getElementById('pl-st');
+          var add = document.getElementById('pl-add');
+          if (add) add.addEventListener('click', function () {
+            var label = document.getElementById('pl-label').value.trim();
+            if (!label) { st.textContent = 'תנו שם לקישור.'; document.getElementById('pl-label').focus(); return; }
+            add.disabled = true;
+            api('/bi/public-links', { method: 'POST', body: { label: label } })
+              .then(function () { renderPubLinks('pl-title'); setTimeout(function () { var s2 = document.getElementById('pl-st'); if (s2) s2.textContent = '✓ הקישור נוצר.'; }, 300); })
+              .catch(function (e) { st.textContent = '✗ ' + (e.message || e); add.disabled = false; });
+          });
+          host.querySelectorAll('[data-pl-copy]').forEach(function (b) {
+            b.addEventListener('click', function () {
+              var url = b.getAttribute('data-pl-copy');
+              if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(url).then(function () { st.textContent = '✓ הקישור הועתק.'; }, function () { window.prompt('העתיקו את הקישור:', url); });
+              } else { window.prompt('העתיקו את הקישור:', url); }
+            });
+          });
+          host.querySelectorAll('[data-pl-del]').forEach(function (b) {
+            b.addEventListener('click', function () {
+              if (!confirm('לבטל את הקישור "' + (b.getAttribute('data-label') || '') + '"? הוא יפסיק לעבוד מיד.')) return;
+              api('/bi/public-links/' + b.getAttribute('data-pl-del'), { method: 'DELETE' })
+                .then(function () { renderPubLinks('pl-title'); })
+                .catch(function (e) { st.textContent = '✗ ' + (e.message || e); });
+            });
+          });
+        }).catch(function (e) { host.innerHTML = '<div class="gs-error" role="alert">' + esc(e.message || e) + '</div>'; });
+      }
+      renderPubLinks();
 
       var pubRotate = document.getElementById('pub-rotate');
       if (pubRotate) {
