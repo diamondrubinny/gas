@@ -4,7 +4,7 @@ Tags: safety, equipment, inspections, hebrew, rtl
 Requires at least: 6.4
 Requires PHP: 8.2
 Tested up to: 7.1
-Stable tag: 2.16.0
+Stable tag: 2.16.1
 License: Proprietary — Technion Safety Unit
 
 Gas systems maintenance management for the Technion Safety Unit. Manages equipment, inspections, faults, and QR codes with native WordPress storage.
@@ -32,6 +32,11 @@ Pairs with the companion "Gas Safety" theme for the portal look (navy/gold, RTL,
 4. To import from Monday: open "Gas Migration", generate a key, run the console script in the portal, then revoke the key.
 
 == Changelog ==
+
+= 2.16.1 =
+* QR issuance ("ניהול הנפקות QR"): every record now shows its scan link — the same URL printed in the sticker's QR code — with a copy button (as in the old portal). Records not linked to equipment say so. GET /qr-issuance returns each record's equipment qr_token (one query per page; the screen is limited to managers and אחמ"ת, who print the stickers).
+* Accessibility: the group headings on that screen were coloured with the status colour (green failed contrast); the colour is now on the dot only.
+* Test: tests/e2e/qrissue-e2e.js (link, clipboard, the link opens the right QR page, axe).
 
 = 2.16.0 =
 * New screen "משיכה מהאתר הישן" (manager): pull equipment, faults, inspections and the audit log from the old system (safety-qr-app / api.safety-tech.dev) through its read-only BI export, using the old system's BI token (no user PIN). A whole BI link can be pasted; host + token are extracted.

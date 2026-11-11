@@ -111,7 +111,37 @@ class GSM_REST_QR_Issuance {
 			'limit'  => $req->get_param( 'limit' ) ? (int) $req->get_param( 'limit' ) : 1000,
 			'offset' => (int) $req->get_param( 'offset' ),
 		);
-		return rest_ensure_response( GSM_QR_Issuance_Service::list( $args ) );
+		$out = GSM_QR_Issuance_Service::list( $args );
+		$out['items'] = self::with_tokens( (array) $out['items'] );
+		return rest_ensure_response( $out );
+	}
+
+	/**
+	 * Add each record's equipment QR token, so the screen can show the scan
+	 * link (one query for the whole page). Issuance users print and hand out
+	 * the stickers, so they need the same link that is printed on them.
+	 *
+	 * @param array $items Issuance rows.
+	 * @return array
+	 */
+	private static function with_tokens( $items ) {
+		global $wpdb;
+		$ids = array_values( array_unique( array_filter( array_map( 'intval', wp_list_pluck( $items, 'equipment_id' ) ) ) ) );
+		$map = array();
+		if ( $ids ) {
+			$t   = $wpdb->prefix . 'gas_equipment';
+			$ph  = implode( ',', array_fill( 0, count( $ids ), '%d' ) );
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
+			$rows = $wpdb->get_results( $wpdb->prepare( "SELECT id, qr_token FROM {$t} WHERE id IN ({$ph})", $ids ), ARRAY_A );
+			foreach ( (array) $rows as $r ) {
+				$map[ (int) $r['id'] ] = (string) $r['qr_token'];
+			}
+		}
+		foreach ( $items as $i => $it ) {
+			$eid                    = isset( $it['equipment_id'] ) ? (int) $it['equipment_id'] : 0;
+			$items[ $i ]['qr_token'] = isset( $map[ $eid ] ) ? $map[ $eid ] : '';
+		}
+		return $items;
 	}
 
 	/**

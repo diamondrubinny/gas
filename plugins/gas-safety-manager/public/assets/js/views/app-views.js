@@ -1176,9 +1176,14 @@
       if (it.pi_name) meta.push('<span><b>חוקר:</b> ' + esc(it.pi_name) + '</span>');
       if (it.qr_number) meta.push('<span><b>QR #:</b> ' + esc(it.qr_number) + '</span>');
       if (it.issued_date) meta.push('<span><b>הונפק:</b> ' + esc(it.issued_date) + '</span>');
+      // Scan link (the URL printed in the sticker's QR code) + copy.
+      var link = it.qr_token
+        ? '<div class="gs-qri-link"><a href="' + esc(bridgeUrl(it.qr_token)) + '" target="_blank" rel="noopener" dir="ltr">' + esc(bridgeUrl(it.qr_token)) + '</a>' +
+          ' <button type="button" class="gs-btn gs-btn--sm gs-btn--ghost" data-copy="' + esc(bridgeUrl(it.qr_token)) + '"><span aria-hidden="true">📋</span> העתק<span class="gs-visually-hidden"> את קישור הסריקה של ' + esc(it.equipment_name || ('רשומה #' + it.id)) + '</span></button></div>'
+        : '<div class="gs-qri-link" style="color:var(--gs-muted)">' + (parseInt(it.equipment_id, 10) > 0 ? 'לציוד אין עדיין קוד QR' : 'לא מקושר לפריט ציוד, ולכן אין קישור סריקה') + '</div>';
       return '<div class="gs-qri-card"><div class="gs-qri-dot" style="background:' + qriColor(it.status) + '"></div>' +
         '<div class="gs-qri-body"><div class="gs-qri-name">' + esc(it.equipment_name || ('רשומה #' + it.id)) + '</div>' +
-        '<div class="gs-qri-meta">' + meta.join('') + '</div>' +
+        '<div class="gs-qri-meta">' + meta.join('') + '</div>' + link +
         '<div class="gs-qri-actions">' + actions + '</div></div></div>';
     }
 
@@ -1207,7 +1212,7 @@
         body = QRI_STATUSES.map(function (s) {
           var gi = items.filter(function (x) { return x.status === s[0]; });
           if (!gi.length) return '';
-          return '<h3 class="gs-qri-h3" style="color:' + s[2] + '"><span class="gs-qri-tdot" style="background:' + s[2] + '"></span>' + esc(s[1]) + ' (' + gi.length + ')</h3>' +
+          return '<h3 class="gs-qri-h3"><span class="gs-qri-tdot" style="background:' + s[2] + '"></span>' + esc(s[1]) + ' (' + gi.length + ')</h3>' +
             '<div class="gs-qri-list">' + gi.map(card).join('') + '</div>';
         }).join('');
       } else {
@@ -1236,6 +1241,17 @@
           api('/qr-issuance/' + id + '/status', { method: 'POST', body: { status: to } })
             .then(function () { var it = state.items.filter(function (x) { return String(x.id) === String(id); })[0]; if (it) it.status = to; render(); })
             .catch(function (e) { alert('שגיאה: ' + (e.message || e)); b.disabled = false; });
+        });
+      });
+      document.querySelectorAll('#qri-body [data-copy]').forEach(function (b) {
+        b.addEventListener('click', function () {
+          var url = b.getAttribute('data-copy');
+          var done = function () { var o = b.innerHTML; b.textContent = '✓ הועתק'; setTimeout(function () { b.innerHTML = o; }, 1500); };
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(url).then(done, function () { window.prompt('העתיקו את הקישור:', url); });
+          } else {
+            window.prompt('העתיקו את הקישור:', url);
+          }
         });
       });
       document.querySelectorAll('[data-del]').forEach(function (b) {

@@ -152,6 +152,11 @@ jobs:
           BASE: http://127.0.0.1:8899
           USER_NAME: admin
         run: PASS="$WP_TEST_PASS" node tests/e2e/legacy-e2e.js
+      - name: QR issuance — scan link + copy on every record + axe
+        env:
+          BASE: http://127.0.0.1:8899
+          USER_NAME: admin
+        run: PASS="$WP_TEST_PASS" node tests/e2e/qrissue-e2e.js
       - name: Layout — header contrast on gradient + chart height (desktop + mobile)
         env:
           BASE: http://127.0.0.1:8899

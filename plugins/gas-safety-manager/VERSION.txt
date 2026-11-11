@@ -1,3 +1,6 @@
+Gas Safety Manager v2.16.1 — QR issuance: scan link + copy on every record.
+
+----
 Gas Safety Manager v2.16.0 — Pull data from the old system.
 
 - New "משיכה מהאתר הישן" screen: BI token (or pasted BI link), check (dry run) -> pull.

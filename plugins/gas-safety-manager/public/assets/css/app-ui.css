@@ -573,6 +573,8 @@
 .gs-qri-tdot { width:9px; height:9px; border-radius:50%; display:inline-block; }
 .gs-qri-h3 { font-size:14px; margin:14px 0 8px; display:flex; align-items:center; gap:7px; }
 .gs-qri-list { display:flex; flex-direction:column; gap:8px; }
+.gs-qri-link { margin:6px 0 2px; font-size:13px; display:flex; flex-wrap:wrap; align-items:center; gap:6px; }
+.gs-qri-link a { overflow-wrap:anywhere; }
 .gs-qri-card { display:flex; gap:10px; background:var(--gs-surface); border:1px solid var(--gs-border);
   border-radius:12px; padding:12px 14px; align-items:stretch; }
 .gs-qri-dot { width:6px; border-radius:6px; flex:0 0 6px; }
