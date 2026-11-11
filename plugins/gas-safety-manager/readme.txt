@@ -4,7 +4,7 @@ Tags: safety, equipment, inspections, hebrew, rtl
 Requires at least: 6.4
 Requires PHP: 8.2
 Tested up to: 7.1
-Stable tag: 2.16.1
+Stable tag: 2.17.0
 License: Proprietary — Technion Safety Unit
 
 Gas systems maintenance management for the Technion Safety Unit. Manages equipment, inspections, faults, and QR codes with native WordPress storage.
@@ -32,6 +32,16 @@ Pairs with the companion "Gas Safety" theme for the portal look (navy/gold, RTL,
 4. To import from Monday: open "Gas Migration", generate a key, run the console script in the portal, then revoke the key.
 
 == Changelog ==
+
+= 2.17.0 =
+* Built-in two-factor authentication (TOTP, RFC 6238) — works with Google Authenticator, Microsoft Authenticator, Authy etc. No external service.
+* Enrollment on the "אבטחה" screen: QR code (generated locally) + manual key, confirmation by code, 8 one-time backup codes shown once.
+* Login: after a correct password the app asks for the code. Enforced in the core `authenticate` filter, so it also covers wp-login.php (extra field) and XML-RPC; application passwords are switched off for users with 2FA.
+* Optional policy "mandatory for managers" (off by default; can only be turned on by a manager who already uses 2FA): un-enrolled managers are sent to the security screen and manager API calls are refused until they enroll.
+* Security: secret stored encrypted (AES-256-GCM, key derived from the WordPress auth salt), backup codes hashed, each code accepted once (replay protection), 5 wrong codes lock the second step for 15 minutes, disabling needs password + code, enabling ends other sessions. A manager can reset another user's 2FA (ends that user's sessions). All events are written to the audit log.
+* Recovery: backup codes, reset by another manager, or `define( 'GSM_2FA_DISABLE', true );` in wp-config.php.
+* Passkeys and CAPTCHA are still not built in.
+* Tests: tests/integration/twofa-test.php (RFC 4226/6238 vectors, all login paths, replay, lockout, policy; 44 checks), tests/e2e/twofa-e2e.js.
 
 = 2.16.1 =
 * QR issuance ("ניהול הנפקות QR"): every record now shows its scan link — the same URL printed in the sticker's QR code — with a copy button (as in the old portal). Records not linked to equipment say so. GET /qr-issuance returns each record's equipment qr_token (one query per page; the screen is limited to managers and אחמ"ת, who print the stickers).

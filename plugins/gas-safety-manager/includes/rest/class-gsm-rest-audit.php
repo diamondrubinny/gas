@@ -137,6 +137,8 @@ class GSM_REST_Audit {
 			'delete' => 'מחיקה',
 			'import' => 'ייבוא',
 			'undo'   => 'ביטול',
+			'security' => 'אבטחה',
+			'legacy' => 'ארכיון',
 		);
 		$entity_labels = array(
 			'equipment'  => 'ציוד',

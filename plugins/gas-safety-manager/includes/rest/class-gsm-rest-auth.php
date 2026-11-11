@@ -87,6 +87,8 @@ class GSM_REST_Auth {
 			'inspect_types' => GSM_Auth::inspect_types( $user ),
 			'nav_hidden'    => $this->nav_hidden(),
 			'nav_allowed'   => $this->nav_allowed( GSM_Auth::role_key( $user ) ),
+			'twofa'         => GSM_2FA::enabled( $user->ID ),
+			'must_2fa'      => GSM_2FA::setup_required( $user ),
 		);
 	}
 
@@ -161,6 +163,8 @@ class GSM_REST_Auth {
 		$login    = isset( $body['user'] ) ? sanitize_text_field( wp_unslash( $body['user'] ) ) : '';
 		$password = isset( $body['password'] ) ? (string) $body['password'] : '';
 		$remember = ! empty( $body['remember'] );
+		// Second step (TOTP or backup code), checked in the authenticate filter.
+		GSM_2FA::$code = isset( $body['code'] ) && is_scalar( $body['code'] ) ? substr( sanitize_text_field( (string) $body['code'] ), 0, 20 ) : '';
 
 		if ( '' === $login || '' === $password ) {
 			return new WP_Error( 'gsm_login_missing', __( 'יש להזין שם משתמש וסיסמה.', 'gas-safety-manager' ), array( 'status' => 400 ) );
@@ -200,6 +204,19 @@ class GSM_REST_Auth {
 			// Correct password, deactivated account (the check runs after the
 			// password check, so this is not an enumeration oracle).
 			return new WP_Error( 'gsm_login_blocked', __( 'החשבון שלך הושבת. פנה למנהל.', 'gas-safety-manager' ), array( 'status' => 403 ) );
+		}
+		GSM_2FA::$code = '';
+		if ( is_wp_error( $user ) && 'gsm_2fa_required' === $user->get_error_code() ) {
+			// Password was correct; the client now asks for the code and sends
+			// everything again. Not a failure, and the counter is not cleared.
+			return rest_ensure_response( array( 'logged_in' => false, 'requires_2fa' => true, 'nonce' => wp_create_nonce( 'wp_rest' ) ) );
+		}
+		if ( is_wp_error( $user ) && 'gsm_2fa_locked' === $user->get_error_code() ) {
+			return new WP_Error( 'gsm_2fa_locked', $user->get_error_message(), array( 'status' => 429 ) );
+		}
+		if ( is_wp_error( $user ) && 'gsm_2fa_invalid' === $user->get_error_code() ) {
+			set_transient( $ip_key, $fails + 1, 10 * MINUTE_IN_SECONDS );
+			return new WP_Error( 'gsm_2fa_invalid', $user->get_error_message(), array( 'status' => 401 ) );
 		}
 		if ( is_wp_error( $user ) ) {
 			set_transient( $ip_key, $fails + 1, 10 * MINUTE_IN_SECONDS );

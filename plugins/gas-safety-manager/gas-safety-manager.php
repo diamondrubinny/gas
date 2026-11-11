@@ -3,7 +3,7 @@
  * Plugin Name:       Gas Safety Manager
  * Plugin URI:        https://safety-tech.dev
  * Description:       Gas systems maintenance management for the Technion Safety Unit. Manages equipment, inspections, faults, and QR codes. Full replacement for the Monday.com backend with native WordPress storage, including a batch QR sticker generator.
- * Version:           2.16.1
+ * Version:           2.17.0
  * Requires at least: 6.4
  * Requires PHP:      8.2
  * Author:            Diamond Rubinny
@@ -21,7 +21,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
-define( 'GSM_VERSION', '2.16.1' );
+define( 'GSM_VERSION', '2.17.0' );
 define( 'GSM_DB_VERSION', '8' );
 define( 'GSM_PLUGIN_FILE', __FILE__ );
 define( 'GSM_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
@@ -77,6 +77,8 @@ require_once GSM_PLUGIN_DIR . 'includes/rest/class-gsm-rest-legacy.php';
 
 // Auth helpers.
 require_once GSM_PLUGIN_DIR . 'includes/auth/class-gsm-auth.php';
+require_once GSM_PLUGIN_DIR . 'includes/auth/class-gsm-2fa.php';
+require_once GSM_PLUGIN_DIR . 'includes/rest/class-gsm-rest-2fa.php';
 
 // REST controllers.
 require_once GSM_PLUGIN_DIR . 'includes/rest/class-gsm-rest-equipment.php';
@@ -167,6 +169,10 @@ add_action( 'wp_enqueue_scripts', array( 'GSM_Chat', 'enqueue' ), 20 );
 // password check (20), so it never reveals that an account exists/is blocked
 // to someone who does not know the password.
 add_filter( 'authenticate', array( 'GSM_Auth', 'block_inactive_login' ), 30 );
+// Two-factor: second step after the password (40), on every password login path.
+add_filter( 'authenticate', array( 'GSM_2FA', 'check_login' ), 40, 3 );
+add_action( 'login_form', array( 'GSM_2FA', 'login_field' ) );
+add_filter( 'wp_is_application_passwords_available_for_user', array( 'GSM_2FA', 'app_passwords' ), 10, 2 );
 add_filter( 'gsm_csp_directives', array( 'GSM_Chat', 'csp' ) );
 register_deactivation_hook( __FILE__, 'gsm_deactivate_cron' );
 /**

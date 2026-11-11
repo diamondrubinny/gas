@@ -29,7 +29,8 @@ class GSM_Auth {
 	 * @return bool
 	 */
 	public static function can_manage() {
-		return self::active_now() && current_user_can( 'gsm_manage_all' );
+		// A manager who still has to set up mandatory 2FA cannot do manager work.
+		return self::active_now() && current_user_can( 'gsm_manage_all' ) && ! ( class_exists( 'GSM_2FA' ) && GSM_2FA::setup_required() );
 	}
 
 	/**

@@ -128,6 +128,8 @@ class GSM_Loader {
 		$privacy->register_routes();
 		$legacy = new GSM_REST_Legacy();
 		$legacy->register_routes();
+		$twofa = new GSM_REST_2FA();
+		$twofa->register_routes();
 	}
 
 	/**

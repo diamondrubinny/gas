@@ -16,6 +16,10 @@
     if (PRIVATE[route.name] && !GSM.session.loggedIn) {
       return '/login';
     }
+    // Mandatory 2FA not set up yet: only the security screen is reachable.
+    if (PRIVATE[route.name] && route.name !== 'security' && GSM.session.user && GSM.session.user.must2fa) {
+      return '/security';
+    }
     return null;
   });
 

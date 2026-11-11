@@ -1110,7 +1110,9 @@
         var active = u.active ? '<span class="gs-pill gs-pill--ok">פעיל</span>' : '<span class="gs-pill gs-pill--danger">מושבת</span>';
         var actions = u.is_admin ? '—' :
           '<button class="gs-btn gs-btn--sm gs-btn--ghost" data-uedit="' + u.id + '">ערוך</button> ' +
-          '<button class="gs-btn gs-btn--sm gs-btn--ghost" data-ureset="' + u.id + '">איפוס סיסמה</button>';
+          '<button class="gs-btn gs-btn--sm gs-btn--ghost" data-ureset="' + u.id + '">איפוס סיסמה</button>' +
+          (u.twofa ? ' <button class="gs-btn gs-btn--sm gs-btn--ghost" data-u2fa="' + u.id + '" data-name="' + esc(u.name) + '">איפוס 2FA</button>' : '');
+        if (u.twofa) badge += ' <span class="gs-pill gs-pill--ok">2FA</span>';
         return '<tr><td>' + esc(u.name) + badge + '</td><td>' + esc(u.email) + '</td><td>' + esc(u.role_label) + '</td><td>' + active + '</td><td>' + esc(u.last_login || '—') + '</td><td>' + actions + '</td></tr>';
       }).join('');
 
@@ -1127,6 +1129,14 @@
           var id = b.getAttribute('data-uedit');
           var u = users.filter(function (x) { return String(x.id) === String(id); })[0];
           GSM_Forms.openUser(u, function () { GSM.navigate('/users'); });
+        });
+      });
+      document.querySelectorAll('[data-u2fa]').forEach(function (b) {
+        b.addEventListener('click', function () {
+          if (!confirm('לאפס את האימות הדו-שלבי של ' + (b.getAttribute('data-name') || '') + '? המשתמש ינותק מכל המכשירים וייכנס בסיסמה בלבד עד שיפעיל מחדש.')) return;
+          api('/users/' + b.getAttribute('data-u2fa') + '/2fa-reset', { method: 'POST' })
+            .then(function () { GSM.navigate('/users'); GSM.render(); })
+            .catch(function (e) { alert('שגיאה: ' + (e.message || e)); });
         });
       });
       document.querySelectorAll('[data-ureset]').forEach(function (b) {
@@ -2072,21 +2082,136 @@
   // ---- SECURITY (guidance) ------------------------------------------------
 
   GSM.registerView('security', function (mount) {
-    mount.innerHTML = chrome('security', '');
+    mount.innerHTML = chrome('security', loading());
     var main = mount.querySelector('.gs-main');
-    main.innerHTML =
-      '<div class="gs-toolbar"><h2 class="gs-h2">אבטחה</h2></div>' +
-      '<div class="gs-card" style="max-width:720px">' +
-      '<p>המערכת משתמשת באימות ובסיסמאות של WordPress (מגובבות). לשכבות אבטחה נוספות מומלץ ' +
-      'להשתמש ב<b>תוספי WordPress מאובטחים ובדוקים</b> במקום מימוש עצמי:</p>' +
-      '<div class="gs-card__title" style="margin-top:12px">אימות דו-שלבי (2FA)</div>' +
-      '<p style="color:var(--gs-muted)">תוספים מומלצים: <b>WP 2FA</b> או <b>Two-Factor</b> (TOTP דרך Google Authenticator/Authy). מתקינים ומפעילים לכל המשתמשים.</p>' +
-      '<div class="gs-card__title" style="margin-top:12px">Passkeys / WebAuthn</div>' +
-      '<p style="color:var(--gs-muted)">תוסף <b>Passkeys</b> (WebAuthn) לכניסה ללא סיסמה (Face ID / טביעת אצבע / מפתח אבטחה).</p>' +
-      '<div class="gs-card__title" style="margin-top:12px">הגנה מפני Brute-Force ו-CAPTCHA</div>' +
-      '<p style="color:var(--gs-muted)">המערכת כבר כוללת הגבלת קצב להתחברות ואנטי-ספאם בדיווח תקלה ציבורי. ל-CAPTCHA מלא מומלץ תוסף ייעודי (reCAPTCHA/Turnstile).</p>' +
-      '<p style="color:var(--gs-muted);font-size:13px;margin-top:14px">הערה: בחרנו להמליץ על תוספים מאובטחים במקום מימוש קריפטוגרפי עצמי — בטוח ומהיר יותר. אם תעדיף מימוש מובנה, נבחן זאת בנפרד.</p>' +
-      '</div>';
+
+    function codesCard(codes) {
+      return '<div class="gs-card" style="max-width:720px;margin-top:16px;border-inline-start:4px solid var(--gs-gold)"><h3 class="gs-card__title" id="tf-codes-title" tabindex="-1">קודי גיבוי — שמרו אותם עכשיו</h3>' +
+        '<p style="font-size:13.5px;margin-top:0">כל קוד פותח כניסה אחת כשהטלפון לא זמין. <b>הקודים מוצגים פעם אחת בלבד.</b> שמרו אותם במקום בטוח (מנהל סיסמאות או הדפסה).</p>' +
+        '<ul id="tf-codes" dir="ltr" style="columns:2;font-family:monospace;font-size:15px;list-style:none;padding:0;margin:0 0 10px;text-align:left">' +
+        codes.map(function (c) { return '<li style="padding:3px 0">' + esc(c) + '</li>'; }).join('') + '</ul>' +
+        '<button type="button" class="gs-btn gs-btn--sm gs-btn--ghost" id="tf-codes-copy">העתק את הקודים</button> ' +
+        '<span id="tf-codes-st" role="status" aria-live="polite" style="color:var(--gs-muted)"></span></div>';
+    }
+    function wireCodes(codes) {
+      var t = document.getElementById('tf-codes-title'); if (t) t.focus();
+      var b = document.getElementById('tf-codes-copy');
+      if (b) b.addEventListener('click', function () {
+        var txt = codes.join('\n'), st = document.getElementById('tf-codes-st');
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(txt).then(function () { st.textContent = '✓ הועתק'; }, function () { window.prompt('העתיקו:', txt); });
+        } else { window.prompt('העתיקו:', txt); }
+      });
+    }
+
+    function draw(s, extraHtml, after) {
+      var u = GSM.session.user || {};
+      var head = '<div class="gs-toolbar"><h2 class="gs-h2">אבטחה</h2></div>';
+      if (s.setup_required) {
+        head += '<div class="gs-error" role="alert" style="max-width:720px;margin-bottom:12px">אימות דו-שלבי הוא חובה למנהלים. הפעילו אותו כדי להמשיך לעבוד במערכת.</div>';
+      }
+      if (s.bypassed) {
+        head += '<div class="gs-error" role="alert" style="max-width:720px;margin-bottom:12px">האימות הדו-שלבי מנוטרל כרגע בהגדרות השרת (GSM_2FA_DISABLE). הסירו את ההגדרה מ-wp-config.php כדי להחזיר אותו.</div>';
+      }
+      var card = '<div class="gs-card" style="max-width:720px"><h3 class="gs-card__title">אימות דו-שלבי (2FA)</h3>';
+      if (!s.available) {
+        card += '<p>השרת אינו תומך בהצפנה הנדרשת (OpenSSL עם AES-256-GCM), ולכן אי אפשר להפעיל אימות דו-שלבי. פנו למנהל השרת.</p>';
+      } else if (s.enabled) {
+        card += '<p role="status"><span class="gs-pill gs-pill--ok">פעיל</span> ' + (s.since ? 'מאז <bdi dir="ltr">' + esc(s.since) + '</bdi>. ' : '') +
+          'נותרו <b>' + esc(s.backup_left) + '</b> קודי גיבוי.</p>' +
+          '<p style="color:var(--gs-muted);font-size:13px">בכל כניסה תתבקשו להזין, אחרי הסיסמה, קוד בן 6 ספרות מאפליקציית האימות.</p>' +
+          '<div class="gs-field"><label class="gs-label" for="tf-code">קוד אימות נוכחי (נדרש לפעולות שלמטה)</label>' +
+          '<input class="gs-input" id="tf-code" inputmode="numeric" autocomplete="one-time-code" dir="ltr" maxlength="12" style="max-width:200px"></div>' +
+          '<button type="button" class="gs-btn gs-btn--ghost" id="tf-newcodes">הפק קודי גיבוי חדשים</button> ' +
+          (s.require_managers && s.is_manager ? '' :
+            '<div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--gs-border)"><div class="gs-field"><label class="gs-label" for="tf-pass">סיסמה (לביטול האימות הדו-שלבי)</label>' +
+            '<input class="gs-input" id="tf-pass" type="password" autocomplete="current-password" style="max-width:260px"></div>' +
+            '<button type="button" class="gs-btn gs-btn--danger" id="tf-disable">בטל אימות דו-שלבי</button></div>') +
+          '<div id="tf-st" role="status" aria-live="polite" style="margin-top:8px;color:var(--gs-muted)"></div>';
+      } else {
+        card += '<p>שכבת הגנה נוספת לכניסה: אחרי הסיסמה מזינים קוד בן 6 ספרות מאפליקציית אימות בטלפון (Google Authenticator, Microsoft Authenticator, Authy וכדומה). ' +
+          'גם מי שגילה את הסיסמה לא יוכל להיכנס בלי הטלפון.</p>' +
+          '<button type="button" class="gs-btn" id="tf-start">הפעל אימות דו-שלבי</button>' +
+          '<div id="tf-setup" style="margin-top:14px"></div>' +
+          '<div id="tf-st" role="status" aria-live="polite" style="margin-top:8px;color:var(--gs-muted)"></div>';
+      }
+      card += '</div>';
+
+      var policy = '';
+      if (s.is_manager && !s.setup_required) {
+        policy = '<div class="gs-card" style="max-width:720px;margin-top:16px"><h3 class="gs-card__title">מדיניות למנהלים</h3>' +
+          '<label style="display:flex;gap:8px;align-items:flex-start"><input type="checkbox" id="tf-policy"' + (s.require_managers ? ' checked' : '') + ' aria-describedby="tf-policy-help"><span><b>חובת אימות דו-שלבי לכל המנהלים</b>' +
+          '<span id="tf-policy-help" style="display:block;color:var(--gs-muted);font-size:12.5px">מנהל שעוד לא הפעיל יופנה למסך הזה אחרי הכניסה, ופעולות ניהול ייחסמו עד שיסיים. אפשר להפעיל את החובה רק אחרי שהפעלתם בעצמכם.</span></span></label>' +
+          '<div id="tf-policy-st" role="status" aria-live="polite" style="margin-top:6px;color:var(--gs-muted)"></div></div>';
+      }
+
+      var more = '<div class="gs-card" style="max-width:720px;margin-top:16px"><h3 class="gs-card__title">שכבות נוספות</h3>' +
+        '<ul style="margin:0;padding-inline-start:18px;font-size:13.5px;line-height:1.8">' +
+        '<li>הכניסה מוגבלת ל-5 ניסיונות שגויים ב-10 דקות, והאימות הדו-שלבי ל-5 קודים שגויים ב-15 דקות.</li>' +
+        '<li>אבד הטלפון? משתמשים בקוד גיבוי, או מבקשים ממנהל לאפס את האימות במסך "ניהול אנשי אחמ"ת".</li>' +
+        '<li>Passkeys (כניסה בטביעת אצבע) ו-CAPTCHA אינם מובנים. אפשר להוסיף אותם בתוסף WordPress ייעודי.</li>' +
+        '</ul></div>';
+
+      main.innerHTML = head + card + (extraHtml || '') + policy + more;
+      if (after) after();
+      var st = document.getElementById('tf-st');
+      function fail(e, btn) { st.textContent = '✗ ' + (e.message || e); if (btn) btn.disabled = false; }
+
+      var start = document.getElementById('tf-start');
+      if (start) start.addEventListener('click', function () {
+        start.disabled = true; st.textContent = 'מכין…';
+        api('/2fa/setup', { method: 'POST' }).then(function (d) {
+          st.textContent = '';
+          var host = document.getElementById('tf-setup');
+          var qr = GSM.qrPng ? '<img src="' + GSM.qrPng(d.uri, 200) + '" width="200" height="200" alt="קוד QR להוספת החשבון לאפליקציית האימות. אפשר גם להקליד את המפתח שמופיע לצד הקוד.">' : '';
+          host.innerHTML =
+            '<ol style="padding-inline-start:18px;font-size:14px;line-height:1.8;margin:0 0 10px"><li>פתחו את אפליקציית האימות בטלפון ובחרו "הוספת חשבון".</li><li>סרקו את הקוד, או הקלידו את המפתח ידנית.</li><li>הזינו כאן את הקוד בן 6 הספרות שמופיע באפליקציה.</li></ol>' +
+            '<div style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start">' + qr +
+            '<div style="flex:1;min-width:220px"><div class="gs-label">מפתח להקלדה ידנית</div>' +
+            '<code id="tf-secret" dir="ltr" style="display:block;font-size:15px;overflow-wrap:anywhere;background:var(--gs-bg);padding:8px 10px;border-radius:8px;margin-bottom:10px">' + esc(d.secret.replace(/(.{4})/g, '$1 ').trim()) + '</code>' +
+            '<div class="gs-field"><label class="gs-label" for="tf-code">קוד מהאפליקציה</label>' +
+            '<input class="gs-input" id="tf-code" inputmode="numeric" autocomplete="one-time-code" dir="ltr" maxlength="6" style="max-width:160px"></div>' +
+            '<button type="button" class="gs-btn" id="tf-confirm">אשר והפעל</button></div></div>';
+          var codeEl = document.getElementById('tf-code'); codeEl.focus();
+          function confirmIt() {
+            var b = document.getElementById('tf-confirm'); b.disabled = true; st.textContent = 'בודק…';
+            api('/2fa/enable', { method: 'POST', body: { code: codeEl.value.trim() } }).then(function (out) {
+              if (GSM.session.user) { GSM.session.user.twofa = true; GSM.session.user.must2fa = false; }
+              return api('/2fa').then(function (ns) { draw(ns, codesCard(out.backup_codes), function () { wireCodes(out.backup_codes); }); });
+            }).catch(function (e) { fail(e, b); codeEl.value = ''; codeEl.focus(); });
+          }
+          document.getElementById('tf-confirm').addEventListener('click', confirmIt);
+          codeEl.addEventListener('keydown', function (e) { if (e.key === 'Enter') confirmIt(); });
+        }).catch(function (e) { fail(e, start); });
+      });
+
+      var nc = document.getElementById('tf-newcodes');
+      if (nc) nc.addEventListener('click', function () {
+        if (!confirm('להפיק קודי גיבוי חדשים? הקודים הישנים יפסיקו לעבוד.')) return;
+        nc.disabled = true;
+        api('/2fa/backup-codes', { method: 'POST', body: { code: document.getElementById('tf-code').value.trim() } }).then(function (out) {
+          return api('/2fa').then(function (ns) { draw(ns, codesCard(out.backup_codes), function () { wireCodes(out.backup_codes); }); });
+        }).catch(function (e) { fail(e, nc); });
+      });
+      var dis = document.getElementById('tf-disable');
+      if (dis) dis.addEventListener('click', function () {
+        if (!confirm('לבטל את האימות הדו-שלבי? הכניסה תהיה מוגנת בסיסמה בלבד.')) return;
+        dis.disabled = true;
+        api('/2fa/disable', { method: 'POST', body: { code: document.getElementById('tf-code').value.trim(), password: document.getElementById('tf-pass').value } }).then(function (ns) {
+          if (GSM.session.user) GSM.session.user.twofa = false;
+          draw(ns); document.getElementById('tf-st').textContent = '✓ האימות הדו-שלבי בוטל.';
+        }).catch(function (e) { fail(e, dis); });
+      });
+      var pol = document.getElementById('tf-policy');
+      if (pol) pol.addEventListener('change', function () {
+        var pst = document.getElementById('tf-policy-st'); pol.disabled = true;
+        api('/2fa/policy', { method: 'POST', body: { require_managers: pol.checked } }).then(function (ns) {
+          draw(ns); document.getElementById('tf-policy-st').textContent = '✓ נשמר.';
+        }).catch(function (e) { pol.checked = !pol.checked; pol.disabled = false; pst.textContent = '✗ ' + (e.message || e); });
+      });
+    }
+
+    api('/2fa').then(function (s) { draw(s); }).catch(function (e) { main.innerHTML = '<div class="gs-error" role="alert">' + esc(e.message || e) + '</div>'; });
   });
 
   // ---- BRIDGE (scan page) DESIGN -----------------------------------------

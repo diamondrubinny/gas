@@ -129,6 +129,8 @@ jobs:
         run: php "$RUNNER_TEMP/wp/cache/wp-cli.phar" --allow-root --path="$RUNNER_TEMP/wp/site" eval-file tests/integration/privacy-requests-test.php
       - name: "Integration — pull from the old system (mock server): check, pull, re-pull, errors"
         run: php "$RUNNER_TEMP/wp/cache/wp-cli.phar" --allow-root --path="$RUNNER_TEMP/wp/site" eval-file tests/integration/legacy-pull-test.php
+      - name: "Integration — two-factor authentication (RFC vectors, login paths, lockout, policy)"
+        run: php "$RUNNER_TEMP/wp/cache/wp-cli.phar" --allow-root --path="$RUNNER_TEMP/wp/site" eval-file tests/integration/twofa-test.php
       - name: Public dashboard test
         run: node tests/public-dashboard-test.js plugins/gas-safety-manager/public/gas-public-dashboard.html
       - name: End-to-end (CSP, all screens, actions, attachments, bridge)
@@ -157,6 +159,11 @@ jobs:
           BASE: http://127.0.0.1:8899
           USER_NAME: admin
         run: PASS="$WP_TEST_PASS" node tests/e2e/qrissue-e2e.js
+      - name: Two-factor login in the browser (enroll, login, mandatory policy) + axe
+        env:
+          BASE: http://127.0.0.1:8899
+          USER_NAME: admin
+        run: PASS="$WP_TEST_PASS" node tests/e2e/twofa-e2e.js
       - name: Layout — header contrast on gradient + chart height (desktop + mobile)
         env:
           BASE: http://127.0.0.1:8899

@@ -165,11 +165,12 @@
     });
   };
 
-  GSM.login = function (user, password, remember) {
-    return GSM.api('/auth/login', {
-      method: 'POST',
-      body: { user: user, password: password, remember: !!remember }
-    }).then(function (me) {
+  GSM.login = function (user, password, remember, code) {
+    var body = { user: user, password: password, remember: !!remember };
+    if (code) body.code = code;
+    return GSM.api('/auth/login', { method: 'POST', body: body }).then(function (me) {
+      // Second step needed: keep the session logged out and let the view ask.
+      if (me && me.requires_2fa) { if (me.nonce) session.nonce = me.nonce; return me; }
       applyMe(me);
       return me;
     });
@@ -191,7 +192,8 @@
       id: me.id, name: me.name, email: me.email,
       caps: me.caps || {}, roleLabel: me.role_label || '',
       roleKey: me.role_key || '', inspectTypes: me.inspect_types || [],
-      navHidden: me.nav_hidden || [], navAllowed: me.nav_allowed || null
+      navHidden: me.nav_hidden || [], navAllowed: me.nav_allowed || null,
+      twofa: !!me.twofa, must2fa: !!me.must_2fa
     } : null;
     if (session.loggedIn) { startNonceHeartbeat(); }
   }

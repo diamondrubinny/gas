@@ -127,6 +127,7 @@ class GSM_REST_Users {
 			'role_label' => isset( $labels[ $rk ] ) ? $labels[ $rk ] : $rk,
 			'is_admin'   => user_can( $u, 'administrator' ),
 			'active'     => GSM_Auth::is_active( $u ),
+			'twofa'      => GSM_2FA::enabled( $u->ID ),
 			'last_login' => $last ? $last : '',
 		);
 	}

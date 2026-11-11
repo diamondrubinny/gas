@@ -49,6 +49,9 @@
       '<input class="gs-input" id="gsm-lg-pass" type="password" autocomplete="current-password">' +
       '</div>' +
       '<label class="gs-check"><input type="checkbox" id="gsm-lg-remember"> זכור אותי</label>' +
+      '<div id="gsm-lg-2fa" hidden><label class="gs-label" for="gsm-lg-code">קוד אימות</label>' +
+      '<input class="gs-input" id="gsm-lg-code" inputmode="numeric" autocomplete="one-time-code" dir="ltr" maxlength="12" aria-describedby="gsm-lg-code-help">' +
+      '<div id="gsm-lg-code-help" style="color:var(--gs-muted);font-size:12.5px;margin:4px 0 12px">6 ספרות מאפליקציית האימות, או אחד מקודי הגיבוי.</div></div>' +
       '<div id="gsm-lg-err"></div>' +
       '<button class="gs-btn gs-btn--lg gs-btn--block" id="gsm-lg-submit">התחבר</button>' +
       '<button class="gs-btn gs-btn--ghost gs-btn--block" type="button" data-gsm-nav="/">חזרה לדף הבית</button>' +
@@ -61,25 +64,44 @@
       var user = document.getElementById('gsm-lg-user').value.trim();
       var pass = document.getElementById('gsm-lg-pass').value;
       var remember = document.getElementById('gsm-lg-remember').checked;
+      var box2 = document.getElementById('gsm-lg-2fa');
+      var codeEl = document.getElementById('gsm-lg-code');
+      var code = box2.hidden ? '' : codeEl.value.trim();
       errBox.innerHTML = '';
+      if (!box2.hidden && !code) {
+        errBox.innerHTML = '<div class="gs-error" role="alert">יש להזין את קוד האימות</div>';
+        codeEl.focus();
+        return;
+      }
       if (!user || !pass) {
         errBox.innerHTML = '<div class="gs-error" role="alert">יש להזין שם משתמש וסיסמה</div>';
         return;
       }
       submit.disabled = true;
       submit.textContent = 'מתחבר…';
-      GSM.login(user, pass, remember).then(function () {
+      GSM.login(user, pass, remember, code).then(function (me) {
+        if (me && me.requires_2fa) {
+          box2.hidden = false;
+          submit.disabled = false;
+          submit.textContent = 'אמת והתחבר';
+          errBox.innerHTML = '<div class="gs-card" role="status" style="margin-bottom:10px;padding:10px 12px">הסיסמה נכונה. הזינו עכשיו את קוד האימות.</div>';
+          codeEl.focus();
+          return;
+        }
         GSM.navigate('/dashboard');
       }).catch(function (e) {
         errBox.innerHTML = '<div class="gs-error" role="alert">' + esc(e.message) + '</div>';
         submit.disabled = false;
-        submit.textContent = 'התחבר';
+        submit.textContent = box2.hidden ? 'התחבר' : 'אמת והתחבר';
+        if (!box2.hidden) { codeEl.value = ''; codeEl.focus(); }
       });
     }
 
     submit.addEventListener('click', doLogin);
-    document.getElementById('gsm-lg-pass').addEventListener('keydown', function (e) {
-      if (e.key === 'Enter') doLogin();
+    ['gsm-lg-pass', 'gsm-lg-code'].forEach(function (id) {
+      document.getElementById(id).addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') doLogin();
+      });
     });
   });
 })();
