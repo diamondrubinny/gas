@@ -4,7 +4,7 @@ Tags: safety, equipment, inspections, hebrew, rtl
 Requires at least: 6.4
 Requires PHP: 8.2
 Tested up to: 7.1
-Stable tag: 2.15.0
+Stable tag: 2.15.1
 License: Proprietary — Technion Safety Unit
 
 Gas systems maintenance management for the Technion Safety Unit. Manages equipment, inspections, faults, and QR codes with native WordPress storage.
@@ -32,6 +32,12 @@ Pairs with the companion "Gas Safety" theme for the portal look (navy/gold, RTL,
 4. To import from Monday: open "Gas Migration", generate a key, run the console script in the portal, then revoke the key.
 
 == Changelog ==
+
+= 2.15.1 =
+* Fix: the system title in the navy header was navy-on-navy (contrast 1:1) whenever the active theme colours headings (the bundled theme does). The title is now white on both gradient stops.
+* Fix: the dashboard "scans in the last 14 days" chart grew to 1,400–2,400 px tall (Chart.js with maintainAspectRatio:false inside an unsized box). It now sits in a fixed 220 px box (180 px on phones), with slimmer bars.
+* Accessibility: that chart now has an accessible name and a text alternative listing the daily counts.
+* Test: tests/e2e/layout-e2e.js (header contrast on both gradient stops, chart height, no horizontal scroll; desktop + mobile) — axe marks gradient backgrounds as "incomplete" and could not catch this.
 
 = 2.15.0 =
 * Privacy requests ("בקשות פרטיות", manager): handle personal-data deletion requests end to end (Israeli Privacy Protection Law Amendment 13 / GDPR erasure). Until now a request only cleared the phone and avatar; the person's name and email stayed in equipment contacts, inspections, faults, QR issuance, attachments, the delivery log, the audit log (incl. its JSON copies of deleted records) and the restore points.

@@ -95,6 +95,7 @@
   font-size: 18px;
   font-weight: 700;
   margin: 0;
+  color: #fff; /* themes often colour every h1 navy — that vanished on the navy bar */
 }
 .gs-header__spacer { flex: 1; }
 .gs-header__user {
@@ -361,7 +362,7 @@
   background: linear-gradient(135deg, var(--gs-navy) 0%, var(--gs-navy-2) 100%); color: #fff;
   border-bottom: 3px solid var(--gs-gold); padding: 12px 20px; display: flex; align-items: center; gap: 12px;
 }
-.gs-header__title { font-size: 17px; font-weight: 700; margin: 0; }
+.gs-header__title { font-size: 17px; font-weight: 700; margin: 0; color: #fff; }
 .gs-header__spacer { flex: 1; }
 .gs-header__user { font-size: 13px; opacity: .9; background: rgba(255,255,255,.12); padding: 6px 14px; border-radius: 999px; }
 .gs-header__logout {
@@ -553,6 +554,15 @@
 }
 .gs-chartbox canvas {
   max-width: 100%;
+}
+.gs-chartbox--trend {
+  position: relative;
+  height: 220px;
+  max-width: none;
+  margin: 0;
+}
+@media (max-width: 600px) {
+  .gs-chartbox--trend { height: 180px; }
 }
 
 /* ---------- QR issuance ---------- */

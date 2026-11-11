@@ -145,6 +145,11 @@ jobs:
           BASE: http://127.0.0.1:8899
           USER_NAME: admin
         run: PASS="$WP_TEST_PASS" node tests/e2e/privacy-e2e.js
+      - name: Layout — header contrast on gradient + chart height (desktop + mobile)
+        env:
+          BASE: http://127.0.0.1:8899
+          USER_NAME: admin
+        run: PASS="$WP_TEST_PASS" node tests/e2e/layout-e2e.js
       - name: Accessibility — keyboard & focus management
         env:
           BASE: http://127.0.0.1:8899

@@ -22,6 +22,7 @@
   font-size: 18px;
   font-weight: 700;
   margin: 0;
+  color: #fff; /* style.css colours h1 navy; the header is navy */
 }
 .gs-header__spacer { flex: 1; }
 .gs-header__user {

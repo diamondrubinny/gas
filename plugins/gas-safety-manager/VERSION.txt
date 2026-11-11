@@ -1,3 +1,10 @@
+Gas Safety Manager v2.15.1 — Header title contrast + dashboard chart height.
+
+- Header title white (was navy on navy when the theme colours h1).
+- 14-day scans chart in a fixed-height box (was 1,400+ px tall); accessible name + text alternative.
+- Test: tests/e2e/layout-e2e.js.
+
+----
 Gas Safety Manager v2.15.0 — Privacy requests (erasure).
 
 - New "בקשות פרטיות" screen: scan (dry run) -> anonymize to "משתמש נמחק #N" across

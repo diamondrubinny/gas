@@ -204,8 +204,12 @@
           stat(cov.not_scanned_30d || 0, 'לא נסרק (30 ימים)', 'warn') +
           stat(cov.monthly_overdue || 0, 'ביקורת חודשית באיחור', (cov.monthly_overdue > 0 ? 'danger' : 'ok')) +
         '</div>' +
-        '<div style="margin-top:14px"><div style="font-size:13px;color:var(--gs-muted);margin-bottom:6px">סריקות ב-14 הימים האחרונים</div>' +
-        '<canvas id="gsm-cov-trend" height="90"></canvas></div></div>';
+        '<div style="margin-top:14px"><div id="gsm-cov-trend-t" style="font-size:13px;color:var(--gs-muted);margin-bottom:6px">סריקות ב-14 הימים האחרונים</div>' +
+        // Fixed-height box: with maintainAspectRatio:false Chart.js takes the
+        // parent's height, so an unsized parent made the chart thousands of px tall.
+        '<div class="gs-chartbox gs-chartbox--trend"><canvas id="gsm-cov-trend" role="img" aria-labelledby="gsm-cov-trend-t" aria-describedby="gsm-cov-trend-d"></canvas></div>' +
+        '<p id="gsm-cov-trend-d" class="gs-visually-hidden">' + esc((cov.trend_14d || []).map(function (x) { return (x.date || '') + ': ' + (x.count || 0); }).join(', ')) + '</p>' +
+        '</div></div>';
       main.innerHTML =
         '<div class="gs-grid gs-grid--stats">' + stats + '</div>' + covCard +
         '<div class="gs-card" style="margin-top:20px"><div class="gs-card__title">⬇️ הנפקת דוחות (Excel)</div>' +
@@ -228,7 +232,7 @@
             type: 'bar',
             data: {
               labels: _tr.map(function (x) { return (x.date || '').slice(5); }),
-              datasets: [{ data: _tr.map(function (x) { return x.count || 0; }), backgroundColor: '#0b2545' }]
+              datasets: [{ data: _tr.map(function (x) { return x.count || 0; }), backgroundColor: '#0b2545', maxBarThickness: 28 }]
             },
             options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }, responsive: true, maintainAspectRatio: false }
           });

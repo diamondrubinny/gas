@@ -13,7 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'GST_VERSION', '1.2.5' );
+define( 'GST_VERSION', '1.2.6' );
 define( 'GST_DIR', get_template_directory() );
 define( 'GST_URI', get_template_directory_uri() );
 
