@@ -407,9 +407,31 @@ class GSM_Activator {
 			KEY created_at (created_at)
 		) {$charset_collate};";
 
+		// Field messages + feedback (kind: field | feedback).
+		$sql_messages = "CREATE TABLE {$p}messages (
+			id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			kind VARCHAR(20) NOT NULL DEFAULT 'field',
+			created_at DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00',
+			user_id BIGINT UNSIGNED NULL,
+			author VARCHAR(255) NOT NULL DEFAULT '',
+			title VARCHAR(160) NOT NULL DEFAULT '',
+			text TEXT NULL,
+			fb_type VARCHAR(20) NOT NULL DEFAULT '',
+			priority VARCHAR(20) NOT NULL DEFAULT '',
+			area VARCHAR(120) NOT NULL DEFAULT '',
+			status VARCHAR(20) NOT NULL DEFAULT '',
+			handled_by VARCHAR(255) NOT NULL DEFAULT '',
+			handled_at DATETIME NULL,
+			PRIMARY KEY  (id),
+			KEY kind_status (kind, status),
+			KEY user_id (user_id),
+			KEY created_at (created_at)
+		) {$charset_collate};";
+
 		dbDelta( $sql_restore );
 		dbDelta( $sql_attach );
 		dbDelta( $sql_comm );
+		dbDelta( $sql_messages );
 	}
 
 	/**

@@ -39,6 +39,7 @@ $tables = array(
 	'checklist_templates',
 	'audit',
 	'deletion_requests',
+	'messages',
 	'qr_issuance',
 	'restore_points',
 	'attachments',

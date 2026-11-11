@@ -20,7 +20,7 @@ wp_set_current_user( (int) $admins[0] );
 $tag = wp_generate_password( 5, false );
 
 $cols = $wpdb->get_col( "SHOW COLUMNS FROM {$wpdb->prefix}gas_equipment" );
-$t( 'upgrade to DB v9 added both columns', in_array( 'purchase_date', $cols, true ) && in_array( 'manual_url', $cols, true ) && '9' === (string) get_option( 'gsm_db_version' ), implode( ',', $cols ) );
+$t( 'upgrade (DB v9+) added both columns', in_array( 'purchase_date', $cols, true ) && in_array( 'manual_url', $cols, true ) && (int) get_option( 'gsm_db_version' ) >= 9, implode( ',', $cols ) );
 
 $id = GSM_Equipment_Service::create( array( 'name' => 'EF ' . $tag, 'purchase_date' => '2020-05-17', 'manual_url' => 'https://example.com/a b.pdf?x=1' ) );
 $e  = is_wp_error( $id ) ? null : GSM_Equipment_Repo::get( (int) $id );

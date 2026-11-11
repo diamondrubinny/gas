@@ -573,6 +573,15 @@
 .gs-qri-tdot { width:9px; height:9px; border-radius:50%; display:inline-block; }
 .gs-qri-h3 { font-size:14px; margin:14px 0 8px; display:flex; align-items:center; gap:7px; }
 .gs-qri-list { display:flex; flex-direction:column; gap:8px; }
+/* ---------- Field messages + feedback ---------- */
+.gs-msglist { list-style:none; margin:12px 0 0; padding:0; }
+.gs-msg { padding:10px 0; border-top:1px solid var(--gs-border); }
+.gs-msg.is-read { opacity:1; }
+.gs-msg.is-read .gs-msg__tx { color:var(--gs-muted); }
+.gs-msg__hd { display:flex; flex-wrap:wrap; align-items:center; gap:6px; font-size:14px; }
+.gs-msg__when, .gs-msg__meta { color:var(--gs-muted); font-size:12.5px; }
+.gs-msg__tx { margin:4px 0; white-space:pre-wrap; overflow-wrap:anywhere; font-size:14px; }
+.gs-msg__act { margin-top:6px; }
 .gs-qri-link { margin:6px 0 2px; font-size:13px; display:flex; flex-wrap:wrap; align-items:center; gap:6px; }
 .gs-qri-link a { overflow-wrap:anywhere; }
 .gs-qri-card { display:flex; gap:10px; background:var(--gs-surface); border:1px solid var(--gs-border);

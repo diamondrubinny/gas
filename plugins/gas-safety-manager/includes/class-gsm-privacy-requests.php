@@ -58,6 +58,10 @@ class GSM_Privacy_Requests {
 			array( 'audit', 'item_name', 'text', 'יומן בקרה — פריט' ),
 			array( 'audit', 'summary', 'text', 'יומן בקרה — פירוט' ),
 			array( 'audit', 'before_json', 'json', 'יומן בקרה — עותק לפני מחיקה' ),
+			array( 'messages', 'author', 'text', 'הודעות ומשוב — כותב' ),
+			array( 'messages', 'title', 'text', 'הודעות ומשוב — כותרת' ),
+			array( 'messages', 'text', 'text', 'הודעות ומשוב — תוכן' ),
+			array( 'messages', 'handled_by', 'text', 'הודעות ומשוב — טופל על ידי' ),
 			array( 'restore_points', 'created_by', 'text', 'נקודות שחזור — נוצר על ידי' ),
 			array( 'restore_points', 'payload', 'json', 'נקודות שחזור — תוכן' ),
 		);

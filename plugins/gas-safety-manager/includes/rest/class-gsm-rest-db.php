@@ -52,6 +52,7 @@ class GSM_REST_DB {
 			'inspection_items'    => array( 'suffix' => 'inspection_items', 'label' => 'פריטי ביקורת', 'search' => array( 'item_text', 'item_result' ), 'edit' => null, 'order' => 'id DESC' ),
 			'audit'               => array( 'suffix' => 'audit', 'label' => 'יומן בקרה', 'search' => array( 'actor', 'action', 'entity', 'item_name', 'summary' ), 'edit' => null, 'order' => 'id DESC' ),
 			'checklist_templates' => array( 'suffix' => 'checklist_templates', 'label' => 'תבניות צ׳קליסט', 'search' => array( 'item_text', 'type' ), 'edit' => null, 'order' => 'id ASC' ),
+			'messages'            => array( 'suffix' => 'messages', 'label' => 'הודעות מהשטח ומשוב', 'search' => array( 'author', 'title', 'text', 'status', 'kind' ), 'edit' => null, 'order' => 'id DESC' ),
 			'deletion_requests'   => array( 'suffix' => 'deletion_requests', 'label' => 'בקשות מחיקה (פרטיות)', 'search' => array( 'email', 'status' ), 'edit' => null, 'order' => 'id DESC' ),
 		);
 	}

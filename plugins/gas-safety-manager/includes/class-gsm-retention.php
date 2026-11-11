@@ -51,6 +51,7 @@ class GSM_Retention {
 			'comm'      => array( 'comm_log', 'created_at', 'יומן שליחות', '' ),
 			'audit'     => array( 'audit', 'created_at', 'יומן בקרה', '' ),
 			'deletions' => array( 'deletion_requests', 'created_at', 'בקשות מחיקה שטופלו', "status <> 'open'" ),
+			'messages'  => array( 'messages', 'created_at', 'הודעות מהשטח ומשוב שטופלו', "status IN ('read','done','wontfix')" ),
 		);
 	}
 
@@ -65,6 +66,7 @@ class GSM_Retention {
 			'comm'      => 24,
 			'audit'     => 84,
 			'deletions' => 24,
+			'messages'  => 24,
 		);
 	}
 

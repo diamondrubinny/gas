@@ -166,6 +166,139 @@
     return '<button class="gs-btn gs-btn--sm gs-btn--export" type="button" data-gsm-action="export" data-type="' + esc(type) + '">⬇️ Excel</button>';
   }
 
+  // ---- FIELD MESSAGES + FEEDBACK (dashboard cards) --------------------------
+
+  function renderFieldMessages(host, focusId) {
+    if (!host) return;
+    api('/field-messages').then(function (d) {
+      var items = d.items || [], mgr = !!d.manage;
+      var unread = items.filter(function (m) { return m.status === 'unread'; }).length;
+      var list = items.length ? items.slice(0, 30).map(function (m) {
+        return '<li class="gs-msg' + (m.status === 'read' ? ' is-read' : '') + '"><div class="gs-msg__hd"><b>' + esc(m.author) + '</b> <bdi dir="ltr" class="gs-msg__when">' + esc(m.created_at.slice(0, 16)) + '</bdi>' +
+          (m.status === 'unread' ? ' <span class="gs-pill gs-pill--warn">לא נקראה</span>' : ' <span class="gs-pill gs-pill--ok">נקראה</span>') + '</div>' +
+          '<div class="gs-msg__tx">' + esc(m.text) + '</div>' +
+          (mgr ? '<div class="gs-msg__act">' +
+            (m.status === 'unread' ? '<button type="button" class="gs-btn gs-btn--sm gs-btn--ghost" data-fm-read="' + m.id + '">סמן כנקראה<span class="gs-visually-hidden">: הודעה של ' + esc(m.author) + '</span></button> ' : '') +
+            '<button type="button" class="gs-btn gs-btn--sm gs-btn--ghost" data-fm-del="' + m.id + '">מחק<span class="gs-visually-hidden">: הודעה של ' + esc(m.author) + '</span></button></div>' : '') +
+          '</li>';
+      }).join('') : '';
+      host.innerHTML =
+        '<div class="gs-card" style="margin-top:20px"><h3 class="gs-card__title" id="fm-title" tabindex="-1">📣 הודעות מהשטח' +
+        (mgr && unread ? ' <span class="gs-pill gs-pill--danger">חדשות: ' + unread + '</span>' : '') + '</h3>' +
+        '<p style="color:var(--gs-muted);font-size:13px;margin-top:0">' + (mgr ? 'הודעות קצרות שמשתמשי המערכת שולחים למנהלים.' : 'הודעה קצרה למנהלי המערכת. כאן מוצגות ההודעות ששלחתם.') + '</p>' +
+        '<div class="gs-field"><label class="gs-label" for="fm-text">הודעה חדשה</label>' +
+        '<textarea class="gs-textarea" id="fm-text" rows="2" maxlength="2000"></textarea></div>' +
+        '<button type="button" class="gs-btn gs-btn--sm" id="fm-send">שלח למנהלים</button> ' +
+        '<span id="fm-st" role="status" aria-live="polite" style="margin-inline-start:8px;color:var(--gs-muted)"></span>' +
+        (list ? '<ul class="gs-msglist" aria-label="הודעות מהשטח">' + list + '</ul>' : '<div class="gs-empty" style="margin-top:10px">אין הודעות.</div>') +
+        (mgr && items.length ? '<div style="margin-top:10px"><button type="button" class="gs-btn gs-btn--sm gs-btn--ghost" id="fm-clear-read">נקה הודעות שנקראו</button> ' +
+          '<button type="button" class="gs-btn gs-btn--sm gs-btn--ghost" id="fm-clear-all">נקה הכל</button></div>' : '') +
+        '</div>';
+      if (focusId) { var f = document.getElementById(focusId); if (f) f.focus(); }
+      var st = document.getElementById('fm-st');
+      document.getElementById('fm-send').addEventListener('click', function () {
+        var btn = this, ta = document.getElementById('fm-text'), text = ta.value.trim();
+        if (!text) { st.textContent = 'כתבו הודעה לפני השליחה.'; ta.focus(); return; }
+        btn.disabled = true; st.textContent = 'שולח…';
+        api('/field-messages', { method: 'POST', body: { text: text } })
+          .then(function () { renderFieldMessages(host, 'fm-title'); setTimeout(function () { var s2 = document.getElementById('fm-st'); if (s2) s2.textContent = '✓ ההודעה נשלחה למנהלים.'; }, 300); })
+          .catch(function (e) { st.textContent = '✗ ' + (e.message || e); btn.disabled = false; });
+      });
+      host.querySelectorAll('[data-fm-read]').forEach(function (b) {
+        b.addEventListener('click', function () { b.disabled = true; api('/field-messages/' + b.getAttribute('data-fm-read') + '/read', { method: 'POST' }).then(function () { renderFieldMessages(host, 'fm-title'); }).catch(function (e) { st.textContent = '✗ ' + (e.message || e); b.disabled = false; }); });
+      });
+      host.querySelectorAll('[data-fm-del]').forEach(function (b) {
+        b.addEventListener('click', function () {
+          if (!confirm('למחוק את ההודעה?')) return;
+          api('/field-messages/' + b.getAttribute('data-fm-del'), { method: 'DELETE' }).then(function () { renderFieldMessages(host, 'fm-title'); }).catch(function (e) { st.textContent = '✗ ' + (e.message || e); });
+        });
+      });
+      [['fm-clear-read', true, 'למחוק את כל ההודעות שנקראו?'], ['fm-clear-all', false, 'למחוק את כל ההודעות מהשטח, כולל אלה שלא נקראו?']].forEach(function (c) {
+        var b = document.getElementById(c[0]);
+        if (b) b.addEventListener('click', function () {
+          if (!confirm(c[2])) return;
+          api('/field-messages/clear', { method: 'POST', body: { read_only: c[1] } }).then(function () { renderFieldMessages(host, 'fm-title'); }).catch(function (e) { st.textContent = '✗ ' + (e.message || e); });
+        });
+      });
+    }).catch(function (e) { host.innerHTML = '<div class="gs-error" role="alert" style="margin-top:20px">' + esc(e.message || e) + '</div>'; });
+  }
+
+  var FB_TYPE = { bug: 'תקלה במערכת', feature: 'בקשת שיפור', question: 'שאלה' };
+  var FB_PRIO = { low: ['נמוכה', 'ok'], medium: ['בינונית', 'warn'], high: ['גבוהה', 'warn'], critical: ['קריטית', 'danger'] };
+  var FB_STATUS = { open: ['פתוח', 'warn'], in_progress: ['בטיפול', 'warn'], done: ['בוצע', 'ok'], wontfix: ['נדחה', 'danger'] };
+  var fbFilter = 'active';
+
+  function renderFeedback(host, focusId) {
+    if (!host) return;
+    function opts(map, sel) { return Object.keys(map).map(function (k) { var v = map[k]; return '<option value="' + k + '"' + (k === sel ? ' selected' : '') + '>' + esc(Array.isArray(v) ? v[0] : v) + '</option>'; }).join(''); }
+    api('/feedback').then(function (d) {
+      var all = d.items || [], mgr = !!d.manage;
+      var active = all.filter(function (m) { return m.status === 'open' || m.status === 'in_progress'; });
+      var items = fbFilter === 'active' ? active : all;
+      var list = items.length ? items.slice(0, 50).map(function (m) {
+        var pr = FB_PRIO[m.priority] || [m.priority, 'warn'], stt = FB_STATUS[m.status] || [m.status, 'warn'];
+        return '<li class="gs-msg"><div class="gs-msg__hd"><b>' + esc(m.title || FB_TYPE[m.type] || 'פנייה') + '</b> <span class="gs-pill gs-pill--' + stt[1] + '">' + esc(stt[0]) + '</span> ' +
+          '<span class="gs-pill gs-pill--' + pr[1] + '">עדיפות ' + esc(pr[0]) + '</span></div>' +
+          '<div class="gs-msg__meta">' + esc(FB_TYPE[m.type] || m.type) + ' · ' + esc(m.author) + ' · <bdi dir="ltr">' + esc(m.created_at.slice(0, 16)) + '</bdi>' + (m.area ? ' · ' + esc(m.area) : '') +
+          (m.handled_by && m.status !== 'open' ? ' · עודכן על ידי ' + esc(m.handled_by) : '') + '</div>' +
+          '<div class="gs-msg__tx">' + esc(m.text) + '</div>' +
+          (mgr ? '<div class="gs-msg__act"><label class="gs-visually-hidden" for="fb-st-' + m.id + '">סטטוס הפנייה: ' + esc(m.title || FB_TYPE[m.type] || '') + '</label>' +
+            '<select class="gs-input" id="fb-st-' + m.id + '" data-fb-status="' + m.id + '" style="max-width:140px;display:inline-block">' + opts(FB_STATUS, m.status) + '</select> ' +
+            '<button type="button" class="gs-btn gs-btn--sm gs-btn--ghost" data-fb-del="' + m.id + '">מחק<span class="gs-visually-hidden">: ' + esc(m.title || 'פנייה') + '</span></button></div>' : '') +
+          '</li>';
+      }).join('') : '';
+      host.innerHTML =
+        '<div class="gs-card" style="margin-top:20px"><h3 class="gs-card__title" id="fb-title" tabindex="-1">📝 משוב ובקשות שיפור' +
+        (mgr && active.length ? ' <span class="gs-pill gs-pill--warn">פעילות: ' + active.length + '</span>' : '') + '</h3>' +
+        '<p style="color:var(--gs-muted);font-size:13px;margin-top:0">נתקלתם בבעיה במערכת או רוצים שיפור? פתחו פנייה, והמנהלים יעדכנו את הסטטוס שלה.' + (mgr ? '' : ' כאן מוצגות הפניות שפתחתם.') + '</p>' +
+        '<button type="button" class="gs-btn gs-btn--sm" id="fb-toggle" aria-expanded="false" aria-controls="fb-form">+ פנייה חדשה</button>' +
+        '<div id="fb-form" hidden style="margin-top:12px;padding:12px;border:1px solid var(--gs-border);border-radius:10px">' +
+        '<div class="gs-field"><label class="gs-label" for="fb-ttl">כותרת קצרה</label><input class="gs-input" id="fb-ttl" maxlength="160"></div>' +
+        '<div style="display:flex;gap:10px;flex-wrap:wrap"><div class="gs-field" style="flex:1;min-width:150px"><label class="gs-label" for="fb-type">סוג</label><select class="gs-input" id="fb-type">' + opts(FB_TYPE, 'bug') + '</select></div>' +
+        '<div class="gs-field" style="flex:1;min-width:150px"><label class="gs-label" for="fb-prio">עדיפות</label><select class="gs-input" id="fb-prio">' + opts(FB_PRIO, 'medium') + '</select></div></div>' +
+        '<div class="gs-field"><label class="gs-label" for="fb-area">מסך או אזור רלוונטי (לא חובה)</label><input class="gs-input" id="fb-area" maxlength="120"></div>' +
+        '<div class="gs-field"><label class="gs-label" for="fb-text">פירוט (חובה): מה קרה, או מה רוצים לשפר</label><textarea class="gs-textarea" id="fb-text" rows="4" maxlength="2000" aria-required="true"></textarea></div>' +
+        '<button type="button" class="gs-btn gs-btn--sm" id="fb-send">פתח פנייה</button></div> ' +
+        '<span id="fb-st" role="status" aria-live="polite" style="margin-inline-start:8px;color:var(--gs-muted)"></span>' +
+        '<div style="margin-top:12px" role="group" aria-label="סינון פניות">' +
+        '<button type="button" class="gs-btn gs-btn--sm' + (fbFilter === 'active' ? '' : ' gs-btn--ghost') + '" data-fb-filter="active" aria-pressed="' + (fbFilter === 'active') + '">פעילות (' + active.length + ')</button> ' +
+        '<button type="button" class="gs-btn gs-btn--sm' + (fbFilter === 'all' ? '' : ' gs-btn--ghost') + '" data-fb-filter="all" aria-pressed="' + (fbFilter === 'all') + '">הכול (' + all.length + ')</button></div>' +
+        (list ? '<ul class="gs-msglist" aria-label="פניות משוב">' + list + '</ul>' : '<div class="gs-empty" style="margin-top:10px">אין פניות להצגה.</div>') +
+        '</div>';
+      if (focusId) { var f = document.getElementById(focusId); if (f) f.focus(); }
+      var st = document.getElementById('fb-st');
+      var tg = document.getElementById('fb-toggle');
+      tg.addEventListener('click', function () {
+        var form = document.getElementById('fb-form'); form.hidden = !form.hidden;
+        tg.setAttribute('aria-expanded', String(!form.hidden));
+        if (!form.hidden) document.getElementById('fb-ttl').focus();
+      });
+      document.getElementById('fb-send').addEventListener('click', function () {
+        var btn = this, text = document.getElementById('fb-text').value.trim();
+        if (!text) { st.textContent = 'יש למלא פירוט.'; document.getElementById('fb-text').focus(); return; }
+        btn.disabled = true; st.textContent = 'שולח…';
+        api('/feedback', { method: 'POST', body: { text: text, title: document.getElementById('fb-ttl').value.trim(), type: document.getElementById('fb-type').value, priority: document.getElementById('fb-prio').value, area: document.getElementById('fb-area').value.trim() } })
+          .then(function () { fbFilter = 'active'; renderFeedback(host, 'fb-title'); setTimeout(function () { var s2 = document.getElementById('fb-st'); if (s2) s2.textContent = '✓ הפנייה נפתחה.'; }, 300); })
+          .catch(function (e) { st.textContent = '✗ ' + (e.message || e); btn.disabled = false; });
+      });
+      host.querySelectorAll('[data-fb-filter]').forEach(function (b) { b.addEventListener('click', function () { fbFilter = b.getAttribute('data-fb-filter'); renderFeedback(host, 'fb-title'); }); });
+      host.querySelectorAll('[data-fb-status]').forEach(function (sel) {
+        sel.addEventListener('change', function () {
+          sel.disabled = true;
+          api('/feedback/' + sel.getAttribute('data-fb-status') + '/status', { method: 'POST', body: { status: sel.value } })
+            .then(function () { renderFeedback(host); setTimeout(function () { var s2 = document.getElementById('fb-st'); if (s2) s2.textContent = '✓ הסטטוס עודכן.'; }, 300); })
+            .catch(function (e) { st.textContent = '✗ ' + (e.message || e); sel.disabled = false; });
+        });
+      });
+      host.querySelectorAll('[data-fb-del]').forEach(function (b) {
+        b.addEventListener('click', function () {
+          if (!confirm('למחוק את הפנייה?')) return;
+          api('/feedback/' + b.getAttribute('data-fb-del'), { method: 'DELETE' }).then(function () { renderFeedback(host, 'fb-title'); }).catch(function (e) { st.textContent = '✗ ' + (e.message || e); });
+        });
+      });
+    }).catch(function (e) { host.innerHTML = '<div class="gs-error" role="alert" style="margin-top:20px">' + esc(e.message || e) + '</div>'; });
+  }
+
   // ---- DASHBOARD -----------------------------------------------------------
 
   GSM.registerView('dashboard', function (mount) {
@@ -213,6 +346,7 @@
         '</div></div>';
       main.innerHTML =
         '<div class="gs-grid gs-grid--stats">' + stats + '</div>' + covCard +
+        '<div id="gsm-fm"></div><div id="gsm-fb"></div>' +
         '<div class="gs-card" style="margin-top:20px"><div class="gs-card__title">⬇️ הנפקת דוחות (Excel)</div>' +
         '<div style="display:flex;flex-wrap:wrap;gap:8px">' +
         '<button class="gs-btn gs-btn--sm gs-btn--export" type="button" data-gsm-action="export" data-type="equipment">⬇️ ציוד</button>' +
@@ -225,6 +359,8 @@
             : '<div class="gs-empty">אין נתונים להצגה</div>') +
         '</div>';
 
+      renderFieldMessages(document.getElementById('gsm-fm'));
+      renderFeedback(document.getElementById('gsm-fb'));
       try {
         var _tr = cov.trend_14d || [];
         var _cv = document.getElementById('gsm-cov-trend');

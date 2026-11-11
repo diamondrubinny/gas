@@ -1,3 +1,6 @@
+Gas Safety Manager v2.18.0 — Field messages + feedback on the dashboard (DB v10).
+
+----
 Gas Safety Manager v2.17.1 — Equipment: purchase date + manual link (DB v9).
 
 ----

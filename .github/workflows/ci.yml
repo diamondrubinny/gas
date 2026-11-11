@@ -133,6 +133,8 @@ jobs:
         run: php "$RUNNER_TEMP/wp/cache/wp-cli.phar" --allow-root --path="$RUNNER_TEMP/wp/site" eval-file tests/integration/twofa-test.php
       - name: "Integration — equipment fields added in DB v9"
         run: php "$RUNNER_TEMP/wp/cache/wp-cli.phar" --allow-root --path="$RUNNER_TEMP/wp/site" eval-file tests/integration/equipment-fields-test.php
+      - name: "Integration — field messages + feedback (permissions, isolation, retention, privacy)"
+        run: php "$RUNNER_TEMP/wp/cache/wp-cli.phar" --allow-root --path="$RUNNER_TEMP/wp/site" eval-file tests/integration/messages-test.php
       - name: Public dashboard test
         run: node tests/public-dashboard-test.js plugins/gas-safety-manager/public/gas-public-dashboard.html
       - name: End-to-end (CSP, all screens, actions, attachments, bridge)
@@ -171,6 +173,11 @@ jobs:
           BASE: http://127.0.0.1:8899
           USER_NAME: admin
         run: PASS="$WP_TEST_PASS" node tests/e2e/forms-e2e.js
+      - name: Field messages + feedback on the dashboard (user and manager) + axe
+        env:
+          BASE: http://127.0.0.1:8899
+          USER_NAME: admin
+        run: PASS="$WP_TEST_PASS" node tests/e2e/messages-e2e.js
       - name: Layout — header contrast on gradient + chart height (desktop + mobile)
         env:
           BASE: http://127.0.0.1:8899

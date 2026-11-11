@@ -4,7 +4,7 @@ Tags: safety, equipment, inspections, hebrew, rtl
 Requires at least: 6.4
 Requires PHP: 8.2
 Tested up to: 7.1
-Stable tag: 2.17.1
+Stable tag: 2.18.0
 License: Proprietary — Technion Safety Unit
 
 Gas systems maintenance management for the Technion Safety Unit. Manages equipment, inspections, faults, and QR codes with native WordPress storage.
@@ -32,6 +32,14 @@ Pairs with the companion "Gas Safety" theme for the portal look (navy/gold, RTL,
 4. To import from Monday: open "Gas Migration", generate a key, run the console script in the portal, then revoke the key.
 
 == Changelog ==
+
+= 2.18.0 =
+* Dashboard: "הודעות מהשטח" — any signed-in user sends a short message to the managers; managers see all messages with a "new" badge, mark them read, delete, or clear. Other users see only their own messages and whether they were read.
+* Dashboard: "משוב ובקשות שיפור" — bug / improvement request / question with priority, title and area; managers move the status (open, in progress, done, rejected) and the author sees it. Filter: active / all.
+* Both are plain text (sanitized, escaped on output), limited to 2,000 characters and 20 per user per hour. Included in the retention policy (handled items, 24 months by default), in privacy requests (author / title / text are scanned and anonymized), in the database browser and in uninstall. No e-mail is sent for them.
+* New routes: /field-messages (+ /{id}/read, /{id}, /clear), /feedback (+ /{id}/status, /{id}).
+* DB v10 (new table gas_messages, created automatically on update).
+* Tests: tests/integration/messages-test.php (permissions, isolation between users, retention, privacy), tests/e2e/messages-e2e.js.
 
 = 2.17.1 =
 * Equipment: two new fields — purchase date ("תאריך רכישה") and manual link ("קישור לחוברת", https only). In the equipment form, the equipment page (link opens in a new tab), Excel import and export, restore points, and the pull from the old system (these two old columns were skipped until now; a non-https link is dropped without failing the row).
