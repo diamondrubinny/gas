@@ -1,0 +1,33 @@
+/* Gas Safety — chat launcher (click-to-load). Sits below the app's own
+   modals (z-index 9999) and the skip link, bottom inline-end (left in RTL). */
+.gsm-chat-btn {
+  position: fixed;
+  bottom: 16px;
+  inset-inline-end: 16px;
+  z-index: 900;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 24px;
+  background: #002147;            /* navy: 16:1 with white text */
+  color: #fff;
+  font: 600 15px/1 'Rubik', 'Segoe UI', Arial, sans-serif;
+  box-shadow: 0 4px 16px rgba(0, 33, 71, 0.3);
+  cursor: pointer;
+}
+.gsm-chat-btn:hover { background: #0b2545; }
+.gsm-chat-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px #fff, 0 0 0 6px #002147; /* visible on light and dark backgrounds */
+}
+.gsm-chat-btn[disabled] { opacity: 0.85; cursor: progress; }
+.gsm-chat-btn[hidden] { display: none; }
+@media (max-width: 480px) {
+  .gsm-chat-btn { bottom: 12px; inset-inline-end: 12px; padding: 0 14px; }
+}
+@media print {
+  .gsm-chat-btn { display: none; }
+}

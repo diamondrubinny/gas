@@ -1,3 +1,13 @@
+Gas Safety Manager v2.14.0 — Botwa chat widget.
+
+- Chat button on QR page / app / site pages (per-placement toggles), off by default.
+- Loader served locally (reviewed pinned copy); script-src stays 'self'.
+- Click-to-load: zero requests to the provider until clicked; no identify().
+- Strict snippet validation (https, public host name, wc_ key).
+- Tests: tests/e2e/chat-e2e.js (29 checks, simulated chat server) + one live check.
+- No DB change — stays v8.
+
+----
 Gas Safety Manager v2.13.9 — Data retention + complete uninstall.
 
 - Daily cleanup (WP-Cron): scans 24m, delivery log 24m, audit 84m, handled

@@ -143,6 +143,10 @@ class GSM_Security {
 		remove_action( 'wp_head', 'print_emoji_detection_script', 7 );
 		remove_action( 'wp_enqueue_scripts', 'wp_enqueue_emoji_styles' );
 		remove_action( 'wp_print_styles', 'print_emoji_styles' );
+		// No Gravatar on these pages: the admin bar of a logged-in WordPress user
+		// would otherwise load their avatar from gravatar.com (third party: email
+		// hash + IP). The admin bar itself stays.
+		add_filter( 'pre_option_show_avatars', '__return_zero' );
 	}
 
 	/**

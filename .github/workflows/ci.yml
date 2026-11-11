@@ -121,6 +121,11 @@ jobs:
           USER_NAME: admin
           WP_PATH: ${{ runner.temp }}/wp/site
         run: PASS="$WP_TEST_PASS" node tests/e2e/csp-e2e.js
+      - name: Chat widget — click-to-load, CSP scoping, placements (simulated chat server)
+        env:
+          BASE: http://127.0.0.1:8899
+          USER_NAME: admin
+        run: PASS="$WP_TEST_PASS" node tests/e2e/chat-e2e.js
       - name: Accessibility — keyboard & focus management
         env:
           BASE: http://127.0.0.1:8899

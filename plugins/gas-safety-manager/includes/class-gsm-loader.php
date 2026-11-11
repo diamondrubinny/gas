@@ -120,6 +120,9 @@ class GSM_Loader {
 
 		$retention = new GSM_REST_Retention();
 		$retention->register_routes();
+
+		$chat = new GSM_REST_Chat();
+		$chat->register_routes();
 	}
 
 	/**

@@ -13,7 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'GST_VERSION', '1.2.3' );
+define( 'GST_VERSION', '1.2.4' );
 define( 'GST_DIR', get_template_directory() );
 define( 'GST_URI', get_template_directory_uri() );
 
@@ -85,6 +85,20 @@ function gst_rtl_lang_attr( $output ) {
 	return trim( $output );
 }
 add_filter( 'language_attributes', 'gst_rtl_lang_attr' );
+
+/**
+ * Privacy: no Gravatar on the public site. For a logged-in user the admin bar
+ * would load their avatar from gravatar.com (a third party that receives a
+ * hash of their email and their IP). The theme shows no comments, so nothing
+ * else uses avatars. wp-admin is not affected.
+ *
+ * @param mixed $value Pre-option value.
+ * @return mixed
+ */
+function gst_no_front_avatars( $value ) {
+	return is_admin() ? $value : 0;
+}
+add_filter( 'pre_option_show_avatars', 'gst_no_front_avatars' );
 
 /**
  * Add a body class on pages that host the plugin app (via a page template).

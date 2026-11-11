@@ -826,6 +826,55 @@
   ];
   var GSM_ROLES = [['ahmat', 'אחמ"ת'], ['lab_manager', 'מנהל מעבדה'], ['pi', 'חוקר ראשי']];
 
+  // ---- Chat widget (Botwa) settings -----------------------------------------
+  function renderChatSettings(host) {
+    if (!host) return;
+    function draw(d) {
+      var where = Object.keys(d.placements || {}).map(function (k) {
+        return '<label style="display:flex;gap:8px;align-items:center;margin:4px 0"><input type="checkbox" class="chat-where" data-k="' + esc(k) + '"' +
+          (d.where && d.where[k] ? ' checked' : '') + '><span>' + esc(d.placements[k]) + '</span></label>';
+      }).join('');
+      host.innerHTML =
+        '<div class="gs-card" style="margin-top:16px"><div class="gs-card__title">💬 צ׳אט (Botwa)</div>' +
+        '<p style="font-size:13px;margin-top:0" role="status">' + (d.configured
+          ? ('מוגדר: <bdi dir="ltr">' + esc(d.origin) + '</bdi> · מפתח <bdi dir="ltr">' + esc(d.key_masked) + '</bdi> · ' + (d.enabled ? '<b>פעיל</b>' : 'כבוי'))
+          : 'לא מוגדר. הדביקו את קוד ההטמעה שקיבלתם מספק הצ׳אט.') + '</p>' +
+        '<div class="gs-field"><label class="gs-label" for="chat-snippet">קוד ההטמעה (‎&lt;script src=&quot;…/widget.js&quot; data-key=&quot;wc_…&quot;&gt;‎)</label>' +
+        '<textarea class="gs-textarea" id="chat-snippet" rows="3" style="direction:ltr;font-family:monospace;font-size:12px" placeholder="&lt;script src=&quot;https://…/widget.js&quot; data-key=&quot;wc_…&quot; async&gt;&lt;/script&gt;"></textarea></div>' +
+        '<div class="gs-field"><label class="gs-label" for="chat-label">טקסט הכפתור</label>' +
+        '<input class="gs-input" id="chat-label" maxlength="40" value="' + esc(d.label || '') + '" style="max-width:240px"></div>' +
+        '<fieldset style="border:0;padding:0;margin:0 0 10px"><legend class="gs-label">איפה להציג</legend>' + where + '</fieldset>' +
+        '<label style="display:flex;gap:8px;align-items:center;margin:8px 0"><input type="checkbox" id="chat-enabled"' + (d.enabled ? ' checked' : '') + '><span><b>הצ׳אט פעיל</b></span></label>' +
+        '<p style="color:var(--gs-muted);font-size:12px">הכפתור נטען מהמערכת עצמה. רק אחרי <b>לחיצה</b> הוא פונה לשרת הצ׳אט, כך שלמבקרים שלא פתחו את הצ׳אט לא נשלח דבר לספק. ' +
+        'ההודעות שהמשתמש כותב בצ׳אט עוברות לספק החיצוני, ולכן נדרשים הסכם עיבוד מידע (DPA) מולו ועדכון מדיניות הפרטיות. המערכת לא שולחת לספק שם, אימייל או טלפון של המשתמש.</p>' +
+        '<button type="button" class="gs-btn" id="chat-save">שמור</button> ' +
+        (d.configured ? '<button type="button" class="gs-btn gs-btn--ghost" id="chat-clear">הסר את הגדרות הצ׳אט</button> ' : '') +
+        '<span id="chat-status" role="status" aria-live="polite" style="margin-inline-start:8px;color:var(--gs-muted)"></span></div>';
+      function send(body, btn) {
+        var st = document.getElementById('chat-status'); btn.disabled = true; st.textContent = 'שומר…';
+        api('/chat', { method: 'POST', body: body })
+          .then(function (nd) { draw(nd); document.getElementById('chat-status').textContent = '✓ נשמר. הצ׳אט יופיע בטעינה הבאה של הדפים.'; })
+          .catch(function (e) { st.textContent = '✗ ' + (e.message || e); btn.disabled = false; });
+      }
+      document.getElementById('chat-save').addEventListener('click', function () {
+        var w = {};
+        document.querySelectorAll('.chat-where').forEach(function (c) { w[c.getAttribute('data-k')] = c.checked; });
+        var body = { label: document.getElementById('chat-label').value, where: w, enabled: document.getElementById('chat-enabled').checked };
+        var sn = document.getElementById('chat-snippet').value.trim();
+        if (sn) body.snippet = sn;
+        send(body, this);
+      });
+      var clr = document.getElementById('chat-clear');
+      if (clr) clr.addEventListener('click', function () {
+        if (!confirm('להסיר את הגדרות הצ׳אט? הצ׳אט ייעלם מכל הדפים.')) return;
+        send({ clear: true }, this);
+      });
+    }
+    api('/chat').then(draw).catch(function (e) {
+      host.innerHTML = '<div class="gs-error" role="alert">' + esc(e.message || e) + '</div>';
+    });
+  }
+
   // ---- Data retention (privacy: storage limitation) ----------------------
   function renderRetention(host) {
     if (!host) return;
@@ -1007,11 +1056,13 @@
         brandCard +
         '<div id="gsm-gov"></div>' +
         '<div id="gsm-retention"></div>' +
+        '<div id="gsm-chat-settings"></div>' +
         '<div class="gs-card" style="margin-top:16px"><div class="gs-card__title">📥 הגירה וגיבוי</div>' +
         '<p style="color:var(--gs-muted)">ייבוא/גיבוי נתונים ומפתח הגירה נמצאים בעמוד "Gas Migration" בפאנל הניהול של WordPress.</p></div>';
 
       renderGovernance(document.getElementById('gsm-gov'));
       renderRetention(document.getElementById('gsm-retention'));
+      renderChatSettings(document.getElementById('gsm-chat-settings'));
 
       var save = document.getElementById('gsm-set-save');
       save.addEventListener('click', function () {

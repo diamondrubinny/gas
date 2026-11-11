@@ -4,8 +4,8 @@
 
 | רכיב | נתיב | גרסה | דרישות |
 |---|---|---|---|
-| תוסף **Gas Safety Manager** | [`plugins/gas-safety-manager/`](plugins/gas-safety-manager/) | 2.13.9 (DB v8) | WordPress 6.4+, PHP 8.1+ |
-| ערכת עיצוב **Gas Safety** | [`themes/gas-safety-theme/`](themes/gas-safety-theme/) | 1.2.3 | WordPress 6.4+, PHP 8.1+ |
+| תוסף **Gas Safety Manager** | [`plugins/gas-safety-manager/`](plugins/gas-safety-manager/) | 2.14.0 (DB v8) | WordPress 6.4+, PHP 8.1+ |
+| ערכת עיצוב **Gas Safety** | [`themes/gas-safety-theme/`](themes/gas-safety-theme/) | 1.2.4 | WordPress 6.4+, PHP 8.1+ |
 
 היסטוריית שינויים: [`plugins/gas-safety-manager/readme.txt`](plugins/gas-safety-manager/readme.txt) (Changelog) ו-[`VERSION.txt`](plugins/gas-safety-manager/VERSION.txt). מצב הפרויקט וממצאים פתוחים: [`STATUS.md`](STATUS.md).
 
@@ -60,6 +60,12 @@ define( 'GSM_CSP_MODE', 'report-only' ); // enforce (ברירת מחדל) | repo
 - **תמונות ה-emoji של WordPress** (מ-`s.w.org`) כבויות בעמודי המערכת.
 
 בדיקת ה-E2E נכשלת על כל בקשה למארח חיצוני.
+
+### צ׳אט (Botwa)
+1. ב"הגדרות אתר", בכרטיס **"צ׳אט (Botwa)"**, מדביקים את קוד ההטמעה של הספק (`<script src="https://…/widget.js" data-key="wc_…">`).
+2. בוחרים איפה להציג (עמוד ה-QR, המערכת, שאר עמודי האתר), מסמנים "הצ׳אט פעיל" ושומרים.
+
+הקוד של הספק נשמר בתוך התוסף (עותק שנבדק), והצ׳אט נטען רק בלחיצה. פירוט ב-[`docs/plan-2.14.md`](docs/plan-2.14.md).
 
 ### דיווח על בעיית אבטחה
 לא לפתוח issue ציבורי. יש לפנות ישירות למנהל המערכת ביחידת הבטיחות.

@@ -3,7 +3,7 @@ Contributors: diamondrubinny
 Tags: safety, equipment, inspections, hebrew, rtl
 Requires at least: 6.4
 Requires PHP: 8.1
-Stable tag: 2.13.9
+Stable tag: 2.14.0
 License: Proprietary — Technion Safety Unit
 
 Gas systems maintenance management for the Technion Safety Unit. Manages equipment, inspections, faults, and QR codes with native WordPress storage.
@@ -31,6 +31,14 @@ Pairs with the companion "Gas Safety" theme for the portal look (navy/gold, RTL,
 4. To import from Monday: open "Gas Migration", generate a key, run the console script in the portal, then revoke the key.
 
 == Changelog ==
+
+= 2.14.0 =
+* Chat widget (Botwa): optional chat button on the public QR page, inside the app and on the other site pages (each placement can be switched on or off). Set up in "הגדרות אתר" by pasting the provider's embed snippet; only an https host name and a key in the provider's format (wc_…) are accepted. Off by default.
+* Security: the provider's loader script is served from the plugin as a reviewed, pinned copy (public/assets/vendor/botwa-widget.js) — no third-party script runs on the plugin's pages and the CSP keeps script-src 'self'. Only the chat window (a cross-origin iframe) and its JSON config come from the chat server; connect-src / frame-src allow that one host, only on pages that show the chat.
+* Privacy: click-to-load — nothing is requested from the chat provider until a visitor clicks the chat button. The plugin never sends the user's name, email or phone to the provider (BotwaChat.identify() is not used). Messages typed in the chat do go to the provider: a data-processing agreement and a privacy-policy update are needed.
+* Privacy: no Gravatar on the app and QR pages — a logged-in WordPress user's admin bar loaded their avatar from gravatar.com (third party: email hash + IP). Caught by the new "no third-party requests" check for logged-in users. (The companion theme 1.2.4 does the same on the other site pages.)
+* New routes: GET/POST /gas/v1/chat (manager).
+* No DB change — stays v8.
 
 = 2.13.9 =
 * Data retention ("מדיניות שמירת מידע" in הגדרות אתר, manager only): old records are deleted automatically once a day — QR scan log 24 months, delivery log 24 months, audit log 84 months, handled deletion requests 24 months (conservative defaults, adjustable; 0 = keep forever). Open deletion requests are never removed. Each cleanup is written to the audit log; the screen shows how many rows the next run would delete, plus a "run now" button with confirmation.

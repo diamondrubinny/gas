@@ -3,7 +3,7 @@
  * Plugin Name:       Gas Safety Manager
  * Plugin URI:        https://safety-tech.dev
  * Description:       Gas systems maintenance management for the Technion Safety Unit. Manages equipment, inspections, faults, and QR codes. Full replacement for the Monday.com backend with native WordPress storage, including a batch QR sticker generator.
- * Version:           2.13.9
+ * Version:           2.14.0
  * Requires at least: 6.4
  * Requires PHP:      8.1
  * Author:            Diamond Rubinny
@@ -21,7 +21,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
-define( 'GSM_VERSION', '2.13.9' );
+define( 'GSM_VERSION', '2.14.0' );
 define( 'GSM_DB_VERSION', '8' );
 define( 'GSM_PLUGIN_FILE', __FILE__ );
 define( 'GSM_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
@@ -67,6 +67,8 @@ require_once GSM_PLUGIN_DIR . 'includes/rest/class-gsm-rest-attachments.php';
 require_once GSM_PLUGIN_DIR . 'includes/rest/class-gsm-rest-comm.php';
 require_once GSM_PLUGIN_DIR . 'includes/class-gsm-retention.php';
 require_once GSM_PLUGIN_DIR . 'includes/rest/class-gsm-rest-retention.php';
+require_once GSM_PLUGIN_DIR . 'includes/class-gsm-chat.php';
+require_once GSM_PLUGIN_DIR . 'includes/rest/class-gsm-rest-chat.php';
 
 // Auth helpers.
 require_once GSM_PLUGIN_DIR . 'includes/auth/class-gsm-auth.php';
@@ -151,6 +153,9 @@ add_action( 'init', array( 'GSM_Comm', 'sync_cron' ) );
 // Data retention: daily cleanup of old log records (starts after a grace period).
 add_action( GSM_Retention::CRON, array( 'GSM_Retention', 'run_scheduled' ) );
 add_action( 'init', array( 'GSM_Retention', 'sync_cron' ) );
+// Chat widget (Botwa): click-to-load launcher + CSP allowance, only where enabled.
+add_action( 'wp_enqueue_scripts', array( 'GSM_Chat', 'enqueue' ), 20 );
+add_filter( 'gsm_csp_directives', array( 'GSM_Chat', 'csp' ) );
 register_deactivation_hook( __FILE__, 'gsm_deactivate_cron' );
 /**
  * Clear scheduled reminders on deactivation.
