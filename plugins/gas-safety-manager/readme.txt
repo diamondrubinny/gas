@@ -4,7 +4,7 @@ Tags: safety, equipment, inspections, hebrew, rtl
 Requires at least: 6.4
 Requires PHP: 8.2
 Tested up to: 7.1
-Stable tag: 2.19.0
+Stable tag: 2.20.0
 License: Proprietary — Technion Safety Unit
 
 Gas systems maintenance management for the Technion Safety Unit. Manages equipment, inspections, faults, and QR codes with native WordPress storage.
@@ -32,6 +32,10 @@ Pairs with the companion "Gas Safety" theme for the portal look (navy/gold, RTL,
 4. To import from Monday: open "Gas Migration", generate a key, run the console script in the portal, then revoke the key.
 
 == Changelog ==
+
+= 2.20.0 =
+* Users: import from a file ("ייבוא מקובץ" on the users screen) — the old system's users export (JSON) or a CSV / Excel sheet with name, e-mail, role, status. Preview first (nothing is created), then create. Old PIN codes / PIN hashes are ignored and never stored: each new user gets a random password and, optionally, an e-mail with a link to choose one. Existing accounts are never changed. Up to 500 rows, 2 MB. POST /users/import (manager).
+* Tests: tests/integration/users-import-test.php, tests/e2e/users-import-e2e.js.
 
 = 2.19.0 =
 * Public dashboard: additional named links (one per recipient, up to 20). Each has its own token, can be revoked on its own, and shows how many times it was loaded and when last. Only a counter and a time are kept — no visitor data. A named link opens the aggregate dashboard only, never the row-level export or the calendar feed.

@@ -1327,10 +1327,63 @@
       }).join('');
 
       main.innerHTML =
-        '<div class="gs-toolbar"><h2 class="gs-h2">ניהול משתמשים</h2><div class="gs-toolbar__actions"><button class="gs-btn" id="gsm-user-add">+ משתמש חדש</button></div></div>' +
+        '<div class="gs-toolbar"><h2 class="gs-h2">ניהול משתמשים</h2><div class="gs-toolbar__actions"><button class="gs-btn gs-btn--ghost" id="gsm-user-import" aria-expanded="false" aria-controls="gsm-user-import-panel">ייבוא מקובץ</button> <button class="gs-btn" id="gsm-user-add">+ משתמש חדש</button></div></div>' +
+        '<div id="gsm-user-import-panel" hidden></div>' +
         '<table class="gs-table"><thead><tr><th>שם</th><th>אימייל</th><th>תפקיד</th><th>סטטוס</th><th>כניסה אחרונה</th><th></th></tr></thead><tbody>' +
         (rows || '<tr><td colspan="6"><div class="gs-empty">אין משתמשים</div></td></tr>') + '</tbody></table>' +
         '<p style="color:var(--gs-muted);font-size:13px;margin-top:10px">אחמ"ת → ביקורת רבעונית · מנהל מעבדה / חוקר ראשי → ביקורת חודשית · מנהל → הכול.</p>';
+
+      // Import users from a file (old-system export or a spreadsheet).
+      document.getElementById('gsm-user-import').addEventListener('click', function () {
+        var tg = this, panel = document.getElementById('gsm-user-import-panel');
+        if (!panel.hidden) { panel.hidden = true; tg.setAttribute('aria-expanded', 'false'); return; }
+        var STATE = { 'new': ['ייווצר', 'ok'], existing: ['קיים', 'warn'], invalid: ['לא תקין', 'danger'], duplicate: ['כפול', 'warn'] };
+        var ROLE = { manager: 'מנהל', lab_manager: 'מנהל מעבדה', pi: 'חוקר ראשי', ahmat: 'אחמ"ת' };
+        panel.innerHTML = '<div class="gs-card" style="margin-bottom:16px"><h3 class="gs-card__title" id="ui-title" tabindex="-1">ייבוא משתמשים מקובץ</h3>' +
+          '<p style="color:var(--gs-muted);font-size:13px;margin-top:0">קובץ המשתמשים מהאתר הישן (לשונית "מיגרציה וגיבוי", ייצוא משתמשים, JSON), או גיליון CSV / Excel עם העמודות: שם, אימייל, תפקיד, סטטוס. ' +
+          'קודי ה-PIN מהמערכת הישנה לא מיובאים. לכל משתמש חדש נקבעת סיסמה אקראית, ואפשר לשלוח לו קישור לקביעת סיסמה. משתמשים שכבר קיימים לא משתנים.</p>' +
+          '<div class="gs-field"><label class="gs-label" for="ui-file">קובץ (JSON, CSV או XLSX, עד 2MB)</label><input class="gs-input" type="file" id="ui-file" accept=".json,.csv,.xlsx"></div>' +
+          '<button type="button" class="gs-btn gs-btn--sm" id="ui-check">בדוק את הקובץ</button> ' +
+          '<span id="ui-st" role="status" aria-live="polite" style="margin-inline-start:8px;color:var(--gs-muted)"></span>' +
+          '<div id="ui-result" style="margin-top:12px"></div></div>';
+        panel.hidden = false; tg.setAttribute('aria-expanded', 'true');
+        document.getElementById('ui-title').focus();
+        function send(apply, sendEmails) {
+          var f = document.getElementById('ui-file').files[0];
+          var fd = new FormData(); fd.append('file', f);
+          if (apply) { fd.append('apply', '1'); if (sendEmails) fd.append('send_emails', '1'); }
+          return fetch(GSM.restUrl('/users/import'), { method: 'POST', headers: { 'X-WP-Nonce': GSM.restNonce() }, body: fd, credentials: 'same-origin' })
+            .then(function (r) { return r.json().then(function (j) { if (!r.ok) throw new Error((j && j.message) || ('HTTP ' + r.status)); return j; }); });
+        }
+        document.getElementById('ui-check').addEventListener('click', function () {
+          var st = document.getElementById('ui-st'), btn = this, res = document.getElementById('ui-result');
+          if (!document.getElementById('ui-file').files[0]) { st.textContent = 'בחרו קובץ.'; document.getElementById('ui-file').focus(); return; }
+          btn.disabled = true; st.textContent = 'בודק…'; res.innerHTML = '';
+          GSM.refreshNonce().then(function () { return send(false); }).then(function (d) {
+            btn.disabled = false; st.textContent = '✓ הבדיקה הסתיימה. שום דבר לא נוצר.';
+            var c = d.counts || {};
+            var body = (d.rows || []).map(function (r) {
+              var s2 = STATE[r.state] || [r.state, 'warn'];
+              return '<tr><td>' + esc(r.name || '—') + '</td><td><bdi dir="ltr">' + esc(r.email || '—') + '</bdi></td><td>' + esc(ROLE[r.role] || r.role_text || '—') + '</td><td>' + (r.active ? 'פעיל' : 'מושבת') + '</td>' +
+                '<td><span class="gs-pill gs-pill--' + s2[1] + '">' + esc(s2[0]) + '</span>' + (r.why ? ' <span style="font-size:12.5px">' + esc(r.why) + '</span>' : '') + '</td></tr>';
+            }).join('');
+            res.innerHTML = '<p style="font-size:14px"><b>' + (c['new'] || 0) + '</b> משתמשים חדשים ייווצרו · ' + (c.existing || 0) + ' כבר קיימים · ' + (c.invalid || 0) + ' לא תקינים · ' + (c.duplicate || 0) + ' כפולים</p>' +
+              (body ? '<div style="overflow-x:auto"><table class="gs-table"><thead><tr><th>שם</th><th>אימייל</th><th>תפקיד</th><th>סטטוס</th><th>מה יקרה</th></tr></thead><tbody>' + body + '</tbody></table></div>' : '') +
+              ((c['new'] || 0) > 0 ? '<label style="display:flex;gap:8px;align-items:center;margin:12px 0"><input type="checkbox" id="ui-emails" checked><span>שלח לכל משתמש חדש ופעיל אימייל עם קישור לקביעת סיסמה</span></label>' +
+                '<button type="button" class="gs-btn" id="ui-apply">צור ' + (c['new'] || 0) + ' משתמשים</button>' : '');
+            var ap = document.getElementById('ui-apply');
+            if (ap) ap.addEventListener('click', function () {
+              if (!confirm('ליצור ' + (c['new'] || 0) + ' משתמשים חדשים?')) return;
+              ap.disabled = true; st.textContent = 'יוצר משתמשים…';
+              send(true, document.getElementById('ui-emails').checked).then(function (o) {
+                var r2 = o.result || {};
+                alert('נוצרו ' + (r2.created || 0) + ' משתמשים' + (r2.emailed ? ', ונשלחו ' + r2.emailed + ' קישורים לקביעת סיסמה' : '') + ((r2.failed || []).length ? '. נכשלו: ' + r2.failed.length : '') + '.');
+                GSM.render();
+              }).catch(function (e) { st.textContent = '✗ ' + (e.message || e); ap.disabled = false; });
+            });
+          }).catch(function (e) { btn.disabled = false; st.textContent = ''; res.innerHTML = '<div class="gs-error" role="alert">' + esc(e.message || e) + '</div>'; });
+        });
+      });
 
       var add = document.getElementById('gsm-user-add');
       if (add) add.addEventListener('click', function () { GSM_Forms.openUser(null, function () { GSM.navigate('/users'); }); });

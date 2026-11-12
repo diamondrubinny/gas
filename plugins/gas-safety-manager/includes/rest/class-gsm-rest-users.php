@@ -91,6 +91,15 @@ class GSM_REST_Users {
 		);
 		register_rest_route(
 			self::NS,
+			'/users/import',
+			array(
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'import_users' ),
+				'permission_callback' => array( 'GSM_Auth', 'require_manage' ),
+			)
+		);
+		register_rest_route(
+			self::NS,
 			'/users/(?P<id>\d+)',
 			array(
 				'methods'             => WP_REST_Server::EDITABLE,
@@ -208,6 +217,55 @@ class GSM_REST_Users {
 	}
 
 	/**
+	 * POST /users/import — multipart: file (+ apply=1, send_emails=1).
+	 * Without apply it is a preview: nothing is created.
+	 *
+	 * @param WP_REST_Request $req Request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public function import_users( $req ) {
+		$files = $req->get_file_params();
+		$file  = isset( $files['file'] ) && is_array( $files['file'] ) ? $files['file'] : null;
+		if ( ! $file || ! isset( $file['error'] ) || UPLOAD_ERR_OK !== (int) $file['error'] || ! is_uploaded_file( $file['tmp_name'] ) ) {
+			return new WP_Error( 'gsm_upload', __( 'לא התקבל קובץ.', 'gas-safety-manager' ), array( 'status' => 400 ) );
+		}
+		if ( (int) $file['size'] <= 0 || (int) $file['size'] > GSM_Users_Import::MAX_BYTES ) {
+			return new WP_Error( 'gsm_upload', __( 'הקובץ גדול מדי (עד 2MB).', 'gas-safety-manager' ), array( 'status' => 400 ) );
+		}
+		$ext = strtolower( pathinfo( (string) $file['name'], PATHINFO_EXTENSION ) );
+		if ( ! in_array( $ext, array( 'json', 'csv', 'xlsx' ), true ) ) {
+			return new WP_Error( 'gsm_file_type', __( 'סוגי קבצים מותרים: JSON, CSV, XLSX.', 'gas-safety-manager' ), array( 'status' => 400 ) );
+		}
+		try {
+			$rows = GSM_Users_Import::read( $file['tmp_name'], $ext );
+		} catch ( \Throwable $e ) {
+			return new WP_Error( 'gsm_parse', __( 'לא ניתן היה לקרוא את הקובץ.', 'gas-safety-manager' ), array( 'status' => 400 ) );
+		}
+		if ( is_wp_error( $rows ) ) {
+			return $rows;
+		}
+		$plan = GSM_Users_Import::plan( $rows );
+		if ( is_wp_error( $plan ) ) {
+			return $plan;
+		}
+		$out = array(
+			'applied' => false,
+			'counts'  => $plan['counts'],
+			'rows'    => array_slice( $plan['rows'], 0, 200 ),
+		);
+		if ( '1' === (string) $req->get_param( 'apply' ) ) {
+			$send           = '1' === (string) $req->get_param( 'send_emails' );
+			$res            = GSM_Users_Import::apply( $plan, $send ? array( $this, 'send_reset_email' ) : null );
+			$out['applied'] = true;
+			$out['result']  = $res;
+			if ( class_exists( 'GSM_Audit' ) ) {
+				GSM_Audit::log( 'import', 'user', 0, 'ייבוא משתמשים', 'נוצרו ' . (int) $res['created'] . ' משתמשים מקובץ' . ( $send ? ' (נשלחו ' . (int) $res['emailed'] . ' קישורים לקביעת סיסמה)' : '' ) );
+			}
+		}
+		return rest_ensure_response( $out );
+	}
+
+	/**
 	 * PUT /users/{id} — update name / role / active.
 	 *
 	 * @param WP_REST_Request $req Request.
@@ -292,7 +350,7 @@ class GSM_REST_Users {
 	 * @param WP_User $user User.
 	 * @return true|WP_Error
 	 */
-	private function send_reset_email( $user ) {
+	public function send_reset_email( $user ) {
 		$key = get_password_reset_key( $user );
 		if ( is_wp_error( $key ) ) {
 			return new WP_Error( 'gsm_reset_key', __( 'יצירת קישור איפוס נכשלה.', 'gas-safety-manager' ), array( 'status' => 500 ) );

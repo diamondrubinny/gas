@@ -1,3 +1,6 @@
+Gas Safety Manager v2.20.0 — Import users from a file (old-system export or spreadsheet).
+
+----
 Gas Safety Manager v2.19.0 — Named public links, personal dashboard layout, SAP export, scan reset, accessibility menu, menu icons.
 
 ----
