@@ -179,6 +179,61 @@
     });
   };
 
+  // ---- Passkeys (WebAuthn) ---------------------------------------------------
+  function b64uToBuf(s) {
+    s = String(s).replace(/-/g, '+').replace(/_/g, '/');
+    while (s.length % 4) s += '=';
+    var bin = atob(s), u = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+    return u.buffer;
+  }
+  function bufToB64u(buf) {
+    var u = new Uint8Array(buf), bin = '';
+    for (var i = 0; i < u.length; i++) bin += String.fromCharCode(u[i]);
+    return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  }
+  GSM.passkeysSupported = function () {
+    return !!(window.PublicKeyCredential && navigator.credentials && window.isSecureContext);
+  };
+
+  // Sign in with a passkey: the browser shows the passkeys saved for this site.
+  GSM.passkeyLogin = function () {
+    return GSM.api('/auth/passkey/options', { method: 'POST' }).then(function (o) {
+      var pk = o.publicKey;
+      pk.challenge = b64uToBuf(pk.challenge);
+      pk.allowCredentials = [];
+      return navigator.credentials.get({ publicKey: pk }).then(function (cred) {
+        if (!cred) throw new Error('לא נבחר Passkey');
+        return GSM.api('/auth/passkey', { method: 'POST', body: {
+          token: o.token,
+          id: bufToB64u(cred.rawId),
+          clientDataJSON: bufToB64u(cred.response.clientDataJSON),
+          authenticatorData: bufToB64u(cred.response.authenticatorData),
+          signature: bufToB64u(cred.response.signature)
+        } });
+      });
+    }).then(function (me) { applyMe(me); return me; });
+  };
+
+  // Add a passkey to the signed-in account.
+  GSM.passkeyRegister = function (name) {
+    return GSM.api('/passkeys/register/options', { method: 'POST' }).then(function (o) {
+      var pk = o.publicKey;
+      pk.challenge = b64uToBuf(pk.challenge);
+      pk.user.id = b64uToBuf(pk.user.id);
+      pk.excludeCredentials = (pk.excludeCredentials || []).map(function (c) { return { type: c.type, id: b64uToBuf(c.id) }; });
+      return navigator.credentials.create({ publicKey: pk }).then(function (cred) {
+        if (!cred) throw new Error('הרישום בוטל');
+        return GSM.api('/passkeys/register', { method: 'POST', body: {
+          token: o.token,
+          name: name || '',
+          clientDataJSON: bufToB64u(cred.response.clientDataJSON),
+          attestationObject: bufToB64u(cred.response.attestationObject)
+        } });
+      });
+    });
+  };
+
   GSM.logout = function () {
     return GSM.api('/auth/logout', { method: 'POST' }).then(function (r) {
       session.loggedIn = false;

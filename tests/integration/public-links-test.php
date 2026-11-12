@@ -28,8 +28,8 @@ $admins = get_users( array( 'role' => 'administrator', 'number' => 1, 'fields' =
 $admin  = (int) $admins[0];
 $before = get_option( GSM_REST_BI::LINKS_OPTION, null );
 delete_option( GSM_REST_BI::LINKS_OPTION );
-foreach ( array( 'gsm_rl_bi-public', 'gsm_rl_bi-data' ) as $k ) {
-	delete_transient( $k );
+foreach ( array( 'bi-public', 'bi-data', 'bi-ical' ) as $k ) {
+	delete_transient( 'gsm_rl_' . md5( $k . '|' . GSM_Rate_Limit::client_ip() ) );
 }
 $uid = wp_insert_user( array( 'user_login' => 'pl-' . wp_generate_password( 5, false ), 'user_email' => 'pl-' . wp_generate_password( 5, false ) . '@example.test', 'user_pass' => wp_generate_password(), 'role' => 'gsm_lab_manager' ) );
 

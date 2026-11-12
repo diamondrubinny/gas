@@ -8,7 +8,11 @@
  *   POST /gas/v1/2fa/backup-codes    { code } -> new { backup_codes }
  *   POST /gas/v1/2fa/disable         { password, code }
  *   POST /gas/v1/2fa/policy          (manager) { require_managers }
- *   POST /gas/v1/users/{id}/2fa-reset (manager) remove another user's 2FA
+ *   POST /gas/v1/users/{id}/2fa-reset (manager) remove another user's 2FA + passkeys
+ *   GET    /gas/v1/passkeys                    own passkeys (public info)
+ *   POST   /gas/v1/passkeys/register/options   start registration
+ *   POST   /gas/v1/passkeys/register           finish registration
+ *   DELETE /gas/v1/passkeys/{key}              remove one of your passkeys
  *
  * @package GasSafetyManager
  */
@@ -47,6 +51,42 @@ class GSM_REST_2FA {
 				)
 			);
 		}
+		register_rest_route(
+			self::NS,
+			'/passkeys',
+			array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => array( $this, 'passkeys' ),
+				'permission_callback' => $self,
+			)
+		);
+		register_rest_route(
+			self::NS,
+			'/passkeys/register/options',
+			array(
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'passkey_options' ),
+				'permission_callback' => $self,
+			)
+		);
+		register_rest_route(
+			self::NS,
+			'/passkeys/register',
+			array(
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'passkey_register' ),
+				'permission_callback' => $self,
+			)
+		);
+		register_rest_route(
+			self::NS,
+			'/passkeys/(?P<key>[a-f0-9]{40})',
+			array(
+				'methods'             => WP_REST_Server::DELETABLE,
+				'callback'            => array( $this, 'passkey_delete' ),
+				'permission_callback' => $self,
+			)
+		);
 		register_rest_route(
 			self::NS,
 			'/2fa/policy',
@@ -201,12 +241,92 @@ class GSM_REST_2FA {
 			return new WP_Error( 'gsm_2fa_self', __( 'את האימות הדו-שלבי שלכם מבטלים במסך "אבטחה".', 'gas-safety-manager' ), array( 'status' => 400 ) );
 		}
 		GSM_2FA::clear( $id );
+		GSM_Passkeys::clear( $id );
 		// The lost device may still hold a session.
 		if ( class_exists( 'WP_Session_Tokens' ) ) {
 			WP_Session_Tokens::get_instance( $id )->destroy_all();
 		}
 		if ( class_exists( 'GSM_Audit' ) ) {
-			GSM_Audit::log( 'security', 'user', $id, $user->display_name, 'מנהל איפס את האימות הדו-שלבי של המשתמש' );
+			GSM_Audit::log( 'security', 'user', $id, $user->display_name, 'מנהל איפס את האימות הדו-שלבי וה-Passkeys של המשתמש' );
+		}
+		return rest_ensure_response( array( 'ok' => true ) );
+	}
+
+	// ---- Passkeys (own account) ---------------------------------------------
+
+	/**
+	 * GET /passkeys
+	 *
+	 * @return WP_REST_Response
+	 */
+	public function passkeys() {
+		return rest_ensure_response(
+			array(
+				'available' => GSM_Passkeys::available(),
+				'items'     => GSM_Passkeys::list_for( get_current_user_id() ),
+				'max'       => GSM_Passkeys::MAX_PER_USER,
+			)
+		);
+	}
+
+	/**
+	 * POST /passkeys/register/options
+	 *
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public function passkey_options() {
+		if ( ! GSM_Passkeys::available() ) {
+			return new WP_Error( 'gsm_passkey_unavailable', __( 'Passkeys דורשים אתר ב-https.', 'gas-safety-manager' ), array( 'status' => 400 ) );
+		}
+		$user = wp_get_current_user();
+		$c    = GSM_Passkeys::new_challenge( 'create', $user->ID );
+		$name = wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES );
+		$excl = array();
+		foreach ( GSM_Passkeys::ids_for( $user->ID ) as $id ) {
+			$excl[] = array( 'type' => 'public-key', 'id' => $id );
+		}
+		return rest_ensure_response(
+			array(
+				'token'     => $c['token'],
+				'publicKey' => array(
+					'challenge'              => GSM_Passkeys::b64u( $c['challenge'] ),
+					'rp'                     => array( 'id' => GSM_Passkeys::rp_id(), 'name' => '' !== trim( $name ) ? $name : 'Gas Safety' ),
+					// The handle is an opaque id, not the e-mail.
+					'user'                   => array( 'id' => GSM_Passkeys::b64u( 'gsm-user-' . (int) $user->ID ), 'name' => $user->user_login, 'displayName' => $user->display_name ),
+					'pubKeyCredParams'       => array( array( 'type' => 'public-key', 'alg' => -7 ), array( 'type' => 'public-key', 'alg' => -257 ) ),
+					'authenticatorSelection' => array( 'residentKey' => 'required', 'requireResidentKey' => true, 'userVerification' => 'required' ),
+					'excludeCredentials'     => $excl,
+					'attestation'            => 'none',
+					'timeout'                => 120000,
+				),
+			)
+		);
+	}
+
+	/**
+	 * POST /passkeys/register
+	 *
+	 * @param WP_REST_Request $req Request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public function passkey_register( $req ) {
+		$out = GSM_Passkeys::register( wp_get_current_user(), (array) $req->get_json_params() );
+		return is_wp_error( $out ) ? $out : rest_ensure_response( $out );
+	}
+
+	/**
+	 * DELETE /passkeys/{key}
+	 *
+	 * @param WP_REST_Request $req Request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public function passkey_delete( $req ) {
+		$user = wp_get_current_user();
+		if ( ! GSM_Passkeys::remove( $user->ID, (string) $req['key'] ) ) {
+			return new WP_Error( 'gsm_not_found', __( 'ה-Passkey לא נמצא.', 'gas-safety-manager' ), array( 'status' => 404 ) );
+		}
+		if ( class_exists( 'GSM_Audit' ) ) {
+			GSM_Audit::log( 'security', 'user', (int) $user->ID, $user->display_name, 'הוסר Passkey' );
 		}
 		return rest_ensure_response( array( 'ok' => true ) );
 	}

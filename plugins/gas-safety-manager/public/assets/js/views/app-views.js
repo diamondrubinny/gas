@@ -1321,7 +1321,7 @@
         var actions = u.is_admin ? '—' :
           '<button class="gs-btn gs-btn--sm gs-btn--ghost" data-uedit="' + u.id + '">ערוך</button> ' +
           '<button class="gs-btn gs-btn--sm gs-btn--ghost" data-ureset="' + u.id + '">איפוס סיסמה</button>' +
-          (u.twofa ? ' <button class="gs-btn gs-btn--sm gs-btn--ghost" data-u2fa="' + u.id + '" data-name="' + esc(u.name) + '">איפוס 2FA</button>' : '');
+          (u.twofa ? ' <button class="gs-btn gs-btn--sm gs-btn--ghost" data-u2fa="' + u.id + '" data-name="' + esc(u.name) + '">איפוס 2FA ו-Passkeys</button>' : '');
         if (u.twofa) badge += ' <span class="gs-pill gs-pill--ok">2FA</span>';
         return '<tr><td>' + esc(u.name) + badge + '</td><td>' + esc(u.email) + '</td><td>' + esc(u.role_label) + '</td><td>' + active + '</td><td>' + esc(u.last_login || '—') + '</td><td>' + actions + '</td></tr>';
       }).join('');
@@ -2399,6 +2399,53 @@
 
   // ---- SECURITY (guidance) ------------------------------------------------
 
+  function renderPasskeys(host, focusId, msg) {
+    if (!host) return;
+    api('/passkeys').then(function (d) {
+      var items = d.items || [];
+      var supported = GSM.passkeysSupported();
+      var rows = items.map(function (p) {
+        return '<tr><td><b>' + esc(p.name) + '</b></td><td><bdi dir="ltr">' + esc((p.created || '').slice(0, 10)) + '</bdi></td><td><bdi dir="ltr">' + esc(p.last_used ? p.last_used.slice(0, 16) : '—') + '</bdi></td>' +
+          '<td><button type="button" class="gs-btn gs-btn--sm gs-btn--danger" data-pk-del="' + esc(p.key) + '" data-name="' + esc(p.name) + '">הסר<span class="gs-visually-hidden">: ' + esc(p.name) + '</span></button></td></tr>';
+      }).join('');
+      var body;
+      if (!d.available) {
+        body = '<p style="color:var(--gs-muted)">Passkeys זמינים רק כשהאתר פועל ב-https עם שם מתחם.</p>';
+      } else if (!supported) {
+        body = '<p style="color:var(--gs-muted)">הדפדפן הזה אינו תומך ב-Passkeys.</p>';
+      } else {
+        body = (items.length < (d.max || 10)
+          ? '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end"><div class="gs-field" style="flex:1;min-width:200px;margin:0"><label class="gs-label" for="pk-name">שם למכשיר (למשל: הטלפון שלי)</label><input class="gs-input" id="pk-name" maxlength="60"></div>' +
+            '<button type="button" class="gs-btn" id="pk-add">הוסף Passkey</button></div>'
+          : '<p style="font-size:13px">הגעתם למספר ה-Passkeys המרבי.</p>');
+      }
+      host.innerHTML = '<div class="gs-card" style="max-width:720px;margin-top:16px"><h3 class="gs-card__title" id="pk-title" tabindex="-1">Passkeys — כניסה בטביעת אצבע, זיהוי פנים או קוד המכשיר</h3>' +
+        '<p style="font-size:13.5px;margin-top:0">כניסה בלי סיסמה: המכשיר מאמת אתכם (טביעת אצבע, פנים או קוד), ולכן אין צורך גם בקוד האימות. במערכת נשמר רק מפתח ציבורי.</p>' +
+        (rows ? '<div style="overflow-x:auto"><table class="gs-table"><thead><tr><th>מכשיר</th><th>נוסף</th><th>שימוש אחרון</th><th>פעולות</th></tr></thead><tbody>' + rows + '</tbody></table></div>' : '<p style="color:var(--gs-muted);font-size:13px">עדיין לא הוגדר Passkey.</p>') +
+        body + '<div id="pk-st" role="status" aria-live="polite" style="margin-top:8px;color:var(--gs-muted)">' + esc(msg || '') + '</div></div>';
+      if (focusId) { var f = document.getElementById(focusId); if (f) f.focus(); }
+      var st = document.getElementById('pk-st');
+      var add = document.getElementById('pk-add');
+      if (add) add.addEventListener('click', function () {
+        add.disabled = true; st.textContent = 'ממתין לאישור במכשיר…';
+        GSM.passkeyRegister(document.getElementById('pk-name').value.trim()).then(function () {
+          renderPasskeys(host, 'pk-title', '✓ ה-Passkey נוסף.');
+        }).catch(function (e) {
+          add.disabled = false;
+          st.textContent = (e && (e.name === 'NotAllowedError' || e.name === 'AbortError')) ? 'הרישום בוטל.' : (e && e.name === 'InvalidStateError' ? 'המכשיר הזה כבר רשום.' : '✗ ' + ((e && e.message) || e));
+        });
+      });
+      host.querySelectorAll('[data-pk-del]').forEach(function (b) {
+        b.addEventListener('click', function () {
+          if (!confirm('להסיר את ה-Passkey "' + (b.getAttribute('data-name') || '') + '"? לא יהיה אפשר להיכנס איתו יותר.')) return;
+          api('/passkeys/' + b.getAttribute('data-pk-del'), { method: 'DELETE' })
+            .then(function () { renderPasskeys(host, 'pk-title', '✓ ה-Passkey הוסר.'); })
+            .catch(function (e) { st.textContent = '✗ ' + (e.message || e); });
+        });
+      });
+    }).catch(function (e) { host.innerHTML = '<div class="gs-error" role="alert" style="max-width:720px;margin-top:16px">' + esc(e.message || e) + '</div>'; });
+  }
+
   GSM.registerView('security', function (mount) {
     mount.innerHTML = chrome('security', loading());
     var main = mount.querySelector('.gs-main');
@@ -2467,10 +2514,11 @@
         '<ul style="margin:0;padding-inline-start:18px;font-size:13.5px;line-height:1.8">' +
         '<li>הכניסה מוגבלת ל-5 ניסיונות שגויים ב-10 דקות, והאימות הדו-שלבי ל-5 קודים שגויים ב-15 דקות.</li>' +
         '<li>אבד הטלפון? משתמשים בקוד גיבוי, או מבקשים ממנהל לאפס את האימות במסך "ניהול אנשי אחמ"ת".</li>' +
-        '<li>Passkeys (כניסה בטביעת אצבע) ו-CAPTCHA אינם מובנים. אפשר להוסיף אותם בתוסף WordPress ייעודי.</li>' +
+        '<li>CAPTCHA אינו מובנה. אפשר להוסיף אותו בתוסף WordPress ייעודי.</li>' +
         '</ul></div>';
 
-      main.innerHTML = head + card + (extraHtml || '') + policy + more;
+      main.innerHTML = head + card + (extraHtml || '') + '<div id="pk-host"></div>' + policy + more;
+      renderPasskeys(document.getElementById('pk-host'));
       if (after) after();
       var st = document.getElementById('tf-st');
       function fail(e, btn) { st.textContent = '✗ ' + (e.message || e); if (btn) btn.disabled = false; }

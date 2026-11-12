@@ -46,6 +46,26 @@ class GSM_REST_Auth {
 			)
 		);
 
+		// Passkey sign-in (public): options, then the signed assertion.
+		register_rest_route(
+			self::NS,
+			'/auth/passkey/options',
+			array(
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'passkey_options' ),
+				'permission_callback' => '__return_true',
+			)
+		);
+		register_rest_route(
+			self::NS,
+			'/auth/passkey',
+			array(
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'passkey_login' ),
+				'permission_callback' => '__return_true',
+			)
+		);
+
 		// Logout.
 		register_rest_route(
 			self::NS,
@@ -245,6 +265,79 @@ class GSM_REST_Auth {
 		delete_transient( $ip_key );
 		update_user_meta( $user->ID, 'gsm_last_login', current_time( 'mysql' ) );
 
+		return rest_ensure_response( $this->me_payload( $user ) );
+	}
+
+	/**
+	 * POST /auth/passkey/options — a fresh challenge. Usernameless: the
+	 * browser offers the passkeys stored for this site, so nothing here
+	 * depends on (or reveals) which accounts exist.
+	 *
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public function passkey_options() {
+		if ( GSM_Rate_Limit::too_many( 'passkey-options', 30, 300 ) ) {
+			return GSM_Rate_Limit::error();
+		}
+		if ( ! GSM_Passkeys::available() ) {
+			return new WP_Error( 'gsm_passkey_unavailable', __( 'Passkeys דורשים אתר ב-https.', 'gas-safety-manager' ), array( 'status' => 400 ) );
+		}
+		$c = GSM_Passkeys::new_challenge( 'get', 0 );
+		return rest_ensure_response(
+			array(
+				'token'     => $c['token'],
+				'publicKey' => array(
+					'challenge'        => GSM_Passkeys::b64u( $c['challenge'] ),
+					'rpId'             => GSM_Passkeys::rp_id(),
+					'userVerification' => 'required',
+					'allowCredentials' => array(),
+					'timeout'          => 120000,
+				),
+			)
+		);
+	}
+
+	/**
+	 * POST /auth/passkey — verify the assertion and sign in.
+	 *
+	 * @param WP_REST_Request $req Request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public function passkey_login( $req ) {
+		// Same failure counter as the password login.
+		$ip_key = 'gsm_login_' . md5( GSM_Auth::client_ip() );
+		$fails  = (int) get_transient( $ip_key );
+		if ( $fails >= 5 ) {
+			return new WP_Error( 'gsm_login_locked', __( 'יותר מדי ניסיונות. נסה שוב בעוד מספר דקות.', 'gas-safety-manager' ), array( 'status' => 429 ) );
+		}
+		$user = GSM_Passkeys::verify( (array) $req->get_json_params() );
+		if ( is_wp_error( $user ) ) {
+			set_transient( $ip_key, $fails + 1, 10 * MINUTE_IN_SECONDS );
+			return $user;
+		}
+		// Same gates as the password login: active + an app role.
+		if ( ! GSM_Auth::is_active( $user ) ) {
+			return new WP_Error( 'gsm_login_blocked', __( 'החשבון שלך הושבת. פנה למנהל.', 'gas-safety-manager' ), array( 'status' => 403 ) );
+		}
+		if ( ! ( user_can( $user, 'gsm_report' ) || user_can( $user, 'gsm_edit_equipment' ) || user_can( $user, 'gsm_manage_all' ) ) ) {
+			set_transient( $ip_key, $fails + 1, 10 * MINUTE_IN_SECONDS );
+			return new WP_Error( 'gsm_login_norole', __( 'אין לך הרשאה לגשת למערכת. פנה למנהל.', 'gas-safety-manager' ), array( 'status' => 403 ) );
+		}
+		add_action(
+			'set_logged_in_cookie',
+			static function ( $logged_in_cookie ) {
+				$_COOKIE[ LOGGED_IN_COOKIE ] = $logged_in_cookie;
+			}
+		);
+		wp_set_auth_cookie( $user->ID, false, is_ssl() );
+		wp_set_current_user( $user->ID );
+		/** This action is documented in wp-includes/user.php */
+		do_action( 'wp_login', $user->user_login, $user ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- core hook, fired like wp_signon() does.
+		delete_transient( $ip_key );
+		update_user_meta( $user->ID, 'gsm_last_login', current_time( 'mysql' ) );
+		if ( class_exists( 'GSM_Audit' ) ) {
+			GSM_Audit::log( 'security', 'user', (int) $user->ID, $user->display_name, 'כניסה עם Passkey' );
+		}
 		return rest_ensure_response( $this->me_payload( $user ) );
 	}
 

@@ -4,7 +4,7 @@ Tags: safety, equipment, inspections, hebrew, rtl
 Requires at least: 6.4
 Requires PHP: 8.2
 Tested up to: 7.1
-Stable tag: 2.20.0
+Stable tag: 2.21.0
 License: Proprietary — Technion Safety Unit
 
 Gas systems maintenance management for the Technion Safety Unit. Manages equipment, inspections, faults, and QR codes with native WordPress storage.
@@ -32,6 +32,13 @@ Pairs with the companion "Gas Safety" theme for the portal look (navy/gold, RTL,
 4. To import from Monday: open "Gas Migration", generate a key, run the console script in the portal, then revoke the key.
 
 == Changelog ==
+
+= 2.21.0 =
+* Passkeys (WebAuthn): sign in with a fingerprint, face or the device PIN — no password. Add passkeys on the "אבטחה" screen (up to 10 per user, each with a name); "כניסה עם Passkey" on the login screen. User verification is required, so a passkey sign-in is two factors on its own and does not ask for the TOTP code.
+* Server checks: single-use challenge (5 minutes), origin and RP ID taken from the site URL, user-present + user-verified flags, ES256 and RS256 signatures (OpenSSL), signature counter (clone detection), one generic failure message, shared failure limit with the password login, active-account and role checks. Only the public key is stored.
+* A manager's "reset 2FA" for a user now removes that user's passkeys too. Needs https and a domain name (or localhost).
+* Not built in: CAPTCHA.
+* Tests: tests/integration/passkeys-test.php (a software authenticator with real P-256 and RSA keys: 41 checks incl. replay, wrong origin / challenge / RP, no user verification, tampered signature, cloned counter), tests/e2e/passkeys-e2e.js (Chromium's virtual authenticator).
 
 = 2.20.0 =
 * Users: import from a file ("ייבוא מקובץ" on the users screen) — the old system's users export (JSON) or a CSV / Excel sheet with name, e-mail, role, status. Preview first (nothing is created), then create. Old PIN codes / PIN hashes are ignored and never stored: each new user gets a random password and, optionally, an e-mail with a link to choose one. Existing accounts are never changed. Up to 500 rows, 2 MB. POST /users/import (manager).

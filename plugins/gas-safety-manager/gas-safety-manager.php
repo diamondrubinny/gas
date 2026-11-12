@@ -3,7 +3,7 @@
  * Plugin Name:       Gas Safety Manager
  * Plugin URI:        https://safety-tech.dev
  * Description:       Gas systems maintenance management for the Technion Safety Unit. Manages equipment, inspections, faults, and QR codes. Full replacement for the Monday.com backend with native WordPress storage, including a batch QR sticker generator.
- * Version:           2.20.0
+ * Version:           2.21.0
  * Requires at least: 6.4
  * Requires PHP:      8.2
  * Author:            Diamond Rubinny
@@ -21,7 +21,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
-define( 'GSM_VERSION', '2.20.0' );
+define( 'GSM_VERSION', '2.21.0' );
 define( 'GSM_DB_VERSION', '10' );
 define( 'GSM_PLUGIN_FILE', __FILE__ );
 define( 'GSM_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
@@ -81,6 +81,7 @@ require_once GSM_PLUGIN_DIR . 'includes/rest/class-gsm-rest-legacy.php';
 // Auth helpers.
 require_once GSM_PLUGIN_DIR . 'includes/auth/class-gsm-auth.php';
 require_once GSM_PLUGIN_DIR . 'includes/auth/class-gsm-2fa.php';
+require_once GSM_PLUGIN_DIR . 'includes/auth/class-gsm-passkeys.php';
 require_once GSM_PLUGIN_DIR . 'includes/rest/class-gsm-rest-2fa.php';
 
 // REST controllers.

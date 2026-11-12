@@ -54,6 +54,7 @@
       '<div id="gsm-lg-code-help" style="color:var(--gs-muted);font-size:12.5px;margin:4px 0 12px">6 ספרות מאפליקציית האימות, או אחד מקודי הגיבוי.</div></div>' +
       '<div id="gsm-lg-err"></div>' +
       '<button class="gs-btn gs-btn--lg gs-btn--block" id="gsm-lg-submit">התחבר</button>' +
+      (GSM.passkeysSupported && GSM.passkeysSupported() ? '<button type="button" class="gs-btn gs-btn--lg gs-btn--block gs-btn--ghost" id="gsm-lg-passkey" style="margin-top:10px">כניסה עם Passkey</button>' : '') +
       '<button class="gs-btn gs-btn--ghost gs-btn--block" type="button" data-gsm-nav="/">חזרה לדף הבית</button>' +
       '</div></div>';
 
@@ -98,6 +99,19 @@
     }
 
     submit.addEventListener('click', doLogin);
+    var pkBtn = document.getElementById('gsm-lg-passkey');
+    if (pkBtn) pkBtn.addEventListener('click', function () {
+      errBox.innerHTML = '';
+      pkBtn.disabled = true;
+      GSM.passkeyLogin().then(function () {
+        GSM.navigate('/dashboard');
+      }).catch(function (e) {
+        pkBtn.disabled = false;
+        // The user closed the browser's prompt: not an error worth showing.
+        if (e && (e.name === 'NotAllowedError' || e.name === 'AbortError')) return;
+        errBox.innerHTML = '<div class="gs-error" role="alert">' + esc((e && e.message) || 'הכניסה עם Passkey נכשלה') + '</div>';
+      });
+    });
     ['gsm-lg-pass', 'gsm-lg-code'].forEach(function (id) {
       document.getElementById(id).addEventListener('keydown', function (e) {
         if (e.key === 'Enter') doLogin();
