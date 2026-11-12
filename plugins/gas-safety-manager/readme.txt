@@ -4,7 +4,7 @@ Tags: safety, equipment, inspections, hebrew, rtl
 Requires at least: 6.4
 Requires PHP: 8.2
 Tested up to: 7.1
-Stable tag: 2.23.0
+Stable tag: 2.24.0
 License: Proprietary — Technion Safety Unit
 
 Gas systems maintenance management for the Technion Safety Unit. Manages equipment, inspections, faults, and QR codes with native WordPress storage.
@@ -32,6 +32,12 @@ Pairs with the companion "Gas Safety" theme for the portal look (navy/gold, RTL,
 4. To import from Monday: open "Gas Migration", generate a key, run the console script in the portal, then revoke the key.
 
 == Changelog ==
+
+= 2.24.0 =
+* Inspection settings: upload a checklist from a file ("העלאת צ׳קליסט מקובץ") — Excel (XLSX), CSV or a plain text list. Accepts the system's own checklist export after editing (type, number, item), a sheet with an item column, or one item per line. Choose which checklist the items belong to when the file has no type column, and whether to replace the existing items or add to them.
+* The items are loaded into the editors for review; nothing is stored until "שמור". Duplicates and empty lines are dropped, unknown inspection types are skipped and reported, up to 200 items per checklist and 300 characters per item, 1 MB. POST /inspection-config/import (manager).
+* Accessibility: the checklist item fields and their delete buttons now have accessible names.
+* Tests: tests/integration/checklist-import-test.php, tests/e2e/checklist-import-e2e.js (incl. export → upload round trip).
 
 = 2.23.0 =
 * Single sign-on with Microsoft Entra ID (OpenID Connect). Off by default; configured in site settings: Directory (tenant) ID, Application (client) ID, client secret, allowed domains. The screen shows the Redirect URI to register in Entra and has a "test connection" button. When on, the login screen shows "כניסה עם החשבון הארגוני (Microsoft)".

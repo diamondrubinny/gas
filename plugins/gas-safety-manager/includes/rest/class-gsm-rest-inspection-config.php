@@ -43,6 +43,17 @@ class GSM_REST_Inspection_Config {
 				),
 			)
 		);
+		// Read checklist items out of an uploaded file. Nothing is saved here:
+		// the screen shows the items for review and saves them with the normal save.
+		register_rest_route(
+			self::NS,
+			'/inspection-config/import',
+			array(
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'import_file' ),
+				'permission_callback' => array( 'GSM_Auth', 'require_manage' ),
+			)
+		);
 	}
 
 	/**
@@ -204,5 +215,142 @@ class GSM_REST_Inspection_Config {
 	private static function clamp_int( $src, $key, $min, $max, $def ) {
 		$v = isset( $src[ $key ] ) ? (int) $src[ $key ] : $def;
 		return max( $min, min( $max, $v ) );
+	}
+
+	const IMPORT_MAX_BYTES = 1048576; // 1 MB.
+	const IMPORT_MAX_ITEMS = 200;     // Per checklist.
+	const IMPORT_MAX_CHARS = 300;     // Per item.
+
+	/**
+	 * Which checklist does a "type" cell mean? '' when not recognized.
+	 *
+	 * @param string $v Cell text.
+	 * @return string quarterly|monthly|''
+	 */
+	public static function list_key( $v ) {
+		$v = function_exists( 'mb_strtolower' ) ? mb_strtolower( trim( (string) $v ), 'UTF-8' ) : strtolower( trim( (string) $v ) );
+		if ( preg_match( '/רבעונ|quarter|אחמ/u', $v ) ) {
+			return 'quarterly';
+		}
+		if ( preg_match( '/חודש|month/u', $v ) ) {
+			return 'monthly';
+		}
+		return '';
+	}
+
+	/**
+	 * Turn spreadsheet rows into checklist items.
+	 *
+	 * Recognized layouts:
+	 *  - the system's own export: "סוג ביקורת", "מס'", "פריט בדיקה";
+	 *  - any sheet with an item column (and optionally a type column);
+	 *  - a single column of items, with or without a header.
+	 *
+	 * @param array  $headers Header cells.
+	 * @param array  $rows    Data rows.
+	 * @param string $default Checklist for rows without a recognized type.
+	 * @return array { quarterly[], monthly[], skipped, truncated }
+	 */
+	public static function rows_to_items( $headers, $rows, $default ) {
+		$default = 'monthly' === $default ? 'monthly' : 'quarterly';
+		$norm    = function ( $h ) {
+			$h = function_exists( 'mb_strtolower' ) ? mb_strtolower( trim( (string) $h ), 'UTF-8' ) : strtolower( trim( (string) $h ) );
+			return (string) preg_replace( '/[\s\'"׳״._\-]+/u', '', $h );
+		};
+		$type_col = -1;
+		$item_col = -1;
+		foreach ( array_values( (array) $headers ) as $i => $h ) {
+			$n = $norm( $h );
+			if ( -1 === $type_col && in_array( $n, array( 'סוגביקורת', 'סוג', 'type', 'checklist', 'list' ), true ) ) {
+				$type_col = $i;
+			} elseif ( -1 === $item_col && in_array( $n, array( 'פריטבדיקה', 'פריט', 'סעיף', 'סעיףצקליסט', 'תיאור', 'תיאורסעיף', 'item', 'text', 'description', 'check' ), true ) ) {
+				$item_col = $i;
+			}
+		}
+		$all = (array) $rows;
+		if ( -1 === $item_col ) {
+			// No recognizable header: the first row is data too, and the item is
+			// the widest text column (a plain list has just one).
+			array_unshift( $all, array_values( (array) $headers ) );
+			$type_col = -1;
+			$width    = array();
+			foreach ( $all as $r ) {
+				foreach ( array_values( (array) $r ) as $i => $c ) {
+					$c = trim( (string) $c );
+					if ( '' !== $c && ! is_numeric( $c ) ) {
+						$width[ $i ] = ( isset( $width[ $i ] ) ? $width[ $i ] : 0 ) + strlen( $c );
+					}
+				}
+			}
+			if ( ! $width ) {
+				return array( 'quarterly' => array(), 'monthly' => array(), 'skipped' => 0, 'truncated' => false );
+			}
+			arsort( $width );
+			$item_col = (int) key( $width );
+		}
+		$out   = array( 'quarterly' => array(), 'monthly' => array() );
+		$seen  = array( 'quarterly' => array(), 'monthly' => array() );
+		$skip  = 0;
+		$trunc = false;
+		foreach ( $all as $r ) {
+			$r    = array_values( (array) $r );
+			$text = isset( $r[ $item_col ] ) ? trim( sanitize_text_field( (string) $r[ $item_col ] ) ) : '';
+			if ( '' === $text ) {
+				continue;
+			}
+			$key = $default;
+			if ( $type_col >= 0 && isset( $r[ $type_col ] ) && '' !== trim( (string) $r[ $type_col ] ) ) {
+				$key = self::list_key( $r[ $type_col ] );
+				if ( '' === $key ) {
+					$skip++; // A type we do not know (e.g. "שנתית").
+					continue;
+				}
+			}
+			$text = function_exists( 'mb_substr' ) ? mb_substr( $text, 0, self::IMPORT_MAX_CHARS ) : substr( $text, 0, self::IMPORT_MAX_CHARS );
+			if ( isset( $seen[ $key ][ $text ] ) ) {
+				continue; // Same item twice in the file.
+			}
+			if ( count( $out[ $key ] ) >= self::IMPORT_MAX_ITEMS ) {
+				$trunc = true;
+				continue;
+			}
+			$seen[ $key ][ $text ] = 1;
+			$out[ $key ][]         = array( 'text' => $text );
+		}
+		return array( 'quarterly' => $out['quarterly'], 'monthly' => $out['monthly'], 'skipped' => $skip, 'truncated' => $trunc );
+	}
+
+	/**
+	 * POST /inspection-config/import — multipart: file (+ default=quarterly|monthly).
+	 *
+	 * @param WP_REST_Request $req Request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public function import_file( $req ) {
+		$files = $req->get_file_params();
+		$file  = isset( $files['file'] ) && is_array( $files['file'] ) ? $files['file'] : null;
+		if ( ! $file || ! isset( $file['error'] ) || UPLOAD_ERR_OK !== (int) $file['error'] || ! is_uploaded_file( $file['tmp_name'] ) ) {
+			return new WP_Error( 'gsm_upload', __( 'לא התקבל קובץ.', 'gas-safety-manager' ), array( 'status' => 400 ) );
+		}
+		if ( (int) $file['size'] <= 0 || (int) $file['size'] > self::IMPORT_MAX_BYTES ) {
+			return new WP_Error( 'gsm_upload', __( 'הקובץ גדול מדי (עד 1MB).', 'gas-safety-manager' ), array( 'status' => 400 ) );
+		}
+		$ext = strtolower( pathinfo( (string) $file['name'], PATHINFO_EXTENSION ) );
+		if ( ! in_array( $ext, array( 'csv', 'txt', 'xlsx' ), true ) ) {
+			return new WP_Error( 'gsm_file_type', __( 'סוגי קבצים מותרים: Excel (XLSX), CSV או TXT.', 'gas-safety-manager' ), array( 'status' => 400 ) );
+		}
+		try {
+			$res = GSM_Spreadsheet::read( $file['tmp_name'], $ext );
+		} catch ( \Throwable $e ) {
+			return new WP_Error( 'gsm_parse', __( 'לא ניתן היה לקרוא את הקובץ.', 'gas-safety-manager' ), array( 'status' => 400 ) );
+		}
+		if ( is_wp_error( $res ) ) {
+			return $res;
+		}
+		$out = self::rows_to_items( isset( $res['headers'] ) ? $res['headers'] : array(), isset( $res['rows'] ) ? $res['rows'] : array(), (string) $req->get_param( 'default' ) );
+		if ( ! $out['quarterly'] && ! $out['monthly'] ) {
+			return new WP_Error( 'gsm_empty', __( 'לא נמצאו סעיפים בקובץ.', 'gas-safety-manager' ), array( 'status' => 400 ) );
+		}
+		return rest_ensure_response( $out );
 	}
 }

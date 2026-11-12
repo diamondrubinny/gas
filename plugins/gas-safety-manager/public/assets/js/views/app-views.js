@@ -2361,8 +2361,8 @@
 
       function itemRow(text) {
         return '<div class="gs-ci-row" style="display:flex;gap:8px;margin-bottom:6px">' +
-          '<input class="gs-input gsm-ci" value="' + esc(text || '') + '" placeholder="תיאור סעיף" style="flex:1">' +
-          '<button class="gs-btn gs-btn--sm gs-btn--danger gsm-ci-del" type="button">✕</button></div>';
+          '<input class="gs-input gsm-ci" value="' + esc(text || '') + '" placeholder="תיאור סעיף" aria-label="תיאור סעיף" style="flex:1">' +
+          '<button class="gs-btn gs-btn--sm gs-btn--danger gsm-ci-del" type="button" aria-label="מחק סעיף">✕</button></div>';
       }
       function editor(key, title, items) {
         return '<div class="gs-card" style="margin-bottom:16px"><div class="gs-card__title">' + title + '</div><div id="cl-' + key + '">' +
@@ -2375,6 +2375,17 @@
 
       main.innerHTML =
         '<div class="gs-toolbar"><h2 class="gs-h2">הגדרות ביקורת</h2><div class="gs-toolbar__actions"><button class="gs-btn gs-btn--export" type="button" data-gsm-action="export" data-type="checklists">⬇️ ייצוא צ׳ק-ליסטים</button><button class="gs-btn" id="cfg-save">שמור</button><span id="cfg-status" role="status" aria-live="polite" style="margin-inline-start:10px;color:var(--gs-muted)"></span></div></div>' +
+        '<div class="gs-card" style="margin-bottom:16px"><h3 class="gs-card__title" id="clf-title">העלאת צ׳קליסט מקובץ</h3>' +
+        '<p style="color:var(--gs-muted);font-size:13px;margin-top:0">קובץ Excel (XLSX) או CSV. אפשר להעלות את הקובץ שהתקבל מ"ייצוא צ׳ק-ליסטים" אחרי עריכה (עמודות: סוג ביקורת, מס\', פריט בדיקה), או רשימה פשוטה של סעיף בכל שורה. ' +
+        'הסעיפים נטענים לרשימות שלמטה לבדיקה, ונשמרים רק בלחיצה על "שמור".</p>' +
+        '<div class="gs-field"><label class="gs-label" for="clf-file">קובץ (עד 1MB)</label><input class="gs-input" type="file" id="clf-file" accept=".xlsx,.csv,.txt"></div>' +
+        '<div style="display:flex;gap:16px;flex-wrap:wrap"><div class="gs-field" style="min-width:220px"><label class="gs-label" for="clf-default">אם בקובץ אין עמודת "סוג ביקורת", הסעיפים שייכים ל:</label>' +
+        '<select class="gs-input" id="clf-default"><option value="quarterly">צ׳קליסט רבעוני</option><option value="monthly">צ׳קליסט חודשי</option></select></div>' +
+        '<fieldset style="border:0;padding:0;margin:0"><legend class="gs-label">מה לעשות עם הסעיפים הקיימים</legend>' +
+        '<label style="display:flex;gap:6px;align-items:center;margin:4px 0"><input type="radio" name="clf-mode" value="replace" checked><span>להחליף אותם בסעיפים מהקובץ</span></label>' +
+        '<label style="display:flex;gap:6px;align-items:center;margin:4px 0"><input type="radio" name="clf-mode" value="append"><span>להוסיף את הסעיפים מהקובץ בסוף</span></label></fieldset></div>' +
+        '<button type="button" class="gs-btn gs-btn--sm" id="clf-load">טען מהקובץ</button> ' +
+        '<span id="clf-st" role="status" aria-live="polite" style="margin-inline-start:8px;color:var(--gs-muted)"></span></div>' +
         editor('quarterly', 'צ׳קליסט רבעוני — אחמ"ת (ארוך)', cl.quarterly) +
         editor('monthly', 'צ׳קליסט חודשי — מנהל מעבדה / חוקר ראשי (קצר)', cl.monthly) +
         '<div class="gs-card"><div class="gs-card__title">כללי תזכורת</div>' +
@@ -2401,6 +2412,38 @@
         });
         return out;
       }
+
+      // Load checklist items from a file into the editors (saved only by "שמור").
+      document.getElementById('clf-load').addEventListener('click', function () {
+        var btnL = this, st = document.getElementById('clf-st'), f = document.getElementById('clf-file').files[0];
+        if (!f) { st.textContent = 'בחרו קובץ.'; document.getElementById('clf-file').focus(); return; }
+        var replace = document.querySelector('input[name="clf-mode"]:checked').value === 'replace';
+        var fd = new FormData(); fd.append('file', f); fd.append('default', document.getElementById('clf-default').value);
+        btnL.disabled = true; st.textContent = 'קורא את הקובץ…';
+        GSM.refreshNonce().then(function () {
+          return fetch(GSM.restUrl('/inspection-config/import'), { method: 'POST', headers: { 'X-WP-Nonce': GSM.restNonce() }, body: fd, credentials: 'same-origin' });
+        }).then(function (r) { return r.json().then(function (j) { if (!r.ok) throw new Error((j && j.message) || ('HTTP ' + r.status)); return j; }); })
+          .then(function (d) {
+            btnL.disabled = false;
+            var names = { quarterly: 'רבעוני', monthly: 'חודשי' }, parts = [];
+            ['quarterly', 'monthly'].forEach(function (key) {
+              var items = d[key] || [];
+              if (!items.length) return;
+              var box = document.getElementById('cl-' + key);
+              var have = {};
+              if (replace) { box.innerHTML = ''; }
+              else { box.querySelectorAll('.gsm-ci').forEach(function (i) { have[i.value.trim()] = 1; }); }
+              var added = 0;
+              items.forEach(function (it) {
+                if (have[it.text]) return;
+                var div = document.createElement('div'); div.innerHTML = itemRow(it.text); box.appendChild(div.firstChild); added++;
+              });
+              parts.push(added + ' סעיפים לצ׳קליסט ה' + names[key]);
+            });
+            st.textContent = '✓ נטענו ' + (parts.join(', ') || '0 סעיפים') + (d.skipped ? '. ' + d.skipped + ' שורות דולגו (סוג ביקורת לא מוכר)' : '') + (d.truncated ? '. הרשימה קוצרה ל-200 סעיפים' : '') + '. בדקו את הרשימות ולחצו "שמור".';
+            document.getElementById('cfg-status').textContent = 'יש שינויים שלא נשמרו';
+          }).catch(function (e) { btnL.disabled = false; st.textContent = '✗ ' + (e.message || e); });
+      });
 
       document.getElementById('cfg-save').addEventListener('click', function () {
         var btn = this; var status = document.getElementById('cfg-status');

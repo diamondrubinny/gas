@@ -1,3 +1,6 @@
+Gas Safety Manager v2.24.0 — Upload a checklist from a file (inspection settings).
+
+----
 Gas Safety Manager v2.23.0 — Single sign-on with Microsoft Entra ID (OpenID Connect).
 
 ----
