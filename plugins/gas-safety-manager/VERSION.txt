@@ -1,3 +1,6 @@
+Gas Safety Manager v2.23.0 — Single sign-on with Microsoft Entra ID (OpenID Connect).
+
+----
 Gas Safety Manager v2.22.0 — Optional reCAPTCHA v3 (lazy-loaded, monitor/enforce).
 
 ----

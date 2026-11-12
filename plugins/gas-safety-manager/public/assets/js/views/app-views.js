@@ -1018,6 +1018,65 @@
   ];
   var GSM_ROLES = [['ahmat', 'אחמ"ת'], ['lab_manager', 'מנהל מעבדה'], ['pi', 'חוקר ראשי']];
 
+  // ---- SSO (Microsoft Entra ID) settings ---------------------------------------
+  function renderSsoSettings(host) {
+    if (!host) return;
+    var ROLES = { pi: 'חוקר ראשי', lab_manager: 'מנהל מעבדה', ahmat: 'אחמ"ת' };
+    function draw(d, note) {
+      var ready = d.tenant && d.client_id && d.has_secret;
+      host.innerHTML =
+        '<div class="gs-card" style="margin-top:16px"><div class="gs-card__title">🏢 כניסה ארגונית (SSO) — Microsoft Entra ID</div>' +
+        (d.bypassed ? '<div class="gs-error" role="alert" style="margin-bottom:10px">הכניסה הארגונית מנוטרלת כרגע בהגדרות השרת (GSM_SSO_DISABLE).</div>' : '') +
+        (!d.https && (d.enabled || d.has_secret) ? '<div class="gs-error" role="alert" style="margin-bottom:10px">האתר אינו פועל ב-https. Microsoft מקבלת כתובת חזרה ב-https בלבד (מלבד localhost).</div>' : '') +
+        '<p style="font-size:13px;margin-top:0" role="status">' + (ready ? (d.enabled ? '<b>פעיל.</b> במסך הכניסה מופיע כפתור "כניסה עם החשבון הארגוני".' : 'מוגדר, כבוי.') : 'לא מוגדר.') + '</p>' +
+        '<p style="color:var(--gs-muted);font-size:12.5px">צוות ה-IT רושם את המערכת ב-Entra (App registration מסוג Web, דייר יחיד) עם כתובת החזרה שלמטה, יוצר client secret, ומוסר את שלושת הערכים. ' +
+        'האימות הנוסף (MFA) נאכף אצל Microsoft לפי מדיניות הארגון, ולכן כניסה ארגונית לא מבקשת את קוד האימות של המערכת.</p>' +
+        '<div class="gs-field"><label class="gs-label" for="sso-redirect">כתובת חזרה (Redirect URI) לרישום ב-Entra</label><input class="gs-input" id="sso-redirect" readonly dir="ltr" value="' + esc(d.redirect_uri) + '" data-gsm-action="select" style="font-size:12px"></div>' +
+        '<div class="gs-field"><label class="gs-label" for="sso-tenant">Directory (tenant) ID</label><input class="gs-input" id="sso-tenant" dir="ltr" autocomplete="off" spellcheck="false" value="' + esc(d.tenant || '') + '" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" style="max-width:420px"></div>' +
+        '<div class="gs-field"><label class="gs-label" for="sso-client">Application (client) ID</label><input class="gs-input" id="sso-client" dir="ltr" autocomplete="off" spellcheck="false" value="' + esc(d.client_id || '') + '" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" style="max-width:420px"></div>' +
+        '<div class="gs-field"><label class="gs-label" for="sso-secret">Client secret (הערך, לא המזהה)</label><input class="gs-input" id="sso-secret" type="password" dir="ltr" autocomplete="off" spellcheck="false" placeholder="' + (d.has_secret ? 'שמור. השאירו ריק כדי לא לשנות' : '') + '" style="max-width:420px"></div>' +
+        '<div class="gs-field"><label class="gs-label" for="sso-domains">דומיינים מותרים (מופרדים בפסיק; ריק = כל חשבון בדייר)</label><input class="gs-input" id="sso-domains" dir="ltr" value="' + esc((d.domains || []).join(', ')) + '" placeholder="technion.ac.il" style="max-width:420px"></div>' +
+        '<label style="display:flex;gap:8px;align-items:flex-start;margin:8px 0"><input type="checkbox" id="sso-auto"' + (d.auto_create ? ' checked' : '') + ' aria-describedby="sso-auto-help"><span><b>צור חשבון אוטומטית למי שנכנס בפעם הראשונה</b>' +
+        '<span id="sso-auto-help" style="display:block;color:var(--gs-muted);font-size:12.5px">כבוי (מומלץ): רק מי שכבר הוגדר כמשתמש במערכת, עם אותו אימייל, יכול להיכנס. דלוק: כל בעל חשבון בדומיינים המותרים מקבל חשבון עם התפקיד שלמטה. מחייב רשימת דומיינים.</span></span></label>' +
+        '<div class="gs-field"><label class="gs-label" for="sso-role">תפקיד לחשבון שנוצר אוטומטית</label><select class="gs-input" id="sso-role" style="max-width:220px">' +
+        Object.keys(ROLES).map(function (k) { return '<option value="' + k + '"' + (d.default_role === k ? ' selected' : '') + '>' + esc(ROLES[k]) + '</option>'; }).join('') + '</select></div>' +
+        '<label style="display:flex;gap:8px;align-items:center;margin:8px 0"><input type="checkbox" id="sso-enabled"' + (d.enabled ? ' checked' : '') + '><span><b>כניסה ארגונית פעילה</b></span></label>' +
+        '<button type="button" class="gs-btn" id="sso-save">שמור</button> ' +
+        (d.tenant ? '<button type="button" class="gs-btn gs-btn--ghost" id="sso-test">בדיקת חיבור ל-Microsoft</button> ' : '') +
+        (d.has_secret ? '<button type="button" class="gs-btn gs-btn--ghost" id="sso-clear">הסר סוד וכבה</button> ' : '') +
+        '<span id="sso-st" role="status" aria-live="polite" style="margin-inline-start:8px;color:var(--gs-muted)">' + esc(note || '') + '</span></div>';
+      var st = document.getElementById('sso-st');
+      function send(body, btn) {
+        btn.disabled = true; st.textContent = 'שומר…';
+        api('/sso', { method: 'POST', body: body }).then(function (nd) { draw(nd, '✓ נשמר.'); })
+          .catch(function (e) { st.textContent = '✗ ' + (e.message || e); btn.disabled = false; });
+      }
+      document.getElementById('sso-save').addEventListener('click', function () {
+        var body = { tenant: document.getElementById('sso-tenant').value.trim(), client_id: document.getElementById('sso-client').value.trim(),
+          domains: document.getElementById('sso-domains').value, auto_create: document.getElementById('sso-auto').checked,
+          default_role: document.getElementById('sso-role').value, enabled: document.getElementById('sso-enabled').checked };
+        var sec = document.getElementById('sso-secret').value.trim();
+        if (sec) body.secret = sec;
+        send(body, this);
+      });
+      var clr = document.getElementById('sso-clear');
+      if (clr) clr.addEventListener('click', function () {
+        if (!confirm('להסיר את ה-client secret ולכבות את הכניסה הארגונית?')) return;
+        send({ clear: true }, this);
+      });
+      var tb = document.getElementById('sso-test');
+      if (tb) tb.addEventListener('click', function () {
+        tb.disabled = true; st.textContent = 'בודק…';
+        api('/sso/test', { method: 'POST' }).then(function (r) {
+          tb.disabled = false;
+          st.textContent = r.ok ? '✓ הדייר נמצא אצל Microsoft (' + (r.keys || 0) + ' מפתחות חתימה). כניסה מלאה נבדקת בלחיצה על הכפתור במסך הכניסה.'
+            : (r.reason === 'unknown-tenant' ? '✗ Microsoft לא מכירה את ה-Directory ID הזה.' : '✗ אין תשובה מ-Microsoft (בדקו שהשרת יכול לגשת ל-login.microsoftonline.com).');
+        }).catch(function (e) { st.textContent = '✗ ' + (e.message || e); tb.disabled = false; });
+      });
+    }
+    api('/sso').then(function (d) { draw(d); }).catch(function (e) { host.innerHTML = '<div class="gs-error" role="alert">' + esc(e.message || e) + '</div>'; });
+  }
+
   // ---- reCAPTCHA settings ----------------------------------------------------
   function renderCaptchaSettings(host, msg) {
     if (!host) return;
@@ -1328,6 +1387,7 @@
         '<div id="gsm-gov"></div>' +
         '<div id="gsm-retention"></div>' +
         '<div id="gsm-chat-settings"></div>' +
+        '<div id="gsm-sso-settings"></div>' +
         '<div id="gsm-captcha-settings"></div>' +
         '<div class="gs-card" style="margin-top:16px"><div class="gs-card__title">📥 הגירה וגיבוי</div>' +
         '<p style="color:var(--gs-muted)">ייבוא/גיבוי נתונים ומפתח הגירה נמצאים בעמוד "Gas Migration" בפאנל הניהול של WordPress.</p></div>';
@@ -1335,6 +1395,7 @@
       renderGovernance(document.getElementById('gsm-gov'));
       renderRetention(document.getElementById('gsm-retention'));
       renderChatSettings(document.getElementById('gsm-chat-settings'));
+      renderSsoSettings(document.getElementById('gsm-sso-settings'));
       renderCaptchaSettings(document.getElementById('gsm-captcha-settings'));
 
       var save = document.getElementById('gsm-set-save');

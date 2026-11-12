@@ -4,7 +4,7 @@ Tags: safety, equipment, inspections, hebrew, rtl
 Requires at least: 6.4
 Requires PHP: 8.2
 Tested up to: 7.1
-Stable tag: 2.22.0
+Stable tag: 2.23.0
 License: Proprietary — Technion Safety Unit
 
 Gas systems maintenance management for the Technion Safety Unit. Manages equipment, inspections, faults, and QR codes with native WordPress storage.
@@ -32,6 +32,15 @@ Pairs with the companion "Gas Safety" theme for the portal look (navy/gold, RTL,
 4. To import from Monday: open "Gas Migration", generate a key, run the console script in the portal, then revoke the key.
 
 == Changelog ==
+
+= 2.23.0 =
+* Single sign-on with Microsoft Entra ID (OpenID Connect). Off by default; configured in site settings: Directory (tenant) ID, Application (client) ID, client secret, allowed domains. The screen shows the Redirect URI to register in Entra and has a "test connection" button. When on, the login screen shows "כניסה עם החשבון הארגוני (Microsoft)".
+* Flow: Authorization Code with PKCE, state bound to the browser by a cookie (login-CSRF protection) and nonce. The ID token is verified on the server: RS256 only, signature against the tenant's published keys (cached, refetched once on key rollover), issuer, audience, tenant, lifetime, nonce. Single tenant only — "common" / multi-tenant is refused. All endpoints are derived from the tenant id on login.microsoftonline.com.
+* Who may sign in: by default only users that already exist in the system (matched once by the organizational user name against the e-mail, then linked to the stable directory object id; a linked account never accepts a different object id). Optional auto-creation for allowed domains with a default role that can never be "manager". Same active-account and role checks as every other sign-in. The optional, possibly unverified "email" claim is not used.
+* An SSO session does not ask for the system's TOTP code and satisfies the "mandatory 2FA for managers" policy: MFA is the identity provider's job.
+* The client secret is never returned or logged. `define( 'GSM_SSO_DISABLE', true );` switches SSO off.
+* Not included: SAML, single logout, role mapping from Entra groups, forcing SSO / disabling passwords.
+* Tests: tests/integration/sso-test.php (simulated identity provider with a real RSA key: forged signature, alg none, HS256 confusion, wrong audience / issuer / tenant / nonce, expiry, state replay, cookie mismatch, domain, linking; 44 checks), tests/e2e/sso-e2e.js.
 
 = 2.22.0 =
 * Optional reCAPTCHA v3 (Google) for the password login and the public fault report. Off by default; configured in site settings (site key, secret key, minimum score, what to protect).

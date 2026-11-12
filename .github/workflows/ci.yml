@@ -151,6 +151,8 @@ jobs:
         run: php "$RUNNER_TEMP/wp/cache/wp-cli.phar" --allow-root --path="$RUNNER_TEMP/wp/site" eval-file tests/integration/passkeys-test.php
       - name: "Integration — reCAPTCHA (simulated Google answers: monitor, enforce, fail-open)"
         run: php "$RUNNER_TEMP/wp/cache/wp-cli.phar" --allow-root --path="$RUNNER_TEMP/wp/site" eval-file tests/integration/captcha-test.php
+      - name: "Integration — SSO with Entra ID (simulated identity provider, all rejection paths)"
+        run: php "$RUNNER_TEMP/wp/cache/wp-cli.phar" --allow-root --path="$RUNNER_TEMP/wp/site" eval-file tests/integration/sso-test.php
       - name: Public dashboard test
         run: node tests/public-dashboard-test.js plugins/gas-safety-manager/public/gas-public-dashboard.html
       - name: End-to-end (CSP, all screens, actions, attachments, bridge)
@@ -214,6 +216,11 @@ jobs:
           BASE: http://127.0.0.1:8899
           USER_NAME: admin
         run: PASS="$WP_TEST_PASS" node tests/e2e/captcha-e2e.js
+      - name: SSO in the browser (settings, button, redirect to Microsoft, failed return) + axe
+        env:
+          BASE: http://127.0.0.1:8899
+          USER_NAME: admin
+        run: PASS="$WP_TEST_PASS" node tests/e2e/sso-e2e.js
       - name: Layout — header contrast on gradient + chart height (desktop + mobile)
         env:
           BASE: http://127.0.0.1:8899

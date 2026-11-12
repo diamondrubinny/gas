@@ -131,6 +131,9 @@ class GSM_Public {
 			'ajaxUrl'   => esc_url_raw( admin_url( 'admin-ajax.php' ) ),
 			'branding'  => self::branding(),
 			'navOrder'  => array_values( (array) get_option( 'gsm_nav_order', array() ) ),
+			// Organizational sign-in (Microsoft Entra ID), when configured.
+			'ssoUrl'    => GSM_SSO::active() ? esc_url_raw( rest_url( 'gas/v1/sso/start' ) ) : '',
+			'ssoError'  => isset( $_GET['sso_error'] ) ? GSM_SSO::message( sanitize_key( wp_unslash( $_GET['sso_error'] ) ) ) : '', // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- display-only slug mapped to a fixed message.
 		);
 		// Attach config to the first script in the chain so all have it.
 		wp_add_inline_script( 'gsm-router', 'window.GSM_CONFIG = ' . wp_json_encode( $config, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT ) . ';', 'before' );

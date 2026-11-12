@@ -102,7 +102,15 @@ class GSM_2FA {
 		if ( ! $user || ! $user->ID || self::disabled() || ! self::required_for_managers() ) {
 			return false;
 		}
-		return user_can( $user, 'gsm_manage_all' ) && ! self::enabled( $user->ID );
+		if ( ! user_can( $user, 'gsm_manage_all' ) || self::enabled( $user->ID ) ) {
+			return false;
+		}
+		// Signed in through the organization's SSO: the second factor is the
+		// identity provider's job (its MFA policy), not a TOTP code here.
+		if ( class_exists( 'GSM_SSO' ) && get_current_user_id() === (int) $user->ID && GSM_SSO::session_is_sso( $user->ID ) ) {
+			return false;
+		}
+		return true;
 	}
 
 	// ------------------------------------------------------------------

@@ -55,6 +55,7 @@
       '<div id="gsm-lg-err"></div>' +
       (window.GSM_captchaActive && window.GSM_captchaActive() ? window.GSM_captchaNotice() : '') +
       '<button class="gs-btn gs-btn--lg gs-btn--block" id="gsm-lg-submit">התחבר</button>' +
+      (window.GSM_CONFIG && window.GSM_CONFIG.ssoUrl ? '<a class="gs-btn gs-btn--lg gs-btn--block gs-btn--ghost" id="gsm-lg-sso" href="' + esc(window.GSM_CONFIG.ssoUrl) + '" style="margin-top:10px;text-align:center;text-decoration:none">כניסה עם החשבון הארגוני (Microsoft)</a>' : '') +
       (GSM.passkeysSupported && GSM.passkeysSupported() ? '<button type="button" class="gs-btn gs-btn--lg gs-btn--block gs-btn--ghost" id="gsm-lg-passkey" style="margin-top:10px">כניסה עם Passkey</button>' : '') +
       '<button class="gs-btn gs-btn--ghost gs-btn--block" type="button" data-gsm-nav="/">חזרה לדף הבית</button>' +
       '</div></div>';
@@ -99,6 +100,11 @@
       });
     }
 
+    // Message from a failed organizational sign-in (set by the server).
+    if (window.GSM_CONFIG && window.GSM_CONFIG.ssoError) {
+      errBox.innerHTML = '<div class="gs-error" role="alert">' + esc(window.GSM_CONFIG.ssoError) + '</div>';
+      window.GSM_CONFIG.ssoError = '';
+    }
     submit.addEventListener('click', doLogin);
     var pkBtn = document.getElementById('gsm-lg-passkey');
     if (pkBtn) pkBtn.addEventListener('click', function () {

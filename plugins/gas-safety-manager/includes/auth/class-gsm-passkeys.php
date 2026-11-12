@@ -254,6 +254,27 @@ class GSM_Passkeys {
 	}
 
 	/**
+	 * RSA public key (modulus + exponent, big-endian bytes) to PEM.
+	 *
+	 * @param string $n Modulus.
+	 * @param string $e Exponent.
+	 * @return string PEM, '' when the values are not a usable key.
+	 */
+	public static function rsa_pem( $n, $e ) {
+		$n = ltrim( (string) $n, "\0" );
+		if ( strlen( $n ) < 256 || strlen( $n ) > 1024 || '' === (string) $e || strlen( $e ) > 8 ) {
+			return '';
+		}
+		$rsa    = self::der_int( $n ) . self::der_int( $e );
+		$rsa    = "\x30" . self::der_len( strlen( $rsa ) ) . $rsa;
+		$bit    = "\x03" . self::der_len( strlen( $rsa ) + 1 ) . "\0" . $rsa;
+		$alg_id = hex2bin( '300d06092a864886f70d0101010500' );
+		$der    = "\x30" . self::der_len( strlen( $alg_id . $bit ) ) . $alg_id . $bit;
+		$pem    = "-----BEGIN PUBLIC KEY-----\n" . chunk_split( base64_encode( $der ), 64, "\n" ) . "-----END PUBLIC KEY-----\n"; // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode
+		return false === openssl_pkey_get_public( $pem ) ? '' : $pem;
+	}
+
+	/**
 	 * COSE public key (decoded CBOR map) to a PEM public key.
 	 *
 	 * @param array $k COSE key.
