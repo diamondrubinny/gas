@@ -120,6 +120,7 @@
       // Honeypot: hidden from humans, bots tend to fill it. Server drops it.
       '<input type="text" id="br-hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0">' +
       '<div id="br-err"></div>' +
+      (window.GSM_captchaActive && window.GSM_captchaActive() ? window.GSM_captchaNotice() : '') +
       '<div class="gs-modal__actions">' +
       '<button class="gs-btn gs-btn--gold" id="br-send">שלח דיווח</button>' +
       '<button class="gs-btn gs-btn--ghost" id="br-cancel">ביטול</button>' +
@@ -139,16 +140,18 @@
         return;
       }
       this.disabled = true;
-      api('/report-fault', {
-        method: 'POST',
-        body: {
-          token: eq.qr_token || getCode(),
-          description: desc,
-          reporter: document.getElementById('br-reporter').value.trim(),
-          priority: document.getElementById('br-priority').value,
-          hp: (document.getElementById('br-hp') || {}).value || '',
-          ts: openedAt
-        }
+      var payload = {
+        token: eq.qr_token || getCode(),
+        description: desc,
+        reporter: document.getElementById('br-reporter').value.trim(),
+        priority: document.getElementById('br-priority').value,
+        hp: (document.getElementById('br-hp') || {}).value || '',
+        ts: openedAt
+      };
+      // Optional reCAPTCHA: Google is contacted only now, on submit.
+      (window.GSM_captchaToken ? window.GSM_captchaToken('report_fault') : Promise.resolve('')).then(function (t) {
+        if (t) payload.captcha = t;
+        return api('/report-fault', { method: 'POST', body: payload });
       }).then(function () {
         var box = backdrop.querySelector('.gs-modal');
         box.setAttribute('aria-labelledby', 'br-done-title');

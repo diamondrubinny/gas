@@ -197,6 +197,14 @@ class GSM_REST_Auth {
 			return new WP_Error( 'gsm_login_locked', __( 'יותר מדי ניסיונות. נסה שוב בעוד מספר דקות.', 'gas-safety-manager' ), array( 'status' => 429 ) );
 		}
 
+		// Bot check (optional). Runs before the password check so a blocked
+		// bot learns nothing about the credentials.
+		$cap = GSM_Captcha::check( 'login', isset( $body['captcha'] ) && is_string( $body['captcha'] ) ? $body['captcha'] : '', 'login' );
+		if ( is_wp_error( $cap ) ) {
+			set_transient( $ip_key, $fails + 1, 10 * MINUTE_IN_SECONDS );
+			return $cap;
+		}
+
 		// Make a nonce generated later in THIS request valid for the NEW
 		// session. wp_signon() -> wp_set_auth_cookie() fires
 		// 'set_logged_in_cookie' with the new cookie, but $_COOKIE is only

@@ -171,7 +171,12 @@
   GSM.login = function (user, password, remember, code) {
     var body = { user: user, password: password, remember: !!remember };
     if (code) body.code = code;
-    return GSM.api('/auth/login', { method: 'POST', body: body }).then(function (me) {
+    // Optional reCAPTCHA: a fresh token per attempt ('' when not in use).
+    var tokenP = window.GSM_captchaToken ? window.GSM_captchaToken('login') : Promise.resolve('');
+    return tokenP.then(function (t) {
+      if (t) body.captcha = t;
+      return GSM.api('/auth/login', { method: 'POST', body: body });
+    }).then(function (me) {
       // Second step needed: keep the session logged out and let the view ask.
       if (me && me.requires_2fa) { if (me.nonce) session.nonce = me.nonce; return me; }
       applyMe(me);

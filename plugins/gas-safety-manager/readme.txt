@@ -4,7 +4,7 @@ Tags: safety, equipment, inspections, hebrew, rtl
 Requires at least: 6.4
 Requires PHP: 8.2
 Tested up to: 7.1
-Stable tag: 2.21.0
+Stable tag: 2.22.0
 License: Proprietary — Technion Safety Unit
 
 Gas systems maintenance management for the Technion Safety Unit. Manages equipment, inspections, faults, and QR codes with native WordPress storage.
@@ -32,6 +32,14 @@ Pairs with the companion "Gas Safety" theme for the portal look (navy/gold, RTL,
 4. To import from Monday: open "Gas Migration", generate a key, run the console script in the portal, then revoke the key.
 
 == Changelog ==
+
+= 2.22.0 =
+* Optional reCAPTCHA v3 (Google) for the password login and the public fault report. Off by default; configured in site settings (site key, secret key, minimum score, what to protect).
+* Privacy: Google's script is not loaded with the page — only when the visitor presses the protected button, with a notice (and Google's policy links) next to it. The server does not forward the visitor's IP address. The CSP allows Google's reCAPTCHA hosts only on pages that use it, and only while it is on.
+* Anti-lockout: "monitor" mode never blocks; "enforce" can be switched on only after a successful live test with the saved keys; changing a key returns to monitor mode; if Google cannot be reached the request is allowed; `define( 'GSM_CAPTCHA_DISABLE', true );` switches it off. Passkey sign-in is not gated.
+* Checks: success, action, host name, score. The secret key is never returned or logged.
+* Requires: a DPA / privacy-policy update for Google before switching on (legal review).
+* Tests: tests/integration/captcha-test.php (Google's answers simulated; 28 checks), tests/e2e/captcha-e2e.js (lazy loading, notice, CSP, both forms).
 
 = 2.21.0 =
 * Passkeys (WebAuthn): sign in with a fingerprint, face or the device PIN — no password. Add passkeys on the "אבטחה" screen (up to 10 per user, each with a name); "כניסה עם Passkey" on the login screen. User verification is required, so a passkey sign-in is two factors on its own and does not ask for the TOTP code.

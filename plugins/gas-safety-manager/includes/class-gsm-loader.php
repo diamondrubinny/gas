@@ -130,6 +130,8 @@ class GSM_Loader {
 		$legacy->register_routes();
 		$messages = new GSM_REST_Messages();
 		$messages->register_routes();
+		$captcha = new GSM_REST_Captcha();
+		$captcha->register_routes();
 		$twofa = new GSM_REST_2FA();
 		$twofa->register_routes();
 	}

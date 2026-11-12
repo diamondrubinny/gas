@@ -1,3 +1,6 @@
+Gas Safety Manager v2.22.0 — Optional reCAPTCHA v3 (lazy-loaded, monitor/enforce).
+
+----
 Gas Safety Manager v2.21.0 — Passkeys (WebAuthn) sign-in.
 
 ----

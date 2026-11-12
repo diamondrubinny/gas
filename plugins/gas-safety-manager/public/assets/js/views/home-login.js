@@ -53,6 +53,7 @@
       '<input class="gs-input" id="gsm-lg-code" inputmode="numeric" autocomplete="one-time-code" dir="ltr" maxlength="12" aria-describedby="gsm-lg-code-help">' +
       '<div id="gsm-lg-code-help" style="color:var(--gs-muted);font-size:12.5px;margin:4px 0 12px">6 ספרות מאפליקציית האימות, או אחד מקודי הגיבוי.</div></div>' +
       '<div id="gsm-lg-err"></div>' +
+      (window.GSM_captchaActive && window.GSM_captchaActive() ? window.GSM_captchaNotice() : '') +
       '<button class="gs-btn gs-btn--lg gs-btn--block" id="gsm-lg-submit">התחבר</button>' +
       (GSM.passkeysSupported && GSM.passkeysSupported() ? '<button type="button" class="gs-btn gs-btn--lg gs-btn--block gs-btn--ghost" id="gsm-lg-passkey" style="margin-top:10px">כניסה עם Passkey</button>' : '') +
       '<button class="gs-btn gs-btn--ghost gs-btn--block" type="button" data-gsm-nav="/">חזרה לדף הבית</button>' +

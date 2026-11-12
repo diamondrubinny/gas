@@ -1018,6 +1018,73 @@
   ];
   var GSM_ROLES = [['ahmat', 'אחמ"ת'], ['lab_manager', 'מנהל מעבדה'], ['pi', 'חוקר ראשי']];
 
+  // ---- reCAPTCHA settings ----------------------------------------------------
+  function renderCaptchaSettings(host, msg) {
+    if (!host) return;
+    function draw(d, note) {
+      var state = !d.site_key || !d.has_secret ? 'לא מוגדר.'
+        : (!d.enabled ? 'מוגדר, כבוי.' : (d.enforce ? '<b>פעיל, מצב אכיפה</b>: בקשות חשודות נחסמות.' : '<b>פעיל, מצב ניטור</b>: הבדיקה רצה אבל לא חוסמת.'));
+      host.innerHTML =
+        '<div class="gs-card" style="margin-top:16px"><div class="gs-card__title">🛡 reCAPTCHA (Google) — הגנה מבוטים</div>' +
+        (d.bypassed ? '<div class="gs-error" role="alert" style="margin-bottom:10px">reCAPTCHA מנוטרל כרגע בהגדרות השרת (GSM_CAPTCHA_DISABLE).</div>' : '') +
+        '<p style="font-size:13px;margin-top:0" role="status">' + state + (d.tested_at ? ' בדיקה מוצלחת אחרונה: <bdi dir="ltr">' + esc(d.tested_at.slice(0, 16)) + '</bdi>.' : '') + '</p>' +
+        '<p style="color:var(--gs-muted);font-size:12.5px">reCAPTCHA v3, בלי תיבת סימון. מגן על הכניסה בסיסמה ועל דיווח תקלה מעמוד הסריקה. הקוד של Google נטען רק כשהמשתמש לוחץ על הכפתור המוגן, ולצד הכפתור מוצגת הודעה על כך. ' +
+        'מידע טכני על הלוחץ עובר ל-Google, ולכן נדרשים עדכון של מדיניות הפרטיות ובדיקה משפטית לפני ההפעלה. את המפתחות יוצרים בקונסולת reCAPTCHA של Google (סוג v3), עם שם המתחם של האתר.</p>' +
+        '<div class="gs-field"><label class="gs-label" for="cap-site">מפתח אתר (Site Key)</label><input class="gs-input" id="cap-site" dir="ltr" autocomplete="off" spellcheck="false" value="' + esc(d.site_key || '') + '" style="max-width:460px"></div>' +
+        '<div class="gs-field"><label class="gs-label" for="cap-secret">מפתח סודי (Secret Key)</label><input class="gs-input" id="cap-secret" type="password" dir="ltr" autocomplete="off" spellcheck="false" placeholder="' + (d.has_secret ? 'שמור. השאירו ריק כדי לא לשנות' : '') + '" style="max-width:460px"></div>' +
+        '<div class="gs-field"><label class="gs-label" for="cap-score">ציון מינימלי (0.1 מקל, 0.9 מחמיר)</label><input class="gs-input" id="cap-score" type="number" min="0.1" max="0.9" step="0.1" value="' + esc(d.min_score) + '" style="max-width:120px"></div>' +
+        '<fieldset style="border:0;padding:0;margin:0 0 8px"><legend class="gs-label">על מה להגן</legend>' +
+        '<label style="display:flex;gap:8px;align-items:center;margin:4px 0"><input type="checkbox" id="cap-login"' + (d.login ? ' checked' : '') + '><span>כניסה בסיסמה</span></label>' +
+        '<label style="display:flex;gap:8px;align-items:center;margin:4px 0"><input type="checkbox" id="cap-bridge"' + (d.bridge ? ' checked' : '') + '><span>דיווח תקלה מעמוד הסריקה</span></label></fieldset>' +
+        '<label style="display:flex;gap:8px;align-items:center;margin:8px 0"><input type="checkbox" id="cap-enabled"' + (d.enabled ? ' checked' : '') + '><span><b>reCAPTCHA פעיל</b></span></label>' +
+        '<label style="display:flex;gap:8px;align-items:flex-start;margin:8px 0"><input type="checkbox" id="cap-enforce"' + (d.enforce ? ' checked' : '') + (d.tested_at ? '' : ' disabled') + ' aria-describedby="cap-enforce-help"><span><b>מצב אכיפה (חסימה בפועל)</b>' +
+        '<span id="cap-enforce-help" style="display:block;color:var(--gs-muted);font-size:12.5px">אפשר להדליק רק אחרי "בדיקה" מוצלחת עם המפתחות השמורים, כדי לא לנעול את הכניסה. אם Google לא זמין, הבקשה עוברת.</span></span></label>' +
+        '<button type="button" class="gs-btn" id="cap-save">שמור</button> ' +
+        (d.site_key && d.has_secret ? '<button type="button" class="gs-btn gs-btn--ghost" id="cap-test">בדיקה מול Google</button> <button type="button" class="gs-btn gs-btn--ghost" id="cap-clear">הסר מפתחות</button> ' : '') +
+        '<span id="cap-st" role="status" aria-live="polite" style="margin-inline-start:8px;color:var(--gs-muted)">' + esc(note || '') + '</span></div>';
+      var st = document.getElementById('cap-st');
+      function send(body, btn, after) {
+        btn.disabled = true; st.textContent = 'שומר…';
+        api('/captcha', { method: 'POST', body: body }).then(function (nd) { if (after) after(nd); else draw(nd, '✓ נשמר.'); })
+          .catch(function (e) { st.textContent = '✗ ' + (e.message || e); btn.disabled = false; });
+      }
+      document.getElementById('cap-save').addEventListener('click', function () {
+        var body = { site_key: document.getElementById('cap-site').value.trim(), min_score: parseFloat(document.getElementById('cap-score').value) || 0.5,
+          login: document.getElementById('cap-login').checked, bridge: document.getElementById('cap-bridge').checked,
+          enabled: document.getElementById('cap-enabled').checked, enforce: document.getElementById('cap-enforce').checked };
+        var sec = document.getElementById('cap-secret').value.trim();
+        if (sec) body.secret = sec;
+        var keysChanged = !!sec || body.site_key !== (d.site_key || '');
+        send(body, this, keysChanged ? function () {
+          // The page's security policy allows Google only from the next load.
+          try { window.sessionStorage.setItem('gsm_cap_note', '1'); } catch (e) { /* ignore */ }
+          window.location.reload();
+        } : null);
+      });
+      var clr = document.getElementById('cap-clear');
+      if (clr) clr.addEventListener('click', function () {
+        if (!confirm('להסיר את מפתחות reCAPTCHA ולכבות את ההגנה?')) return;
+        send({ clear: true, enforce: false }, this);
+      });
+      var tb = document.getElementById('cap-test');
+      if (tb) tb.addEventListener('click', function () {
+        if (!window.GSM_captchaToken) { st.textContent = 'רעננו את הדף ונסו שוב.'; return; }
+        tb.disabled = true; st.textContent = 'בודק מול Google…';
+        window.GSM_captchaToken('test', d.site_key).then(function (tok) {
+          if (!tok) { st.textContent = '✗ לא התקבל אסימון מ-Google. בדקו את מפתח האתר ואת שם המתחם בקונסולת reCAPTCHA.'; tb.disabled = false; return null; }
+          return api('/captcha/test', { method: 'POST', body: { token: tok } }).then(function (r) {
+            draw(r.config, r.works ? '✓ הבדיקה הצליחה' + (r.score != null ? ' (ציון ' + r.score + ')' : '') + '. אפשר להדליק מצב אכיפה.' : '✗ הבדיקה נכשלה: ' + (r.reason || ''));
+          });
+        }).catch(function (e) { st.textContent = '✗ ' + (e.message || e); tb.disabled = false; });
+      });
+    }
+    api('/captcha').then(function (d) {
+      var note = msg || '';
+      try { if (window.sessionStorage.getItem('gsm_cap_note')) { window.sessionStorage.removeItem('gsm_cap_note'); note = '✓ המפתחות נשמרו. עכשיו אפשר להריץ "בדיקה מול Google".'; } } catch (e) { /* ignore */ }
+      draw(d, note);
+    }).catch(function (e) { host.innerHTML = '<div class="gs-error" role="alert">' + esc(e.message || e) + '</div>'; });
+  }
+
   // ---- Chat widget (Botwa) settings -----------------------------------------
   function renderChatSettings(host) {
     if (!host) return;
@@ -1261,12 +1328,14 @@
         '<div id="gsm-gov"></div>' +
         '<div id="gsm-retention"></div>' +
         '<div id="gsm-chat-settings"></div>' +
+        '<div id="gsm-captcha-settings"></div>' +
         '<div class="gs-card" style="margin-top:16px"><div class="gs-card__title">📥 הגירה וגיבוי</div>' +
         '<p style="color:var(--gs-muted)">ייבוא/גיבוי נתונים ומפתח הגירה נמצאים בעמוד "Gas Migration" בפאנל הניהול של WordPress.</p></div>';
 
       renderGovernance(document.getElementById('gsm-gov'));
       renderRetention(document.getElementById('gsm-retention'));
       renderChatSettings(document.getElementById('gsm-chat-settings'));
+      renderCaptchaSettings(document.getElementById('gsm-captcha-settings'));
 
       var save = document.getElementById('gsm-set-save');
       save.addEventListener('click', function () {
@@ -2514,7 +2583,7 @@
         '<ul style="margin:0;padding-inline-start:18px;font-size:13.5px;line-height:1.8">' +
         '<li>הכניסה מוגבלת ל-5 ניסיונות שגויים ב-10 דקות, והאימות הדו-שלבי ל-5 קודים שגויים ב-15 דקות.</li>' +
         '<li>אבד הטלפון? משתמשים בקוד גיבוי, או מבקשים ממנהל לאפס את האימות במסך "ניהול אנשי אחמ"ת".</li>' +
-        '<li>CAPTCHA אינו מובנה. אפשר להוסיף אותו בתוסף WordPress ייעודי.</li>' +
+        '<li>הגנת reCAPTCHA מבוטים היא אופציונלית, ומוגדרת במסך "הגדרות אתר".</li>' +
         '</ul></div>';
 
       main.innerHTML = head + card + (extraHtml || '') + '<div id="pk-host"></div>' + policy + more;

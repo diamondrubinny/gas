@@ -116,6 +116,12 @@ class GSM_REST_QR {
 			return new WP_Error( 'gsm_rate', __( 'יותר מדי דיווחים. נסו שוב מאוחר יותר.', 'gas-safety-manager' ), array( 'status' => 429 ) );
 		}
 
+		// Bot check (optional).
+		$cap = GSM_Captcha::check( 'bridge', isset( $body['captcha'] ) && is_string( $body['captcha'] ) ? $body['captcha'] : '', 'report_fault' );
+		if ( is_wp_error( $cap ) ) {
+			return $cap;
+		}
+
 		// Resolve equipment by token (authorization). Legacy monday_id allowed.
 		$token = isset( $body['token'] ) ? sanitize_text_field( (string) $body['token'] ) : '';
 		$row   = $token ? GSM_Equipment_Repo::get_by_token( $token ) : null;
